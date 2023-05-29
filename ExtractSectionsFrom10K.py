@@ -643,7 +643,22 @@ class tenKTextProcessor(tenKProcessor):
 
 
 class tenKDatabaseProcessor(tenKProcessor):
-    pass
+    def getWellformedContent(self, orig_content):
+        return orig_content
+
+ 
+    def saveResults(self):
+        output_xml_file_name = self.f_output_file_path
+        with open(output_xml_file_name, 'w') as targetFile:
+            targetFile.write(self.final_xml)
+
+        log_info = self.getReport()
+        f_log = open(self.f_success_log, 'a')
+        f_log.write(f'{dt.datetime.now()}\n' +
+                    f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
+        print(f'{dt.datetime.now()}\n' +
+              f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
+
 
 
 file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/3449-0000950112-94-000842.txt'

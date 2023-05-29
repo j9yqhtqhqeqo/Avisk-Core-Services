@@ -2,7 +2,9 @@ import os
 import datetime as dt
 import time
 import ExtractSectionsFrom10K
-
+import pathlib
+from zipfile import ZipFile, ZIP_DEFLATED
+import shutil
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/10KDocumentExtraction')
 PARM_TENK_OUTPUT_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Extracted10K/')
@@ -20,8 +22,6 @@ def process10K():
     item_zero_logfile = f'{PARM_LOGFILE}ItemZero{dt.datetime.now().strftime("%c")}.txt'
     f_log = open(summary_logfile, 'a')
     f_log.write('Begin Processing 10K FIles...:  {0}\n'.format(time.strftime('%c')))
-
-
 
     for year in range(PARM_BGNYEAR, PARM_ENDYEAR + 1):
         for qtr in range(PARM_BGNQTR, PARM_ENDQTR + 1):
@@ -49,6 +49,7 @@ def process10K():
                 output_file_path = f'{output_file_folder}/{file}'
                 sec_url_clean_file_name = file.replace('-','/',1)
                 sec_url = f'{PARM_FORM_PREFIX}/{sec_url_clean_file_name}'
+ 
                 section_processor = ExtractSectionsFrom10K.tenKXMLProcessor()  
                 success_failure = section_processor.processSingleTenKFile(f_input_file_path=input_file_path, f_output_file_path=output_file_path, f_success_log=success_logfile,f_failed_log=failure_logfile,f_item0_logile = item_zero_logfile, f_sec_url=file)
                
@@ -60,22 +61,47 @@ def process10K():
                 else:
                     error_processing =+1
 
-        f_log = open(summary_logfile, 'a')
-        f_log.write('\t\tTotal Items Submitted For Processing:{0}\n'.format(total_items_submitted))
+            f_log = open(summary_logfile, 'a')
+            f_log.write('\t\tTotal Items Submitted For Processing:{0}\n'.format(total_items_submitted))
 
-        f_log.write('\t\tSuccess - Files fully Processd:{0}\n'.format(processed_all_items))
-        f_log.write('\t\tSuccess - Files Processd as Item[0]:{0}\n'.format(processed_zero_items))
-        f_log.write('\t\tFaliure  - Files Failed to Process due to errors:{0}\n'.format(error_processing))
-        missed_files = total_items_submitted - processed_all_items+processed_zero_items+error_processing
-        if(total_items_submitted != processed_all_items+processed_zero_items+error_processing):
-                    f_log.write('\tALERT  - Files Not picked up for processing :{0}\n'.format(missed_files))
+            f_log.write('\t\tSuccess - Files fully Processd:{0}\n'.format(processed_all_items))
+            f_log.write('\t\tSuccess - Files Processd as Item[0]:{0}\n'.format(processed_zero_items))
+            f_log.write('\t\tFaliure  - Files Failed to Process due to errors:{0}\n'.format(error_processing))
+            missed_files = total_items_submitted - processed_all_items+processed_zero_items+error_processing
+            if(total_items_submitted != processed_all_items+processed_zero_items+error_processing):
+                        f_log.write('\tALERT  - Files Not picked up for processing :{0}\n'.format(missed_files))
 
-        f_log.write('\tCompleted Processing Year:{0}  Quarter:{1}\n'.format(year, qtr))
+            f_log.write('\tCompleted Processing Year:{0}  Quarter:{1}\n'.format(year, qtr))
+            # #Archive Processed Folder as Zip File and Remove Folder
+            # try:
+            #     f_log.write('\tFolder compression Start:{0}  Quarter:{1}\n'.format(year, qtr))
+            #     archive_Processed_Files(input_path, f'Year{year}Q{qtr}.zip')
+            #     f_log.write('\tFolder compression complete:{0}  Quarter:{1}\n'.format(year, qtr))
+            # except (Exception) as exc:
 
-        f_log.flush()
+            #     print(f'Error Creating Compressed Folder: {input_path}\n')
+            #     f_log.write(f'{dt.datetime.now()}\n' +
+            #                     f'Error Processing File: {input_path}\n')
+            #     f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
+            #     f_log.flush()
 
-    f_log.write('End Processing 10Files...:  {0}\n'.format(time.strftime('%c')))
+    f_log.write('End Processing 10K Files...:  {0}\n'.format(time.strftime('%c')))
     f_log.flush()
+
+def archive_Processed_Files(directory_path:str, zip_file_name:str):
+   
+   # Archive folder and create a zip file
+    directory = pathlib.Path(directory_path)
+    archive_location = PARM_SOURCE_INPUT_PATH+''+zip_file_name
+    print(archive_location)
+    with ZipFile(archive_location, "w", ZIP_DEFLATED, compresslevel=9) as archive:
+        for file_path in directory.rglob("*"):
+            archive.write(file_path, arcname=file_path.relative_to(directory))
+            print("Zipped File:", file_path)
+    #Remvove Processed Folder        
+    shutil.rmtree(directory_path)
 
 
 process10K()
+
+#archive_Processed_Files('/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/TobeZipped')

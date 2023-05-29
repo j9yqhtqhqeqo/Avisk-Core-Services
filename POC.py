@@ -3,12 +3,26 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
+import pathlib
+from zipfile import ZipFile, ZIP_DEFLATED
 
 
-item_text = '1989 to 1990 -- General Manager, Austria & Switzerland.'
-item_text = (item_text).replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&apos;").replace("<", "&lt;").replace(">", "&gt;")
 
-print (item_text)
+
+
+     
+# directory = pathlib.Path('/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/TobeZipped')
+# with ZipFile('/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/TobeZipped.zip', "w", ZIP_DEFLATED, compresslevel=9) as archive:
+#         for file_path in directory.rglob("*"):
+#             archive.write(file_path, arcname=file_path.relative_to(directory))
+
+# process10K()
+
+
+# item_text = '1989 to 1990 -- General Manager, Austria & Switzerland.'
+# item_text = (item_text).replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&apos;").replace("<", "&lt;").replace(">", "&gt;")
+
+# print (item_text)
 
 # FileName='Tempstring.txt'
 # with open(FileName, 'r') as fin:
