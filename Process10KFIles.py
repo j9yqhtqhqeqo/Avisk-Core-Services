@@ -14,16 +14,24 @@ PARM_BGNQTR = 1  # Beginning quarter of each year
 PARM_ENDQTR = 1  # Ending quarter of each year
 
 def process10K():
+    summary_logfile = f'{PARM_LOGFILE}10KDocumentExtractionSummary{dt.datetime.now().strftime("%c")}.txt'
     success_logfile = f'{PARM_LOGFILE}Success{dt.datetime.now().strftime("%c")}.txt'
     failure_logfile = f'{PARM_LOGFILE}Failure{dt.datetime.now().strftime("%c")}.txt'
     item_zero_logfile = f'{PARM_LOGFILE}ItemZero{dt.datetime.now().strftime("%c")}.txt'
-    f_log = open(success_logfile, 'a')
-    f_log.write('BEGIN LOOPS:  {0}\n'.format(time.strftime('%c')))
-    total_processed =0
-    errors=0
+    f_log = open(summary_logfile, 'a')
+    f_log.write('Begin Processing 10K FIles...:  {0}\n'.format(time.strftime('%c')))
+
+
+
     for year in range(PARM_BGNYEAR, PARM_ENDYEAR + 1):
         for qtr in range(PARM_BGNQTR, PARM_ENDQTR + 1):
+            processed_all_items =0
+            processed_zero_items=0
+            error_processing=0
+            total_items_submitted=0
 
+            f_log.write('\tStart Processing Year:{0}  Quarter:{1}\n'.format(year, qtr))
+            f_log.flush()
             # Setup output path
             path = '{0}'.format(PARM_SOURCE_INPUT_PATH)
             input_path = f'{PARM_SOURCE_INPUT_PATH}Year{year}Q{qtr}'
@@ -36,7 +44,7 @@ def process10K():
                 print('Path: {0} created'.format(output_file_folder))
 
             for file in file_list:
-                n_tot = 0
+                total_items_submitted = len(file_list)
                 input_file_path = f'{input_path}/{file}'
                 output_file_path = f'{output_file_folder}/{file}'
                 sec_url_clean_file_name = file.replace('-','/',1)
@@ -45,8 +53,29 @@ def process10K():
                 success_failure = section_processor.processSingleTenKFile(f_input_file_path=input_file_path, f_output_file_path=output_file_path, f_success_log=success_logfile,f_failed_log=failure_logfile,f_item0_logile = item_zero_logfile, f_sec_url=file)
                
                 if(success_failure == 1):
-                    total_processed +=1
+                    processed_all_items +=1
+
+                elif(success_failure == 2):
+                    processed_zero_items+=1
                 else:
-                    errors =+1
+                    error_processing =+1
+
+        f_log = open(summary_logfile, 'a')
+        f_log.write('\t\tTotal Items Submitted For Processing:{0}\n'.format(total_items_submitted))
+
+        f_log.write('\t\tSuccess - Files fully Processd:{0}\n'.format(processed_all_items))
+        f_log.write('\t\tSuccess - Files Processd as Item[0]:{0}\n'.format(processed_zero_items))
+        f_log.write('\t\tFaliure  - Files Failed to Process due to errors:{0}\n'.format(error_processing))
+        missed_files = total_items_submitted - processed_all_items+processed_zero_items+error_processing
+        if(total_items_submitted != processed_all_items+processed_zero_items+error_processing):
+                    f_log.write('\tALERT  - Files Not picked up for processing :{0}\n'.format(missed_files))
+
+        f_log.write('\tCompleted Processing Year:{0}  Quarter:{1}\n'.format(year, qtr))
+
+        f_log.flush()
+
+    f_log.write('End Processing 10Files...:  {0}\n'.format(time.strftime('%c')))
+    f_log.flush()
+
 
 process10K()

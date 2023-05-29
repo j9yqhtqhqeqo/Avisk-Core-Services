@@ -123,6 +123,7 @@ class tenKProcessor:
             self.header_text = raw_10k[:doc_start_is]
         else:
             print('Process All content as Item 0')
+            self.header_text = raw_10k[0:]
             self.saveResultsAsItemZero()
 
         raw_basic = raw_10k[doc_start_is:doc_end_is]
@@ -487,7 +488,7 @@ class tenKProcessor:
                             f'Item Processing Alert: {self.f_input_file_path}\n')
                 f_log.write(f'Details:\n' + f'{exc.ErrorMessage}\n\n')
                 f_log.flush()
-            return -1
+            return 2
 
         except (Exception) as exc:
 
@@ -498,7 +499,7 @@ class tenKProcessor:
                             f'Error Processing File: {self.f_input_file_path}\n')
                 f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
                 f_log.flush()
-            return -1
+            return 0
 
     def saveResultsAsItemZero(self):
         # Save all content Beyond tag Accession Number into Item 0
@@ -534,6 +535,7 @@ class tenKProcessor:
         header_start = '<HEADER>\n'
         header_end = '</HEADER>\n'
         sec_url = "<SEC_URL_LOC>"+self.f_sec_url+"</SEC_URL_LOC>\n"
+        conformed_name = standard_industry_classification = irs_number=state_of_incorporation =fiscal_year_end = form_type = street_1 = city =state =zip =''
 
         lines = self.header_text.split('\n')
         for line in lines:
@@ -644,14 +646,14 @@ class tenKDatabaseProcessor(tenKProcessor):
     pass
 
 
-# file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/106170-0000072741-94-000029.txt'
+file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/3449-0000950112-94-000842.txt'
 
-# logfile = f'templogfile.txt'
-# section_processor = tenKTextProcessor()
-# # section_processor = tenKXMLProcessor()
-# section_processor.processSingleTenKFile(
-#     file_path, "temptarget.xml", logfile, logfile, logfile, f_sec_url="testurl")
+logfile = f'templogfile.txt'
+section_processor = tenKTextProcessor()
+section_processor = tenKXMLProcessor()
+section_processor.processSingleTenKFile(
+    file_path, "temptarget.txt", logfile, logfile, logfile, f_sec_url="testurl")
+# # # section_processor = tenKProcessor()
+# # section_processor.processSingleTenKFile("103682-0001193125-16-480850.txt",logfile)
 # # section_processor = tenKProcessor()
-# section_processor.processSingleTenKFile("103682-0001193125-16-480850.txt",logfile)
-# section_processor = tenKProcessor()
 # section_processor.processSingleTenKFile("32567-0001264931-14-000431.txt",logfile)
