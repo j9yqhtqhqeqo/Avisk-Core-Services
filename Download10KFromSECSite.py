@@ -13,7 +13,7 @@ import time
 
 PARM_BGNYEAR = 1994  # User selected bgn period.  Earliest available is 1993
 PARM_ENDYEAR = 1994  # User selected end period.
-PARM_BGNQTR = 1  # Beginning quarter of each year
+PARM_BGNQTR = 2  # Beginning quarter of each year
 PARM_ENDQTR = 1  # Ending quarter of each year
 # Path where you will store the downloaded files
 PARM_PATH_INDEX_DOWNLOAD = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/IndexDownloads'

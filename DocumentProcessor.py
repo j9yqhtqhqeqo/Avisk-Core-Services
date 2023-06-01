@@ -17,7 +17,7 @@ class formItem:
     def __init__(self) -> None:
         self.form_Elements = []
         self.hierarchy = 0
-        self.item_text: any
+        self.item_text=' '
         self.selected_item_name: str
         self.start_index = 0
         self.end_index = 0
@@ -70,12 +70,36 @@ class tenKProcessor:
         self.header_text: str
         self.final_xml: str
 
+        self.d_current_document_seed:int
+        self.d_reporting_year:int
+        self.d_reporting_quarter:int
+        self.b_process_hader_only = False
+
         self.f_input_file_path: str
         self.f_output_file_path: str
         self.f_success_log: str
         self.f_failed_log: str
         self.f_sec_url: str
-        self.f_item0_logile:str
+        self.f_item0_logile: str
+        self.f_document_name:str
+       
+        self.b_bulk_mode:bool
+        self.b_last_batch:bool
+
+
+
+        self.conformed_name:str
+        self.standard_industry_classification:str
+        self.irs_number = 0
+        self.state_of_incorporation:str 
+        self.fiscal_year_end:str 
+        self.form_type:str
+        self.street_1:str
+        self.city:str 
+        self.state:str 
+        self.zip:str
+
+
 
         self.filtered_item_list = []
         self.form_item1 = formItem()
@@ -121,9 +145,11 @@ class tenKProcessor:
             doc_start_is = doc_start_found.start()
             doc_end_is = doc_end_found.end()
             self.header_text = raw_10k[:doc_start_is]
+            if(self.b_process_hader_only): return
         else:
             print('Process All content as Item 0')
             self.header_text = raw_10k[0:]
+            if(self.b_process_hader_only): return
             self.saveResultsAsItemZero()
 
         raw_basic = raw_10k[doc_start_is:doc_end_is]
@@ -135,7 +161,6 @@ class tenKProcessor:
         untagged_data = untagged_data.replace('\xa0', '')
 
         untagged_data = self.getWellformedContent(untagged_data)
-
 
         tagged_data = re.sub(r'(?<=[\w\r\:\.\;\) *])\n',
                              '<LINESEP>', untagged_data)
@@ -460,7 +485,38 @@ class tenKProcessor:
     def postProcessCleanup(self):
         self.data_cleanup_complete = False
 
-    def processSingleTenKFile(self, f_input_file_path=None, f_output_file_path=None, f_success_log=None, f_failed_log=None,f_item0_logile=None, f_sec_url=None):
+    def initProcessorParams(self, f_input_file_path=None, f_output_file_path=None, f_success_log=None, 
+                            f_failed_log=None, f_item0_logile=None, f_sec_url=None,f_document_name=None, 
+                            b_process_hader_only = False, d_current_document_seed = None,
+                            d_reporting_year = None, d_reporting_quarter = None, b_bulk_mode = False):
+        self.f_input_file_path = f_input_file_path
+        self.f_output_file_path = f_output_file_path
+        self.f_success_log = f_success_log
+        self.f_failed_log = f_failed_log
+        self.f_sec_url = f_sec_url
+        self.f_item0_logile = f_item0_logile
+        self.f_document_name = f_document_name
+        self.b_process_hader_only = b_process_hader_only
+        
+        self.d_current_document_seed = d_current_document_seed
+        self.d_reporting_year = d_reporting_year
+        self.d_reporting_quarter = d_reporting_quarter
+
+        #Reset Header
+        self.conformed_name=""
+        self.standard_industry_classification=""
+        self.irs_number = 0
+        self.state_of_incorporation="" 
+        self.fiscal_year_end="" 
+        self.form_type=""
+        self.street_1=""
+        self.city="" 
+        self.state="" 
+        self.zip=""
+
+        self.b_bulk_mode=b_bulk_mode
+
+    def processSingleTenKFile(self, f_input_file_path=None, f_output_file_path=None, f_success_log=None, f_failed_log=None, f_item0_logile=None, f_sec_url=None,f_document_name=None):
 
         self.f_input_file_path = f_input_file_path
         self.f_output_file_path = f_output_file_path
@@ -468,16 +524,23 @@ class tenKProcessor:
         self.f_failed_log = f_failed_log
         self.f_sec_url = f_sec_url
         self.f_item0_logile = f_item0_logile
+        self.f_document_name = f_document_name
 
         try:
-            self.preProcessDocumentData()
-            self.createSectionList()
-            self.populateItemText()
-            self.extractDocumentHeader()
-            self.build_final_xml()
-            self.saveResults()
-            self.postProcessCleanup()
-            return 1
+            if(self.b_process_hader_only):
+                  self.preProcessDocumentData()
+                  self.extractDocumentHeader()
+                  self.saveResults()
+                  return 1
+            else:
+                self.preProcessDocumentData()
+                self.createSectionList()
+                self.populateItemText()
+                self.extractDocumentHeader()
+                self.build_final_xml()
+                self.saveResults()
+                self.postProcessCleanup()
+                return 1
 
         except (ItemsNotProcssedError) as exc:
 
@@ -493,8 +556,8 @@ class tenKProcessor:
         except (Exception) as exc:
 
             print(f'Error Processing File: = {self.f_input_file_path}\n')
-            if f_failed_log:
-                f_log = open(f_failed_log, 'a')
+            if self.f_failed_log:
+                f_log = open(self.f_failed_log, 'a')
                 f_log.write(f'{dt.datetime.now()}\n' +
                             f'Error Processing File: {self.f_input_file_path}\n')
                 f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
@@ -531,17 +594,22 @@ class tenKProcessor:
         # print(f'{dt.datetime.now()}\n' +
         #       f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
 
+    def processDocumentHeader(self, current_count:0, last_batch:False):
+        self.preProcessDocumentData()
+        self.extractDocumentHeader()
+        self.saveResults()
+
     def extractDocumentHeader(self):
         header_start = '<HEADER>\n'
         header_end = '</HEADER>\n'
         sec_url = "<SEC_URL_LOC>"+self.f_sec_url+"</SEC_URL_LOC>\n"
-        conformed_name = standard_industry_classification = irs_number=state_of_incorporation =fiscal_year_end = form_type = street_1 = city =state =zip =''
 
-        lines = self.header_text.split('\n')
+        lines = self.getWellformedContent(self.header_text).split('\n')
         for line in lines:
             if ('COMPANY CONFORMED NAME:' in line):
                 conformed_name = line.lstrip('\t').strip(
                     'COMPANY CONFORMED NAME:')
+                self.conformed_name=re.sub('\\t', '', conformed_name)
                 conformed_name = '<COMPANY_CONFORMED_NAME>' + \
                     re.sub('\\t', '', conformed_name) + \
                     '</COMPANY_CONFORMED_NAME>\n'
@@ -549,55 +617,97 @@ class tenKProcessor:
             if ('STANDARD INDUSTRIAL CLASSIFICATION:' in line):
                 standard_industry_classification = line.lstrip(
                     '\t').strip('STANDARD INDUSTRIAL CLASSIFICATION:')
+                self.standard_industry_classification=re.sub('\\t', '', standard_industry_classification)
                 standard_industry_classification = '<STANDARD_INDUSTRIAL_CLASSIFICATION>' + \
                     re.sub('\\t', '', standard_industry_classification) + \
                     '</STANDARD_INDUSTRIAL_CLASSIFICATION>\n'
 
             if ('IRS NUMBER:' in line):
                 irs_number = line.lstrip('\t').strip('IRS NUMBER:')
+                self.irs_number=re.sub('\\t', '', irs_number)
                 irs_number = '<IRS_NUMBER>' + \
                     re.sub('\\t', '', irs_number)+'</IRS_NUMBER>\n'
 
             if ('STATE OF INCORPORATION:' in line):
                 state_of_incorporation = line.lstrip(
                     '\t').strip('STATE OF INCORPORATION:')
+                self.state_of_incorporation=re.sub('\\t', '', state_of_incorporation)
                 state_of_incorporation = '<STATE_OF_INCORPORATION>' + \
                     re.sub('\\t', '', state_of_incorporation) + \
                     '</STATE_OF_INCORPORATION>\n'
 
             if ('FISCAL YEAR END:' in line):
                 fiscal_year_end = line.lstrip('\t').strip('FISCAL YEAR END:')
+                self.fiscal_year_end=re.sub('\\t', '', fiscal_year_end)
                 fiscal_year_end = '<FISCAL_YEAR_END>' + \
                     re.sub('\\t', '', fiscal_year_end)+'</FISCAL_YEAR_END>\n'
 
             if ('FORM TYPE:' in line):
                 form_type = line.lstrip('\t').strip('FORM TYPE:')
+                self.form_type = re.sub('\\t', '', form_type)
                 form_type = '<FORM_TYPE>' + \
                     re.sub('\\t', '', form_type)+'</FORM_TYPE>\n'
 
             if ('STREET 1:' in line):
                 street_1 = line.lstrip('\t').strip('STREET 1:')
+                self.street_1 = re.sub('\\t', '', street_1)
                 street_1 = '<STREET_1>' + \
                     re.sub('\\t', '', street_1)+'</STREET_1>\n'
 
             if ('CITY:' in line):
                 city = line.lstrip('\t').strip('CITY:')
+                self.city = re.sub('\\t', '', city)
                 city = '<CITY>'+re.sub('\\t', '', city)+'</CITY>\n'
             if ('STATE:' in line):
                 state = line.lstrip('\t').strip('STATE:')
+                self.state=re.sub('\\t', '', state)
                 state = '<STATE>'+re.sub('\\t', '', state)+'</STATE>\n'
 
             if ('ZIP:' in line):
                 zip = line.lstrip('\t').strip('ZIP:')
+                self.zip=re.sub('\\t', '', zip)
                 zip = '<ZIP>'+re.sub('\\t', '', zip)+'</ZIP>\n'
 
-        self.document_header = header_start + sec_url + conformed_name + standard_industry_classification + \
-            irs_number+state_of_incorporation+fiscal_year_end + \
-            form_type+street_1+city+state+zip+header_end
+        # self.document_header = header_start + sec_url + self.conformed_name + self.standard_industry_classification + \
+        #     self.irs_number+self.state_of_incorporation+self.fiscal_year_end + \
+        #     self.form_type+self.street_1+self.city+self.state+self.zip+ header_end
+
+
+        self.document_header = header_start + sec_url 
+        if(self.conformed_name):
+            self.document_header += self.conformed_name
+        
+        if(self.standard_industry_classification):
+            self.document_header += self.standard_industry_classification
+        
+        if(self.irs_number):
+            self.document_header +=  self.irs_number
+        
+        if(self.state_of_incorporation):
+            self.document_header += self.state_of_incorporation 
+        
+        if(self.fiscal_year_end):
+            self.document_header += self.fiscal_year_end
+    
+        if(self.form_type):
+            self.document_header += self.form_type
+
+        if(self.form_type):
+            self.document_header += self.street_1
+
+        if(self.city):
+            self.document_header += self.city
+
+        if(self.state):
+            self.document_header += self.state
+
+        self.document_header += header_end
+
+
 
     def build_final_xml(self):
         self.final_xml = '<?xml version="1.0" encoding="ascii"?>\n' + \
-            '<Document>\n'+ \
+            '<Document>\n' + \
             self.document_header+'<ITEMS>\n' + self.final_itemized_data + '</ITEMS>\n' + \
             '</Document>'
        # print(self.final_xml)
@@ -605,14 +715,15 @@ class tenKProcessor:
     def getWellformedContent(self, orig_content):
         pass
 
+
 class tenKXMLProcessor(tenKProcessor):
-   def getWellformedContent(self, orig_content):
+    def getWellformedContent(self, orig_content):
         return orig_content.replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&apos;").replace("<", "&lt;").replace(">", "&gt;")
 
-   
-   def saveResults(self):
+    def saveResults(self):
 
-        output_xml_file_name = self.f_output_file_path.replace('.txt','.xml',1)
+        output_xml_file_name = self.f_output_file_path.replace(
+            '.txt', '.xml', 1)
         with open(output_xml_file_name, 'w') as targetFile:
             targetFile.write(self.final_xml)
 
@@ -625,28 +736,9 @@ class tenKXMLProcessor(tenKProcessor):
 
 
 class tenKTextProcessor(tenKProcessor):
-   def getWellformedContent(self, orig_content):
-        return orig_content
-
- 
-   def saveResults(self):
-        output_xml_file_name = self.f_output_file_path
-        with open(output_xml_file_name, 'w') as targetFile:
-            targetFile.write(self.final_xml)
-
-        log_info = self.getReport()
-        f_log = open(self.f_success_log, 'a')
-        f_log.write(f'{dt.datetime.now()}\n' +
-                    f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
-        print(f'{dt.datetime.now()}\n' +
-              f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
-
-
-class tenKDatabaseProcessor(tenKProcessor):
     def getWellformedContent(self, orig_content):
         return orig_content
 
- 
     def saveResults(self):
         output_xml_file_name = self.f_output_file_path
         with open(output_xml_file_name, 'w') as targetFile:
@@ -659,15 +751,46 @@ class tenKDatabaseProcessor(tenKProcessor):
         print(f'{dt.datetime.now()}\n' +
               f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
 
-
-
-file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/3449-0000950112-94-000842.txt'
+file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/63908-0000063908-94-000013.txt'
 
 logfile = f'templogfile.txt'
-section_processor = tenKTextProcessor()
-section_processor = tenKXMLProcessor()
-section_processor.processSingleTenKFile(
-    file_path, "temptarget.txt", logfile, logfile, logfile, f_sec_url="testurl")
+# section_processor = tenKTextProcessor()
+# section_processor = tenKXMLProcessor()
+
+# file_list =[
+# '37008-0000950152-94-000288.txt',
+# '37008-0000950152-94-000288.txt',
+# '773915-0000892569-94-000101.txt',
+# '773915-0000892569-94-000101.txt',
+# '790381-0000898080-94-000022.txt',
+# '793421-0000950103-94-001944.txt',
+# '793421-0000950103-94-001944.txt',
+# '842461-0000950124-94-000623.txt',
+# '857402-0000857402-94-000035.txt',
+# '859257-0000857402-94-000036.txt',
+# '860004-0000857402-94-000037.txt',
+# '865227-0000857402-94-000038.txt',
+# '868482-0000857402-94-000039.txt',
+# '869391-0000857402-94-000045.txt',
+# '869844-0000869844-94-000001.txt',
+# '873084-0000857402-94-000041.txt',
+# '874783-0000857402-94-000042.txt',
+# '876858-0000857402-94-000043.txt',
+# '879209-0000857402-94-000044.txt',
+# '893958-0000893958-94-000006.txt',
+# '893958-0000893958-94-000007.txt',
+# '909783-0000909783-94-000002.txt',
+# '912238-0000912238-94-000002.txt'
+# ]
+
+# for file_name in file_list:
+    
+#     section_processor = tenKDatabaseProcessor()
+#     section_processor.b_process_hader_only = True
+#     section_processor.d_reporting_year=1994
+#     section_processor.d_reporting_quarter=1
+#     section_processor.processSingleTenKFile(
+#         file_path, "temptarget.txt", logfile, logfile, logfile, f_sec_url="testurl", f_document_name=file_name)
 # # # section_processor = tenKProcessor()
 # # section_processor.processSingleTenKFile("103682-0001193125-16-480850.txt",logfile)
 # # section_processor = tenKProcessor()

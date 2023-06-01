@@ -7,7 +7,11 @@ import pathlib
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
+line = 'PETROLEUM REFINING [2911]'
 
+PATTERN = ".+Iteration (\d+)"
+m = re.match(PATTERN, line)
+print(m.group(1))
 
 
      
