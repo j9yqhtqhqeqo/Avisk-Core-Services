@@ -7,11 +7,22 @@ import pathlib
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
-line = 'PETROLEUM REFINING [2911]'
+# line = ']		IRS NUMBER:				232539694'
+# # doc_start_pattern = re.compile(r'IRS NUMBER:')
+# # doc_start_found = doc_start_pattern.search(line,re.IGNORECASE)
+# # irs_number = line[doc_start_found.start():]
+# irs_number = line.strip(']').lstrip('\t').strip('IRS NUMBER:')
+# irs_number=re.sub('\\t', '', irs_number)
+# print(irs_number)
 
-PATTERN = ".+Iteration (\d+)"
-m = re.match(PATTERN, line)
-print(m.group(1))
+sic_code = '['
+sic_code_int = re.search('\d+', sic_code)
+if(not sic_code_int):
+        print('Not found')
+else:
+        print(sic_code_int.group())
+
+
 
 
      

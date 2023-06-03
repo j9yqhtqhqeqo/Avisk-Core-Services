@@ -11,10 +11,10 @@ import pandas as pd
 import re
 import time
 
-PARM_BGNYEAR = 1994  # User selected bgn period.  Earliest available is 1993
-PARM_ENDYEAR = 1994  # User selected end period.
-PARM_BGNQTR = 2  # Beginning quarter of each year
-PARM_ENDQTR = 1  # Ending quarter of each year
+PARM_BGNYEAR = 2022  # User selected bgn period.  Earliest available is 1993
+PARM_ENDYEAR = 2022 # User selected end period.
+PARM_BGNQTR = 1  # Beginning quarter of each year
+PARM_ENDQTR = 4  # Ending quarter of each year
 # Path where you will store the downloaded files
 PARM_PATH_INDEX_DOWNLOAD = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/IndexDownloads'
 PARM_PATH_PROCESSED_FILES = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/ProcessedIndexFiles'
@@ -23,7 +23,7 @@ PARM_PATH_FORM_DOWNLOAD = r'/Users/mohanganadal/Data Company/Text Processing/Pro
 # Change the file pointer below to reflect your location for the log file
 #    (directory must already exist)
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/EdgarDownload' +
-                str(PARM_BGNYEAR) + '-' + str(PARM_ENDYEAR))
+                str(PARM_BGNYEAR) +'Q'+str(PARM_BGNQTR) + '-' + str(PARM_ENDYEAR) +'Q'+str(PARM_ENDQTR))
 # EDGAR parameter
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
 PARM_MASTERIDX_PREFIX = 'https://www.sec.gov/Archives/edgar/full-index/'

@@ -70,7 +70,6 @@ class tenKProcessor:
         self.header_text: str
         self.final_xml: str
 
-        self.d_current_document_seed:int
         self.d_reporting_year:int
         self.d_reporting_quarter:int
         self.b_process_hader_only = False
@@ -487,7 +486,7 @@ class tenKProcessor:
 
     def initProcessorParams(self, f_input_file_path=None, f_output_file_path=None, f_success_log=None, 
                             f_failed_log=None, f_item0_logile=None, f_sec_url=None,f_document_name=None, 
-                            b_process_hader_only = False, d_current_document_seed = None,
+                            b_process_hader_only = False, 
                             d_reporting_year = None, d_reporting_quarter = None, b_bulk_mode = False):
         self.f_input_file_path = f_input_file_path
         self.f_output_file_path = f_output_file_path
@@ -497,8 +496,6 @@ class tenKProcessor:
         self.f_item0_logile = f_item0_logile
         self.f_document_name = f_document_name
         self.b_process_hader_only = b_process_hader_only
-        
-        self.d_current_document_seed = d_current_document_seed
         self.d_reporting_year = d_reporting_year
         self.d_reporting_quarter = d_reporting_quarter
 
@@ -600,6 +597,17 @@ class tenKProcessor:
         self.saveResults()
 
     def extractDocumentHeader(self):
+        conformed_name=""
+        standard_industry_classification=""
+        irs_number = 0
+        state_of_incorporation="" 
+        fiscal_year_end="" 
+        form_type=""
+        street_1=""
+        city="" 
+        state="" 
+        zip=""
+
         header_start = '<HEADER>\n'
         header_end = '</HEADER>\n'
         sec_url = "<SEC_URL_LOC>"+self.f_sec_url+"</SEC_URL_LOC>\n"
@@ -607,7 +615,7 @@ class tenKProcessor:
         lines = self.getWellformedContent(self.header_text).split('\n')
         for line in lines:
             if ('COMPANY CONFORMED NAME:' in line):
-                conformed_name = line.lstrip('\t').strip(
+                conformed_name = line.strip(']').lstrip('\t').strip(
                     'COMPANY CONFORMED NAME:')
                 self.conformed_name=re.sub('\\t', '', conformed_name)
                 conformed_name = '<COMPANY_CONFORMED_NAME>' + \
@@ -623,13 +631,13 @@ class tenKProcessor:
                     '</STANDARD_INDUSTRIAL_CLASSIFICATION>\n'
 
             if ('IRS NUMBER:' in line):
-                irs_number = line.lstrip('\t').strip('IRS NUMBER:')
+                irs_number = line.strip(']').lstrip('\t').strip('IRS NUMBER:')
                 self.irs_number=re.sub('\\t', '', irs_number)
                 irs_number = '<IRS_NUMBER>' + \
                     re.sub('\\t', '', irs_number)+'</IRS_NUMBER>\n'
 
             if ('STATE OF INCORPORATION:' in line):
-                state_of_incorporation = line.lstrip(
+                state_of_incorporation = line.strip(']').lstrip(
                     '\t').strip('STATE OF INCORPORATION:')
                 self.state_of_incorporation=re.sub('\\t', '', state_of_incorporation)
                 state_of_incorporation = '<STATE_OF_INCORPORATION>' + \
@@ -637,69 +645,66 @@ class tenKProcessor:
                     '</STATE_OF_INCORPORATION>\n'
 
             if ('FISCAL YEAR END:' in line):
-                fiscal_year_end = line.lstrip('\t').strip('FISCAL YEAR END:')
+                fiscal_year_end = line.strip(']').lstrip('\t').strip('FISCAL YEAR END:')
                 self.fiscal_year_end=re.sub('\\t', '', fiscal_year_end)
                 fiscal_year_end = '<FISCAL_YEAR_END>' + \
                     re.sub('\\t', '', fiscal_year_end)+'</FISCAL_YEAR_END>\n'
 
             if ('FORM TYPE:' in line):
-                form_type = line.lstrip('\t').strip('FORM TYPE:')
+                form_type = line.strip(']').lstrip('\t').strip('FORM TYPE:')
                 self.form_type = re.sub('\\t', '', form_type)
                 form_type = '<FORM_TYPE>' + \
                     re.sub('\\t', '', form_type)+'</FORM_TYPE>\n'
 
             if ('STREET 1:' in line):
-                street_1 = line.lstrip('\t').strip('STREET 1:')
+                street_1 = line.strip(']').lstrip('\t').strip('STREET 1:')
                 self.street_1 = re.sub('\\t', '', street_1)
                 street_1 = '<STREET_1>' + \
                     re.sub('\\t', '', street_1)+'</STREET_1>\n'
 
             if ('CITY:' in line):
-                city = line.lstrip('\t').strip('CITY:')
+                city = line.strip(']').lstrip('\t').strip('CITY:')
                 self.city = re.sub('\\t', '', city)
                 city = '<CITY>'+re.sub('\\t', '', city)+'</CITY>\n'
             if ('STATE:' in line):
-                state = line.lstrip('\t').strip('STATE:')
+                state = line.strip(']').lstrip('\t').strip('STATE:')
                 self.state=re.sub('\\t', '', state)
                 state = '<STATE>'+re.sub('\\t', '', state)+'</STATE>\n'
 
             if ('ZIP:' in line):
-                zip = line.lstrip('\t').strip('ZIP:')
+                zip = line.strip(']').lstrip('\t').strip('ZIP:')
                 self.zip=re.sub('\\t', '', zip)
                 zip = '<ZIP>'+re.sub('\\t', '', zip)+'</ZIP>\n'
 
-        # self.document_header = header_start + sec_url + self.conformed_name + self.standard_industry_classification + \
-        #     self.irs_number+self.state_of_incorporation+self.fiscal_year_end + \
-        #     self.form_type+self.street_1+self.city+self.state+self.zip+ header_end
 
 
         self.document_header = header_start + sec_url 
-        if(self.conformed_name):
-            self.document_header += self.conformed_name
+        if(conformed_name):
+            self.document_header += conformed_name
         
-        if(self.standard_industry_classification):
-            self.document_header += self.standard_industry_classification
+        if(standard_industry_classification):
+            self.document_header += standard_industry_classification
         
-        if(self.irs_number):
-            self.document_header +=  self.irs_number
+        if(irs_number):
+            self.document_header +=  irs_number
         
-        if(self.state_of_incorporation):
-            self.document_header += self.state_of_incorporation 
+        if(state_of_incorporation):
+            self.document_header += state_of_incorporation 
         
-        if(self.fiscal_year_end):
-            self.document_header += self.fiscal_year_end
+        if(fiscal_year_end):
+            self.document_header += fiscal_year_end
     
-        if(self.form_type):
-            self.document_header += self.form_type
+        if(form_type):
+            self.document_header += form_type
 
-        if(self.form_type):
-            self.document_header += self.street_1
+        if(form_type):
+            self.document_header += street_1
 
-        if(self.city):
-            self.document_header += self.city
+        if(city):
+            self.document_header += city
 
-        if(self.state):
-            self.document_header += self.state
+        if(state):
+            self.document_header += state
 
         self.document_header += header_end
 
@@ -751,9 +756,9 @@ class tenKTextProcessor(tenKProcessor):
         print(f'{dt.datetime.now()}\n' +
               f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
 
-file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/63908-0000063908-94-000013.txt'
+# file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/63908-0000063908-94-000013.txt'
 
-logfile = f'templogfile.txt'
+# logfile = f'templogfile.txt'
 # section_processor = tenKTextProcessor()
 # section_processor = tenKXMLProcessor()
 

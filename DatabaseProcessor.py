@@ -1,11 +1,14 @@
 import pyodbc
 from DocumentProcessor import tenKProcessor
+import datetime as dt
+import re
 
 class tenKDatabaseProcessor(tenKProcessor):
 
     def __init__(self) -> None:
         super().__init__()
-        self.current_document_seed = 0
+        self.d_current_document_seed=0
+        self.b_load_document_seed_from_db = True
         self.dbConnection = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
         self.current_count:int
         
@@ -15,43 +18,35 @@ class tenKDatabaseProcessor(tenKProcessor):
         self.preProcessDocumentData()
         self.extractDocumentHeader()
         self.saveResults()
+    
 
-    def getCurrentDocumentSeedFromDatabase(self):
-        cursor = self.dbConnection.cursor()
-        cursor.execute("select max(document_id) from dbo.t_sec_document_header") 
-        current_seed = cursor.fetchone()[0]
-        if(current_seed):
-            return current_seed+ 1
+    def getCurrentDocumentSeed(self):
+        if(self.b_load_document_seed_from_db):
+            cursor = self.dbConnection.cursor()
+            cursor.execute("select max(document_id) from dbo.t_sec_document_header") 
+            current_seed = cursor.fetchone()[0]
+            if(current_seed):
+                self.b_load_document_seed_from_db =False
+                self.d_current_document_seed = current_seed+1
+                return self.d_current_document_seed
+            else:
+                return 1000
+            cursor.close()
         else:
-            return 1000
-        cursor.close()
-        cnxn.close()
+            self.d_current_document_seed +=1
+            return self.d_current_document_seed
 
     def getWellformedContent(self, orig_content):
         return orig_content.replace("'", "''")
  
     def saveResults(self):
-       if(self.b_process_hader_only):
-        try:
-            if(self.b_bulk_mode):
-                self.saveDocumentHeaderBulk()
-            else:
-                self.saveDocumentHeader()
-            return 1
-        except (Exception) as exc:
-
-            print(f'Error Processing File: = {self.f_input_file_path}\n')
-            if self.f_failed_log:
-                f_log = open(self.f_failed_log, 'a')
-                f_log.write(f'{dt.datetime.now()}\n' +
-                            f'Error Processing File: {self.f_input_file_path}\n')
-                f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
-                f_log.flush()
-            raise exc
-        else:
+        if(self.b_process_hader_only):
             try:
-                self.insertData()
-                return 1
+                if(self.b_bulk_mode):
+                    self.saveDocumentHeaderBulk()
+                else:
+                    self.saveDocumentHeader()
+
             except (Exception) as exc:
 
                 print(f'Error Processing File: = {self.f_input_file_path}\n')
@@ -61,12 +56,25 @@ class tenKDatabaseProcessor(tenKProcessor):
                                 f'Error Processing File: {self.f_input_file_path}\n')
                     f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
                     f_log.flush()
-                    raise exc           
+                raise exc
+        else:
+                try:
+                    self.insertData()
+                    return 1
+                except (Exception) as exc:
+
+                    print(f'Error Processing File: = {self.f_input_file_path}\n')
+                    if self.f_failed_log:
+                        f_log = open(self.f_failed_log, 'a')
+                        f_log.write(f'{dt.datetime.now()}\n' +
+                                    f'Error Processing File: {self.f_input_file_path}\n')
+                        f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
+                        f_log.flush()
+                        raise exc           
 
     def saveDocumentHeader(self):
         
-        if(self.current_document_seed == 0):
-            self.current_document_seed = self.getCurrentDocumentSeedFromDatabase()
+        self.d_current_document_seed = self.getCurrentDocumentSeed()
 
         conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
     
@@ -81,7 +89,7 @@ class tenKDatabaseProcessor(tenKProcessor):
             added_dt,added_by ,modify_dt,modify_by\
             )\
                 VALUES\
-                ({self.current_document_seed},{self.d_reporting_year},{self.d_reporting_quarter},N'{self.f_document_name}',\
+                ({self.d_current_document_seed},{self.d_reporting_year},{self.d_reporting_quarter},N'{self.f_document_name}',\
                 N'{self.conformed_name}', N'{self.standard_industry_classification}', {self.irs_number} ,N'{self.state_of_incorporation}',\
                 N'{self.fiscal_year_end}', N'{self.form_type}', N'{self.street_1}',N'{self.city}', N'{self.state}',N'{self.zip}',\
                 CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
@@ -102,26 +110,29 @@ class tenKDatabaseProcessor(tenKProcessor):
         # Close the cursor and connection
         cursor.close()
         conn.close()
-        return self.current_document_seed
+        return self.d_current_document_seed
 
     def saveDocumentHeaderBulk(self):
         
-        if(self.current_document_seed == 0):
-            self.current_document_seed = self.getCurrentDocumentSeedFromDatabase()
+        self.d_current_document_seed = self.getCurrentDocumentSeed()
 
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
         # Construct the INSERT INTO statement
 
-  
+        sic_code_4_digit_exp = re.search('\d+', self.standard_industry_classification)
+        sic_code_4_digit = 0
+        if(sic_code_4_digit_exp):
+             sic_code_4_digit = int(sic_code_4_digit_exp.group())
+
         sql = f"INSERT INTO dbo.t_sec_document_header( \
             document_id ,  reporting_year, reporting_quarter, document_name,\
-            conformed_name ,sic_code, irs_number, state_of_incorporation ,fiscal_year_end ,form_type,street_1,city ,state , zip,\
+            conformed_name ,sic_code, sic_code_4_digit,irs_number, state_of_incorporation ,fiscal_year_end ,form_type,street_1,city ,state , zip,\
             added_dt,added_by ,modify_dt,modify_by\
             )\
                 VALUES\
-                ({self.current_document_seed},{self.d_reporting_year},{self.d_reporting_quarter},N'{self.f_document_name}',\
-                N'{self.conformed_name}', N'{self.standard_industry_classification}', {self.irs_number} ,N'{self.state_of_incorporation}',\
+                ({self.d_current_document_seed},{self.d_reporting_year},{self.d_reporting_quarter},N'{self.f_document_name}',\
+                N'{self.conformed_name}', N'{self.standard_industry_classification}',{sic_code_4_digit} ,{self.irs_number} ,N'{self.state_of_incorporation}',\
                 N'{self.fiscal_year_end}', N'{self.form_type}', N'{self.street_1}',N'{self.city}', N'{self.state}',N'{self.zip}',\
                 CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
         try:
@@ -136,25 +147,32 @@ class tenKDatabaseProcessor(tenKProcessor):
         if(self.current_count == 100 or self.b_last_batch):
             try:
                 self.dbConnection.commit()
-                print("Record inserted successfully!")
             except Exception as exc:
                 # Rollback the transaction if any error occurs
                 self.dbConnection.rollback()
                 print(f"Error: {str(exc)}")
                 raise exc
+        # if(self.b_last_batch):
+        #     try:
+        #         cursor.close()
+        #         self.dbConnection.close()
+        #         print("Batch inserted successfully!")
+        #     except Exception as exc:
+        #         # Rollback the transaction if any error occurs
+        #         self.dbConnection.rollback()
+        #         print(f"Error: {str(exc)}")
+        #         raise exc
+
+    def CleanupDBConnection(self):
         if(self.b_last_batch):
             try:
-                cursor.close()
                 self.dbConnection.close()
-                print("Batch inserted successfully!")
+                print("Batch Processing Complete!")
             except Exception as exc:
                 # Rollback the transaction if any error occurs
                 self.dbConnection.rollback()
                 print(f"Error: {str(exc)}")
                 raise exc
-
-        return self.current_document_seed
-
 
     def insertData(self):
 
@@ -173,7 +191,7 @@ class tenKDatabaseProcessor(tenKProcessor):
             added_dt,added_by ,modify_dt,modify_by\
             )\
                 VALUES\
-                ({self.current_document_seed},9999,1,\
+                ({self.d_current_document_seed},9999,1,\
                 N'{self.conformed_name}', N'{self.standard_industry_classification}', N'{self.irs_number}' ,N'{self.state_of_incorporation}',\
                 N'{self.fiscal_year_end}', N'{self.form_type}', N'{self.street_1}',N'{self.city}', N'{self.state}',N'{self.zip}',N'{self.form_item1.item_text}',\
                 N'{self.form_item1A.item_text}', N'{self.form_item1B.item_text}',N'{self.form_item2.item_text}',N'{self.form_item3.item_text}',N'{self.form_item4.item_text}',N'{self.form_item5.item_text}',\

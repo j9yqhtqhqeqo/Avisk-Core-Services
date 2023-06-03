@@ -11,9 +11,11 @@ PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/Docu
 PARM_TENK_OUTPUT_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Extracted10K/')
 PARM_SOURCE_INPUT_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/')
 PARM_REPROCESS_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/ReProcessDocHeaders/')
+PARM_PROCESSED_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10KProcessed/')
+
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
-PARM_BGNYEAR = 2000  # User selected bgn period.  Earliest available is 1993
-PARM_ENDYEAR = 2000  # User selected end period.
+PARM_BGNYEAR = 2022  # User selected bgn period.  Earliest available is 1993
+PARM_ENDYEAR = 2022  # User selected end period.
 PARM_BGNQTR = 1  # Beginning quarter of each year
 PARM_ENDQTR = 4  # Ending quarter of each year
 
@@ -103,6 +105,8 @@ def process10KHeaders():
     f_log = open(summary_logfile, 'a')
     f_log.write('Begin Processing 10K FIles...:  {0}\n'.format(time.strftime('%c')))
 
+    section_processor = DatabaseProcessor.tenKDatabaseProcessor()
+
     for year in range(PARM_BGNYEAR, PARM_ENDYEAR + 1):
         for qtr in range(PARM_BGNQTR, PARM_ENDQTR + 1):
             processed_all_items =0
@@ -123,12 +127,13 @@ def process10KHeaders():
                 os.makedirs(output_file_folder)
                 print('Path: {0} created'.format(output_file_folder))
 
-            section_processor = DocumentProcessor.tenKDatabaseProcessor()
-            currenct_row_count =0 
+            currenct_row_count = 1 
             total_count =0 
             for file in file_list:
-
-                currenct_row_count +=1
+                if(currenct_row_count == 101):
+                    currenct_row_count = 1
+                else:
+                    currenct_row_count += 1
                 total_count +=1
                 
                 total_items_submitted = len(file_list)
@@ -137,41 +142,42 @@ def process10KHeaders():
                 sec_url_clean_file_name = file.replace('-','/',1)
                 sec_url = f'{PARM_FORM_PREFIX}/{sec_url_clean_file_name}'
  
-                current_document_seed = section_processor.getCurrentDocumentSeedFromDatabase()
+                # current_document_seed = section_processor.getCurrentDocumentSeedFromDatabase()
                 section_processor.initProcessorParams(f_input_file_path=input_file_path,f_output_file_path=output_file_path, 
                                                                                                   f_success_log=success_logfile,f_failed_log=failure_logfile,
                                                                                                   f_item0_logile = item_zero_logfile, f_sec_url= sec_url , f_document_name = file, 
-                                                                                                  b_process_hader_only=True, d_current_document_seed = current_document_seed,
-                                                                                                  d_reporting_year=year, d_reporting_quarter=qtr, b_bulk_mode=True)
+                                                                                                  b_process_hader_only=True,d_reporting_year=year, d_reporting_quarter=qtr, b_bulk_mode=True)
                 try:
                    
                     if(total_count == total_items_submitted):
-                        success_failure = section_processor.processDocumentHeader(currenct_row_count, last_batch=True)
+                        section_processor.processDocumentHeader(currenct_row_count, last_batch=True)
                     else:
-                        success_failure = section_processor.processDocumentHeader(currenct_row_count)
-                    
+                        section_processor.processDocumentHeader(currenct_row_count)
+
+                    #Archive Processed Files    
+                    processed_path_folder = f'{PARM_PROCESSED_PATH}Year{year}Q{qtr}'
+
+                    if not os.path.exists(processed_path_folder):
+                        os.makedirs(processed_path_folder)
+            
+                    processed_path = f'{processed_path_folder}/{file}'
+                    os.rename(input_file_path,processed_path)
+
 
                 except (Exception) as exc:
-                    success_failure = 0
+                    error_processing =+1
                     print(f'Error Processing File: = {input_file_path}\n')
                     if failure_logfile:
-
-                        os.rename(input_file_path,f'{PARM_REPROCESS_PATH}/{file}')
-
                         f_log = open(failure_logfile, 'a')
                         f_log.write(f'{dt.datetime.now()}\n' +
                                     f'Error Processing File: {input_file_path}\n')
                         f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
                         f_log.flush()
                 
+                print(f'{dt.datetime.now()}' +  f'Total Files Processed Sofar:' +f'{total_count} of {total_items_submitted}\n' )     
 
-                if(success_failure == 1):
-                    processed_all_items +=1
-                else:
-                    error_processing =+1
-
+                processed_all_items +=1
                 
-
             f_log = open(summary_logfile, 'a')
             f_log.write('\t\tTotal Items Submitted For Processing:{0}\n'.format(total_items_submitted))
 
