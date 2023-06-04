@@ -722,15 +722,21 @@ class tenKProcessor:
 
 
 class tenKXMLProcessor(tenKProcessor):
+    def __init__(self, save_results) -> None:
+        super().__init__()
+        self.save_results = save_results
+
     def getWellformedContent(self, orig_content):
         return orig_content.replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&apos;").replace("<", "&lt;").replace(">", "&gt;")
 
     def saveResults(self):
-
-        output_xml_file_name = self.f_output_file_path.replace(
-            '.txt', '.xml', 1)
-        with open(output_xml_file_name, 'w') as targetFile:
-            targetFile.write(self.final_xml)
+        if(self.save_results):
+            output_xml_file_name = self.f_output_file_path.replace(
+                '.txt', '.xml', 1)
+            with open(output_xml_file_name, 'w') as targetFile:
+                targetFile.write(self.final_xml)
+        else: 
+                return self.final_xml
 
         log_info = self.getReport()
         f_log = open(self.f_success_log, 'a')
@@ -739,15 +745,22 @@ class tenKXMLProcessor(tenKProcessor):
         print(f'{dt.datetime.now()}\n' +
               f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
 
+    def getProcessedXMLContent(self):
+        return self.final_xml
+
+
+
 
 class tenKTextProcessor(tenKProcessor):
+
+
     def getWellformedContent(self, orig_content):
         return orig_content
 
     def saveResults(self):
         output_xml_file_name = self.f_output_file_path
         with open(output_xml_file_name, 'w') as targetFile:
-            targetFile.write(self.final_xml)
+                targetFile.write(self.final_xml)
 
         log_info = self.getReport()
         f_log = open(self.f_success_log, 'a')
@@ -755,6 +768,8 @@ class tenKTextProcessor(tenKProcessor):
                     f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
         print(f'{dt.datetime.now()}\n' +
               f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
+
+
 
 # file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/63908-0000063908-94-000013.txt'
 
