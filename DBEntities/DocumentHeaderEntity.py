@@ -1,7 +1,7 @@
-class DocumentHeaderDBEntity:
+class DocHeaderEntity:
     def __init__(self) -> None:
         self.document_id :int  
-        self.document_name
+        self.document_name:str
         self.reporting_year :int  
         self.reporting_quarter :int  
         self.conformed_name :str  

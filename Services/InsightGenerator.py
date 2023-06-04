@@ -3,9 +3,14 @@
 # 
 #
 ############################################################################################################
-from LogDetails import LogGenerator as lg
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
 import datetime as dt
-from InsightGeneratorDBManager import InsightGeneratorDBManager
+# from InsightGeneratorDBManager import InsightGeneratorDBManager 
+from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
+from DBEntities.DocumentHeaderEntity import DocHeaderEntity
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenerator')
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
@@ -25,8 +30,9 @@ class insightGenerator:
         
     
     def _get_company_list(self):
-        pass
-
+        insightDBMgr = InsightGeneratorDBManager()
+        self.company_list = insightDBMgr.get_test_company_list()
+        return self.company_list
 
     def generate_insights(self,company_list:any):
         self.company_list = self._get_company_list()
@@ -72,7 +78,23 @@ class tenK_Insight_Generator(insightGenerator):
         super().__init__()
 
 
+insight_gen = insightGenerator()
 
+company_list = insight_gen._get_company_list()
+l_company: DocHeaderEntity
+
+for company in company_list:
+    print(str(company.document_id )+ '  ' + str(company.document_name))
+    
+    # l_company.document_id = company.document_id
+    # l_company.document_name = company.document_name
+    # l_company.reporting_year = company.reporting_year
+    # l_company.reporting_quarter = company.reporting_quarter
+    # l_company.conformed_name = company.conformed_name
+    # l_company.sic_code = company.sic_code
+    # l_company.form_type = company.form_type
+
+   
 
 # insights = insights()
 
