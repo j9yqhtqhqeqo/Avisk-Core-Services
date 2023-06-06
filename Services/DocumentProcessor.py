@@ -80,7 +80,7 @@ class tenKProcessor:
         self.f_failed_log: str
         self.f_sec_url: str
         self.f_item0_logile: str
-        self.f_document_name:str
+ 
        
         self.b_bulk_mode:bool
         self.b_last_batch:bool
@@ -154,7 +154,7 @@ class tenKProcessor:
         raw_basic = raw_10k[doc_start_is:doc_end_is]
 
         item_1a_content = BeautifulSoup(raw_basic, 'html.parser')
-        sourcedata = item_1a_content.get_text().encode('ascii')
+        sourcedata = item_1a_content.get_text().encode('ascii','ignore')
         untagged_data = sourcedata.decode('ascii', errors='ignore')
 
         untagged_data = untagged_data.replace('\xa0', '')
@@ -513,7 +513,7 @@ class tenKProcessor:
 
         self.b_bulk_mode=b_bulk_mode
 
-    def processSingleTenKFile(self, f_input_file_path=None, f_output_file_path=None, f_success_log=None, f_failed_log=None, f_item0_logile=None, f_sec_url=None,f_document_name=None):
+    def processSingleTenKFile(self, f_input_file_path=None, f_output_file_path=None, f_success_log=None, f_failed_log=None, f_item0_logile=None, f_sec_url=None):
 
         self.f_input_file_path = f_input_file_path
         self.f_output_file_path = f_output_file_path
@@ -521,7 +521,7 @@ class tenKProcessor:
         self.f_failed_log = f_failed_log
         self.f_sec_url = f_sec_url
         self.f_item0_logile = f_item0_logile
-        self.f_document_name = f_document_name
+    
 
         try:
             if(self.b_process_hader_only):
@@ -562,13 +562,18 @@ class tenKProcessor:
             return 0
 
     def saveResultsAsItemZero(self):
-        # Save all content Beyond tag Accession Number into Item 0
-        with open(self.f_input_file_path, 'r') as fin:
-            raw_text = fin.read()
-        doc_start_pattern = re.compile(r'ACCESSION NUMBER:')
-        doc_start_is = doc_start_pattern.search(raw_text).start()
-        item0_text = raw_text[doc_start_is:]
-        self.final_itemized_data = item0_text
+        
+        if(self.clean_data_as_text):
+            self.final_itemized_data = self.clean_data_as_text
+        else:
+            # Save all content Beyond tag Accession Number into Item 0
+            with open(self.f_input_file_path, 'r') as fin:
+                raw_text = fin.read()
+            doc_start_pattern = re.compile(r'ACCESSION NUMBER:')
+            doc_start_is = doc_start_pattern.search(raw_text).start()
+            item0_text = raw_text[doc_start_is:]
+            self.final_itemized_data = item0_text
+
         item0 = formItem()
         item0.add_Element(item_name='ITEM0')
         self.filtered_item_list.append(item0)
@@ -724,19 +729,15 @@ class tenKProcessor:
 class tenKXMLProcessor(tenKProcessor):
     def __init__(self, save_results) -> None:
         super().__init__()
-        self.save_results = save_results
 
     def getWellformedContent(self, orig_content):
         return orig_content.replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&apos;").replace("<", "&lt;").replace(">", "&gt;")
 
     def saveResults(self):
-        if(self.save_results):
-            output_xml_file_name = self.f_output_file_path.replace(
+        output_xml_file_name = self.f_output_file_path.replace(
                 '.txt', '.xml', 1)
-            with open(output_xml_file_name, 'w') as targetFile:
+        with open(output_xml_file_name, 'w') as targetFile:
                 targetFile.write(self.final_xml)
-        else: 
-                return self.final_xml
 
         log_info = self.getReport()
         f_log = open(self.f_success_log, 'a')
@@ -747,8 +748,6 @@ class tenKXMLProcessor(tenKProcessor):
 
     def getProcessedXMLContent(self):
         return self.final_xml
-
-
 
 
 class tenKTextProcessor(tenKProcessor):
@@ -770,12 +769,14 @@ class tenKTextProcessor(tenKProcessor):
               f'Following Items were Found in the document {self.f_input_file_path} and successfully processed:\n'+f'|{log_info}| \n')
 
 
+file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year2022Q1/1065059-0001065059-22-000012.txt'
+out_file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Extracted10K/Year2022Q1/1065059-0001065059-22-000012.txt'
 
-# file_path = '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/Year1994Q1/63908-0000063908-94-000013.txt'
-
-# logfile = f'templogfile.txt'
+logfile = f'templogfile.txt'
 # section_processor = tenKTextProcessor()
-# section_processor = tenKXMLProcessor()
+section_processor = tenKXMLProcessor(save_results=True)
+section_processor.processSingleTenKFile(
+         f_input_file_path= file_path,f_output_file_path= out_file_path,f_failed_log= logfile,f_success_log= logfile,f_item0_logile= logfile, f_sec_url="testurl")
 
 # file_list =[
 # '37008-0000950152-94-000288.txt',

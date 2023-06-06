@@ -6,6 +6,8 @@ import DatabaseProcessor
 import pathlib
 from zipfile import ZipFile, ZIP_DEFLATED
 import shutil
+from DocumentProcessor import tenKXMLProcessor
+
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/10KDocumentExtraction')
 PARM_TENK_OUTPUT_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Extracted10K/')
@@ -56,10 +58,12 @@ def process10K():
                 sec_url_clean_file_name = file.replace('-','/',1)
                 sec_url = f'{PARM_FORM_PREFIX}/{sec_url_clean_file_name}'
  
-                section_processor = DocumentProcessor.tenKDatabaseProcessor()  
+                # section_processor = DocumentProcessor.tenKDatabaseProcessor()  
+                section_processor = DocumentProcessor.tenKXMLProcessor(save_results=True)  
+
                 success_failure = section_processor.processSingleTenKFile(f_input_file_path=input_file_path,f_output_file_path=output_file_path, 
                                                                           f_success_log=success_logfile,f_failed_log=failure_logfile,
-                                                                          f_item0_logile = item_zero_logfile, f_sec_url= sec_url , f_file_name = file)
+                                                                          f_item0_logile = item_zero_logfile, f_sec_url= sec_url)
                
                 if(success_failure == 1):
                     processed_all_items +=1
@@ -208,7 +212,7 @@ def archive_Processed_Files(directory_path:str, zip_file_name:str):
     shutil.rmtree(directory_path)
 
 
-# process10K()
+process10K()
 
-process10KHeaders()
+# process10KHeaders()
 #archive_Processed_Files('/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/TobeZipped')
