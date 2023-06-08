@@ -2,12 +2,13 @@ import datetime as dt
 
 
 class logGenerator:
-    pass
+    def __init__(self, file_path) -> None:
+        self.file_path = file_path
 
-    def log_details(message: str, file_path=None):
-        f_log = open(file_path, 'a')
-        print(f'{dt.datetime.now()} : ' + {message})
-        f_log.write(f'{dt.datetime.now()} : ' + {message})
+    def log_details(self,message: str):
+        f_log = open(self.file_path, 'a')
+        print(f'{dt.datetime.now()} :  + {message}')
+        f_log.write(f'{dt.datetime.now()} : +{message}')
         f_log.write('\n')
         f_log.flush()
         f_log.close()

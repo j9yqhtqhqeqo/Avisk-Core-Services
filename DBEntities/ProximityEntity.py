@@ -1,6 +1,7 @@
-class Key_word_locations:
-        key_word:str
-        locations = []
+class KeyWordLocationsEntity:
+        def __init__(self, key_word=None, locations=None) -> None:
+            self.key_word=key_word
+            self.locations = locations
 
 class ProximityEntity:
     def __init__(self,dictionary_id=None,doc_header_id=None) -> None:

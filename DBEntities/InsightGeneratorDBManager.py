@@ -77,6 +77,34 @@ class InsightGeneratorDBManager:
         return company_list
 
 
+    def get_company_id_by_Name(self,  company_name:None, reporting_year:None):
+
+        company_id:int
+        sql = "SELECT comp.company_id\
+               FROM t_sec_company comp\
+               where comp.conformed_name = ? \
+                     and comp.reporting_year =?"
+
+        try:
+            # Execute the SQL query
+
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql, company_name,reporting_year)#, company_name)
+            rows = cursor.fetchone()
+
+            company_id = rows.company_id
+            cursor.close()
+
+            # print("Record inserted successfully!")
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return company_id
+
+
     def get_exp_dictionary_term_list(self):
 
         exp_dict_terms_list =[]    
