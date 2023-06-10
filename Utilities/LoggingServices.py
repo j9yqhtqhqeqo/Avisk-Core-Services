@@ -7,8 +7,7 @@ class logGenerator:
 
     def log_details(self,message: str):
         f_log = open(self.file_path, 'a')
-        print(f'{dt.datetime.now()} :  + {message}')
-        f_log.write(f'{dt.datetime.now()} : +{message}')
+        f_log.write(f'{dt.datetime.now()} : {message}')
         f_log.write('\n')
         f_log.flush()
         f_log.close()

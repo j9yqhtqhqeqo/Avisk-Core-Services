@@ -6,6 +6,12 @@ import pyodbc
 import datetime as dt
 from DBEntities.DocumentHeaderEntity import DocHeaderEntity
 from DBEntities.DictionaryEntity import DictionaryEntity
+from DBEntities.ProximityEntity import ProximityEntity
+from DBEntities.ProximityEntity import KeyWordLocationsEntity
+from Utilities.LoggingServices import logGenerator
+
+PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
+
 
 
 class InsightGeneratorDBManager:
@@ -13,7 +19,12 @@ class InsightGeneratorDBManager:
     def __init__(self) -> None:
         self.dbConnection = pyodbc.connect(
             'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
+        self.d_current_document_seed=0
+        self.batch_id =0
         
+        self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
+        self.log_generator = logGenerator(self.log_file_path)
+
 
     def get_company_list(self, sic_code:None):#, company_name:None):
 
@@ -105,7 +116,7 @@ class InsightGeneratorDBManager:
         return company_id
 
 
-    def get_exp_dictionary_term_list(self):
+    def get_int_dictionary_term_list(self):
 
         exp_dict_terms_list =[]    
 
@@ -133,7 +144,96 @@ class InsightGeneratorDBManager:
 
     def int_dictionary_terms():
         pass
-        
+    
+    def getCurrentSeed(self):
+
+        if(self.d_current_document_seed >= 1000):
+            self.d_current_document_seed = self.d_current_document_seed+1
+            return self.d_current_document_seed
+
+        cursor = self.dbConnection.cursor()
+        cursor.execute("select max(key_word_hit_id) from dbo.t_key_word_hits") 
+        current_seed = cursor.fetchone()[0]
+        if(current_seed):
+            self.d_current_document_seed = current_seed+1
+            return self.d_current_document_seed
+        else:
+            self.d_current_document_seed = 1001
+            return self.d_current_document_seed
+        cursor.close()
+
+    def get_current_batch_id(self):
+
+        if(self.batch_id>0): return self.batch_id
+
+        cursor = self.dbConnection.cursor()
+        cursor.execute("select max(batch_id) from dbo.t_key_word_hits") 
+        batch_id = cursor.fetchone()[0]
+        if(batch_id):
+            self.batch_id = batch_id + 1
+            return self.batch_id
+        else:
+            self.batch_id = 1
+            return self.batch_id
+        cursor.close()  
+
+    def save_key_word_hits(self, proximity_entity_list, company_id:int, document_name:str, reporting_year:int, dictionary_type:int):
+
+        proximity: ProximityEntity
+        key_word_locations:KeyWordLocationsEntity
+        total_records_added_to_db = 0
+        for proximity in proximity_entity_list:
+            dictionary_id = proximity.dictionary_id
+            for key_word_locations in proximity.key_word_bunch:
+                batch_id = self.get_current_batch_id()
+                key_word_hit_id = self.getCurrentSeed()
+                key_word = key_word_locations.key_word
+                locations = key_word_locations.locations
+                frequency = key_word_locations.frequency
+
+                self.insert_key_word_hits_to_db (company_id,document_name,reporting_year,dictionary_id,key_word_hit_id, key_word, locations,frequency=frequency, dictionary_type=dictionary_type)
+                total_records_added_to_db = total_records_added_to_db +1
+            # Commit current batch 
+            self.dbConnection.commit()
+        self.log_generator.log_details("Total keyword location lists Added to the Database:"+ str(total_records_added_to_db))
+        self.log_generator.log_details('################################################################################################')
+
+        print("Total keyword location lists Added to the Database:"+ str(total_records_added_to_db))
+        print('################################################################################################')
+
+
+
+    def insert_key_word_hits_to_db(self, company_id:int, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int):
+            
+        # Create a cursor object to execute SQL queries
+        cursor = self.dbConnection.cursor()
+        # Construct the INSERT INTO statement
+
+        sql = f"INSERT INTO dbo.t_key_word_hits( \
+            batch_id, dictionary_type, key_word_hit_id ,  document_name, company_id, reporting_year,\
+            dictionary_id ,key_word, locations,frequency, insights_generated,\
+            added_dt,added_by ,modify_dt,modify_by\
+            )\
+                VALUES\
+                ({self.batch_id},{dictionary_type},{self.d_current_document_seed},N'{document_name}', {company_id}, {reporting_year},\
+            {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0,  CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
+        try:
+            # Execute the SQL query
+            cursor.execute(sql)
+            # self.dbConnection.commit()
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            self.dbConnection.rollback()
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        # Close the cursor and connection
+        cursor.close()
+
+
+        pass
+
+
     def save_insights(self):
         pass
 

@@ -1,7 +1,8 @@
 class KeyWordLocationsEntity:
-        def __init__(self, key_word=None, locations=None) -> None:
+        def __init__(self, key_word=None, locations=None, frequency = 0) -> None:
             self.key_word=key_word
             self.locations = locations
+            self.frequency = frequency
 
 class ProximityEntity:
     def __init__(self,dictionary_id=None,doc_header_id=None) -> None:
