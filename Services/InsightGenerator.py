@@ -6,6 +6,7 @@
 import sys
 from pathlib import Path
 import os
+
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 import datetime as dt
@@ -13,16 +14,18 @@ import re
 from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
 from DBEntities.DocumentHeaderEntity import DocHeaderEntity
 # from DocumentProcessor import tenKXMLProcessor
-from DBEntities.ProximityEntity import  ProximityEntity, KeyWordLocationsEntity
+from DBEntities.ProximityEntity import  ProximityEntity, KeyWordLocationsEntity, FD_Factor
 from Utilities.LoggingServices import logGenerator
 from DBEntities.DictionaryEntity import DictionaryEntity
 from Utilities.Lookups import Lookups
+import numpy as np
 
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsightLog')
 PARM_TENK_OUTPUT_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Extracted10K/')
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
 PARM_STAGE1_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/')
+WORD_RADIUS = 25
 
 
 
@@ -44,18 +47,22 @@ class insightGenerator:
         self.errors: any
         self.log_generator = logGenerator(self.log_file_path)
         self.insightDBMgr = InsightGeneratorDBManager()
+
+
+        self.big_int_location_list =[]
         
     
     def _get_company_list(self):
          pass
 
-    def generate_insights(self):
+    def generate_keyword_location_map(self):
         
         self.proximity_entity_list=[]
         self.company_list = self._get_company_list()
         company: DocHeaderEntity
     
         for company in self.company_list:
+            self.document_id = company.document_id
             self.document_name = company.document_name
             self._load_content(company.document_name, company.document_id, company.reporting_year, company.reporting_quarter)
             self._get_dictionary_terms()
@@ -65,9 +72,84 @@ class insightGenerator:
     
         self.cleanup()
     
+    def generate_insights_from_keyword_location_details(self):
+
+        #Create a sorted array of all locations found for a given dictionary list
+        self.big_int_location_list.clear()
+        big_int_location_list =[]
+        big_list = []
+        keyword_location_list = self._load_keyword_location_list()
+        keyword_location: KeyWordLocationsEntity
+        for keyword_location in keyword_location_list:
+            # print(keyword_location.key_word + ':' + str(keyword_location.frequency))
+            # print(keyword_location.locations)
+            locations = keyword_location.locations.strip('[').strip(']').split(',')
+            big_list = np.append(big_list, locations)
+            # print('Current Big List Count:'+ str(len(big_list)))
+        self.big_int_location_list = np.sort(np.asarray(big_list, dtype= np.int32))
+        # for i in big_int_location_list:
+        #     self.log_generator.log_details(i)
+        #     print(i) 
+        
+        # For each keyword in the dictionary list, compute the Distance Factor as 1 * 10000 / word distance
+        #Try for Supply: 1002
+        for keyword_location in keyword_location_list:
+            # print('Processing:'+ keyword_location.key_word)
+            self._compute_FD_Factor(keyword_location)
+
+
+    def _compute_FD_Factor(self,keyword_location:KeyWordLocationsEntity):
+            # print('Computing Frequency Distance Factor for:'+ keyword_location.key_word)
+            fd_factors_for_keyword = []
+
+            keyword_hit_id = keyword_location.key_word_hit_id
+            keyword = keyword_location.key_word
+            frequency = keyword_location.frequency
+            locations = keyword_location.locations.strip('[').strip(']').split(',')
+
+            int_keyword_locations = np.asarray(locations, dtype = np.int32)
+            fd_factor1 = FD_Factor(keyword_hit_id=keyword_hit_id, keyword=keyword,frequency=frequency)
+            for int_keyword_location in int_keyword_locations:
+
+                # print(int_keyword_location)
+                related_word_locations = self._get_related_word_locations_in_Radius(int_keyword_location=int_keyword_location)
+
+                # Compute the Distance Factor as 1 * 10000 / word distance
+                calculated_factor = 0.00
+                for related_word_location in related_word_locations:
+                    distance = abs(int_keyword_location - related_word_location)
+                    if(distance != 0):
+                        calculated_factor = calculated_factor + (1*(1/distance))               
+                fd_factor1.add_fd_factor(round(calculated_factor,2),len(related_word_locations))
+            fd_factors_for_keyword.append(fd_factor1)
+
+            # print("Frequency Distance Factors:"+str(fd_factors_for_keyword))
+
+            fd_factor2:FD_Factor
+            for fd_factor2 in fd_factors_for_keyword:
+                print("Key Word:"+fd_factor2.keyword)
+                print("FD Factors:"+str(fd_factor2.fd_factor))
+    
+
+    def _get_related_word_locations_in_Radius(self, int_keyword_location:int):
+        radius_upper = int_keyword_location + WORD_RADIUS 
+        radius_lower : int
+
+        if(int_keyword_location - WORD_RADIUS < 0): radius_lower =0
+        else: radius_lower = int_keyword_location - WORD_RADIUS 
+
+        radius_locations = [location for location in self.big_int_location_list if location >= radius_lower and location <= radius_upper] 
+
+        # print(radius_locations)    
+        return radius_locations      
+
+ 
+    def _load_keyword_location_list(self):
+        return(self.insightDBMgr.get_keyword_location_list())
+
+
     def cleanup(self):
         self.insightDBMgr.dbConnection.close()
-
 
     def _get_dictionary_terms(self):
 
@@ -115,7 +197,6 @@ class insightGenerator:
         print("Current Document:" +self.document_name)
         print("Total key words found:"+ str(total_dictionary_hits))
 
-
     def _get_parsed_content(self):
         pass
 
@@ -125,7 +206,7 @@ class insightGenerator:
     def _save_keyword_search_results(self, dictionary_type:int):
          ## Save Keyword search Results to Database
         if(self.proximity_entity_list):
-            self.insightDBMgr.save_key_word_hits(self.proximity_entity_list, self.company_id, self.document_name, self.reporting_year, dictionary_type=dictionary_type)
+            self.insightDBMgr.save_key_word_hits(self.proximity_entity_list, self.company_id,self.document_id, self.document_name, self.reporting_year, dictionary_type=dictionary_type)
     def _save_insights(self):
         pass
 
@@ -190,43 +271,24 @@ class file_folder_Insight_Generator(insightGenerator):
         fully_qualified_path = f'{self.folder_path}/{self.company_name}/{self.reporting_year}'
         file_list = sorted(os.listdir(fully_qualified_path))
 
+        document_count = 1
         for file in file_list:
             if (file =='.DS_Store'):
                 pass
             else:
                 doc_header_entity = DocHeaderEntity()
                 doc_header_entity.company_id = self.company_id
+                doc_header_entity.document_id = document_count
                 doc_header_entity.document_name = file
                 doc_header_entity.reporting_year = self.reporting_year
                 company_list.append(doc_header_entity)
+                document_count = document_count + 1
+
+
+
         return company_list
 
-
-
 insight_gen = file_folder_Insight_Generator(folder_path=PARM_STAGE1_FOLDER, company_name='Marathon OIL', reporting_year=2022)
-insight_gen.generate_insights()
-# company_list = insight_gen._get_company_list()
-# l_company: DocHeaderEntity
-
-# for company in company_list:
-#     print(str(company.document_id )+ '  ' + str(company.document_name))
-    
-#     # l_company.document_id = company.document_id
-#     # l_company.document_name = company.document_name
-#     # l_company.reporting_year = company.reporting_year
-#     # l_company.reporting_quarter = company.reporting_quarter
-#     # l_company.conformed_name = company.conformed_name
-#     # l_company.sic_code = company.sic_code
-#     # l_company.form_type = company.form_type
-
-   
-
-# insights = insights()
-
-# insights.add_proximity_info("water", 5)
-# insights.add_proximity_info("drauhgt", 8)
-# insights.add_proximity_info("fire", 6)
-# insights.add_proximity_info("rain", 9)
-
-# print(insights.cluster_terms)
+# insight_gen.generate_keyword_location_map()
+insight_gen.generate_insights_from_keyword_location_details()
 

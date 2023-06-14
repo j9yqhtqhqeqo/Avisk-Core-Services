@@ -177,7 +177,51 @@ class InsightGeneratorDBManager:
             return self.batch_id
         cursor.close()  
 
-    def save_key_word_hits(self, proximity_entity_list, company_id:int, document_name:str, reporting_year:int, dictionary_type:int):
+    def get_keyword_location_list(self):
+
+        keyword_list =[]
+        sql = 'select key_word_hit_id, key_word, locations, frequency from t_key_word_hits where insights_generated = 0 and document_id = 11 and dictionary_id = 1001'
+        try:
+            # Execute the SQL query
+
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)#, company_name)
+            rows = cursor.fetchall()
+            for row in rows:
+                # print(row.sic_code, ' ', row.industry_title, row.conformed_name, row.form_type,
+                #       row.document_id, row.document_name, row.reporting_year, row.reporting_quarter)
+                keyword_loc_entity = KeyWordLocationsEntity()
+                keyword_loc_entity.key_word_hit_id = row.key_word_hit_id
+                keyword_loc_entity.key_word = row.key_word
+                keyword_loc_entity.locations = row.locations
+                keyword_loc_entity.frequency = row.frequency
+                
+                keyword_list.append(keyword_loc_entity)
+                # doc_header_entity.sic_code_4_digit = row.
+                # doc_header_entity.irs_number  = row.
+                # doc_header_entity.state_of_incorporation  = row.
+                # doc_header_entity.fiscal_year_end  = row.
+
+                # doc_header_entity.street_1  = row.
+                # doc_header_entity.city  = row.
+                # doc_header_entity.state  = row.
+                # doc_header_entity.zip  = row.
+
+            cursor.close()
+
+            # print("Record inserted successfully!")
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+        return keyword_list
+
+
+        pass
+
+    def save_key_word_hits(self, proximity_entity_list, company_id:int,document_id:int, document_name:str, reporting_year:int, dictionary_type:int):
 
         proximity: ProximityEntity
         key_word_locations:KeyWordLocationsEntity
@@ -191,7 +235,7 @@ class InsightGeneratorDBManager:
                 locations = key_word_locations.locations
                 frequency = key_word_locations.frequency
 
-                self.insert_key_word_hits_to_db (company_id,document_name,reporting_year,dictionary_id,key_word_hit_id, key_word, locations,frequency=frequency, dictionary_type=dictionary_type)
+                self.insert_key_word_hits_to_db (company_id,document_id, document_name,reporting_year,dictionary_id,key_word_hit_id, key_word, locations,frequency=frequency, dictionary_type=dictionary_type)
                 total_records_added_to_db = total_records_added_to_db +1
             # Commit current batch 
             self.dbConnection.commit()
@@ -202,20 +246,22 @@ class InsightGeneratorDBManager:
         print('################################################################################################')
 
 
+    def insert_key_word_hits_to_db(self, company_id:int, document_id:str, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int):
 
-    def insert_key_word_hits_to_db(self, company_id:int, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int):
-            
+        #reconfigure document id   
+        new_doc_id =  int(str(self.batch_id)+str(document_id))
+                
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
         # Construct the INSERT INTO statement
 
         sql = f"INSERT INTO dbo.t_key_word_hits( \
-            batch_id, dictionary_type, key_word_hit_id ,  document_name, company_id, reporting_year,\
+            batch_id, dictionary_type, key_word_hit_id , document_id,  document_name, company_id, reporting_year,\
             dictionary_id ,key_word, locations,frequency, insights_generated,\
             added_dt,added_by ,modify_dt,modify_by\
             )\
                 VALUES\
-                ({self.batch_id},{dictionary_type},{self.d_current_document_seed},N'{document_name}', {company_id}, {reporting_year},\
+                ({self.batch_id},{dictionary_type},{self.d_current_document_seed},{new_doc_id},N'{document_name}', {company_id}, {reporting_year},\
             {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0,  CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
         try:
             # Execute the SQL query

@@ -74,4 +74,3 @@ class DocumentDBManager():
         conn.close()
         return self.d_current_document_seed
 
-

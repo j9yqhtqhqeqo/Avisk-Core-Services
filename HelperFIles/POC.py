@@ -1,10 +1,10 @@
-# Import requests to retrive Web Urls example HTML. TXT 
-import requests
-from bs4 import BeautifulSoup
-import re
-import pandas as pd
-import pathlib
-from zipfile import ZipFile, ZIP_DEFLATED
+# # Import requests to retrive Web Urls example HTML. TXT 
+# import requests
+# from bs4 import BeautifulSoup
+# import re
+# import pandas as pd
+# import pathlib
+# from zipfile import ZipFile, ZIP_DEFLATED
 
 
 # line = ']		IRS NUMBER:				232539694'
@@ -15,12 +15,25 @@ from zipfile import ZipFile, ZIP_DEFLATED
 # irs_number=re.sub('\\t', '', irs_number)
 # print(irs_number)
 
-sic_code = '['
-sic_code_int = re.search('\d+', sic_code)
-if(not sic_code_int):
-        print('Not found')
-else:
-        print(sic_code_int.group())
+# sic_code = '['
+# sic_code_int = re.search('\d+', sic_code)
+# if(not sic_code_int):
+#         print('Not found')
+# else:
+#         print(sic_code_int.group())
+
+batch_id = 1
+document_id = 1
+
+new_doc_id =  int(str(batch_id)+str(document_id))
+
+print(new_doc_id)
+
+
+
+
+
+
 
 
 
