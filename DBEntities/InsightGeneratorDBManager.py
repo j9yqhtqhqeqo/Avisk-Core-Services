@@ -40,14 +40,6 @@ class InsightGeneratorDBManager:
                     and form_type ='10-K' and reporting_quarter =1\
                     order by sic.sic_code"
 
-        # sql = "SELECT sic.sic_code, sic.industry_title,header.conformed_name, header.form_type,header.document_id, header.document_name, header.reporting_year, header.reporting_quarter\
-        #        FROM dbo.t_sic_codes sic INNER JOIN dbo.t_sec_document_header header ON sic.sic_code = header.sic_code_4_digit \
-        #             and header.reporting_year = 2022\
-        #             where sic.industry_title like ? \
-        #             and header.conformed_name like ? \
-        #             and form_type ='10-K' and reporting_quarter =1\
-        #             order by sic.sic_code"    
-
         try:
             # Execute the SQL query
 
@@ -66,15 +58,6 @@ class InsightGeneratorDBManager:
                 doc_header_entity.sic_code = row.sic_code
                 doc_header_entity.form_type = row.form_type
                 company_list.append(doc_header_entity)
-                # doc_header_entity.sic_code_4_digit = row.
-                # doc_header_entity.irs_number  = row.
-                # doc_header_entity.state_of_incorporation  = row.
-                # doc_header_entity.fiscal_year_end  = row.
-
-                # doc_header_entity.street_1  = row.
-                # doc_header_entity.city  = row.
-                # doc_header_entity.state  = row.
-                # doc_header_entity.zip  = row.
 
             cursor.close()
 
@@ -139,7 +122,6 @@ class InsightGeneratorDBManager:
             raise exc
 
         return exp_dict_terms_list
-        # return 'disturbance,efficiency,resiliance,supply,suppliers,inventory,disruptions,pandemic,capacity,over-reliance,logistics,products,production,regulations,trade,resilient,operations,materials,global,manufacturing,nearshoring,offshoring,volatility,collaboration,end-to-end,distribution,distributions,monitoring,regions,finances,weather,social ,unrest,policy,shifts,financial ,markets'
         
 
     def int_dictionary_terms():
@@ -188,8 +170,7 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)#, company_name)
             rows = cursor.fetchall()
             for row in rows:
-                # print(row.sic_code, ' ', row.industry_title, row.conformed_name, row.form_type,
-                #       row.document_id, row.document_name, row.reporting_year, row.reporting_quarter)
+
                 keyword_loc_entity = KeyWordLocationsEntity()
                 keyword_loc_entity.key_word_hit_id = row.key_word_hit_id
                 keyword_loc_entity.key_word = row.key_word
@@ -197,15 +178,7 @@ class InsightGeneratorDBManager:
                 keyword_loc_entity.frequency = row.frequency
                 
                 keyword_list.append(keyword_loc_entity)
-                # doc_header_entity.sic_code_4_digit = row.
-                # doc_header_entity.irs_number  = row.
-                # doc_header_entity.state_of_incorporation  = row.
-                # doc_header_entity.fiscal_year_end  = row.
 
-                # doc_header_entity.street_1  = row.
-                # doc_header_entity.city  = row.
-                # doc_header_entity.state  = row.
-                # doc_header_entity.zip  = row.
 
             cursor.close()
 

@@ -28,7 +28,6 @@ PARM_STAGE1_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Program
 WORD_RADIUS = 25
 
 
-
 class insightGenerator:
     def __init__(self) -> None:
         self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
@@ -55,6 +54,7 @@ class insightGenerator:
     def _get_company_list(self):
          pass
 
+
     def generate_keyword_location_map(self):
         
         self.proximity_entity_list=[]
@@ -66,12 +66,12 @@ class insightGenerator:
             self.document_name = company.document_name
             self._load_content(company.document_name, company.document_id, company.reporting_year, company.reporting_quarter)
             self._get_dictionary_terms()
-            self._get_parsed_content()
             self._create_proximity_map()
             self._save_keyword_search_results(Lookups().Exposure_Pathway_Dictionary_Type)
     
         self.cleanup()
-    
+
+
     def generate_insights_from_keyword_location_details(self):
 
         #Create a sorted array of all locations found for a given dictionary list
@@ -151,6 +151,7 @@ class insightGenerator:
     def cleanup(self):
         self.insightDBMgr.dbConnection.close()
 
+
     def _get_dictionary_terms(self):
 
         # # DEBUG CODE
@@ -159,6 +160,7 @@ class insightGenerator:
 
         insightDBMgr = InsightGeneratorDBManager()
         self.exp_dictionary_term_list = insightDBMgr.get_int_dictionary_term_list()
+
 
     def _create_proximity_map(self):
         self.proximity_entity_list.clear()
@@ -197,18 +199,20 @@ class insightGenerator:
         print("Current Document:" +self.document_name)
         print("Total key words found:"+ str(total_dictionary_hits))
 
-    def _get_parsed_content(self):
-        pass
 
     def _load_content(self, document_name:str, year:int,document_id=9999,  qtr=1):
         pass
+
 
     def _save_keyword_search_results(self, dictionary_type:int):
          ## Save Keyword search Results to Database
         if(self.proximity_entity_list):
             self.insightDBMgr.save_key_word_hits(self.proximity_entity_list, self.company_id,self.document_id, self.document_name, self.reporting_year, dictionary_type=dictionary_type)
+   
+   
     def _save_insights(self):
         pass
+
 
     def remove_insights(self):
         pass
