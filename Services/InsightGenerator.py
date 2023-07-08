@@ -1,7 +1,8 @@
 ############################################################################################################
 # Master Insight Generator File
-# 
-#
+# To Process New set of files:
+#  1. Add textfiles to PARM_STAGE1_FOLDER
+#  2. Create entry in table t_document and set document_processed_ind = 0 
 ############################################################################################################
 import sys
 from pathlib import Path
@@ -71,10 +72,40 @@ class insightGenerator:
          pass
 
 
-    def generate_keyword_location_map(self):
+    def generate_keyword_location_map_for_exposure_pathway(self):
         
         self.proximity_entity_list=[]
         self.document_list = self.insightDBMgr.get_document_list()
+        if(len(self.document_list) == 0):
+            print("All documents processed: No new documents to process - Exiting generate_keyword_location_map")
+            return
+        # self.company_list = self._get_company_list()
+        # company: DocHeaderEntity
+
+        for document in self.document_list:
+            self.document_id = document.document_id
+            self.document_name = document.document_name
+            self._load_content(document.document_name, document.document_id, document.reporting_year)
+        # for company in self.company_list:
+        #     self.document_id = company.document_id
+        #     self.document_name = company.document_name
+        #     self._load_content(company.document_name, company.document_id, company.reporting_year, company.reporting_quarter)
+           
+            # Generate keyword location map for exposure pathway dictionary terms
+            print("Generating keyword location map for exposure pathway dictionary terms ")
+
+            self._get_exp_dictionary_term_list()
+            self._create_exp_dictionary_proximity_map()
+            self._save_dictionary_keyword_search_results(Lookups().Exposure_Pathway_Dictionary_Type)
+
+    
+    def generate_keyword_location_map_for_internalization(self):
+        
+        self.proximity_entity_list=[]
+        self.document_list = self.insightDBMgr.get_document_list()
+        if(len(self.document_list) == 0):
+            print("All documents processed: No new documents to process - Exiting generate_keyword_location_map")
+            return
         self.company_list = self._get_company_list()
         company: DocHeaderEntity
     
@@ -83,18 +114,11 @@ class insightGenerator:
             self.document_name = company.document_name
             self._load_content(company.document_name, company.document_id, company.reporting_year, company.reporting_quarter)
            
-            # Generate keyword location map for exposure pathway dictionary terms
-            self._get_exp_dictionary_term_list()
-            self._create_exp_dictionary_proximity_map()
-            self._save_dictionary_keyword_search_results(Lookups().Exposure_Pathway_Dictionary_Type)
-
-           ## Generate keyword location map for internalization pathway dictionary terms
-            # self._get_int_dictionary_term_list()
-            # self._create_int_dictionary_proximity_map()
-            # self._save_dictionary_keyword_search_results(Lookups().Internalization_Dictionary_Type)
-    
-        # self.cleanup()
-
+           # Generate keyword location map for internalization pathway dictionary terms
+            print('Generating keyword location map for internalization pathway dictionary terms')
+            self._get_int_dictionary_term_list()
+            self._create_int_dictionary_proximity_map()
+            self._save_dictionary_keyword_search_results(Lookups().Internalization_Dictionary_Type)
 
     def _get_exp_dictionary_term_list(self):
 
@@ -250,16 +274,19 @@ class insightGenerator:
         return radius_locations      
 
  
-    def generate_insights_with_2_factors(self, batch_id = 0, dictionary_type =0):
+    def generate_insights_with_2_factors(self):
 
+        batch_id:int
+        dictionary_type:int 
 
-        document_list = self.insightDBMgr.get_unprocessed_document_items_by_batch(batch_id=batch_id, dictionary_type=dictionary_type)
+        document_list = self.insightDBMgr.get_unprocessed_document_items()
 
         document_item: KeyWordLocationsEntity
         for document_item in document_list:
-            self.log_generator.log_details("Processing Batch:"+str(batch_id)+", Document ID:"+str(document_item.document_id)+", dictionary_type:"+str(dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
-            print("Processing Batch:"+str(batch_id)+", Document ID:"+str(document_item.document_id)+", dictionary_type:"+str(dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
-            self._generate_insights_with_2_factors_by_dictionary_id(batch_id=batch_id, dictionary_type=dictionary_type, dictionary_id=document_item.dictionary_id, document_id = document_item.document_id, document_name=document_item.document_name)
+
+            self.log_generator.log_details("Processing Batch:"+str(document_item.batch_id)+", Document ID:"+str(document_item.document_id)+", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
+            print("Processing Batch:"+str(document_item.batch_id)+", Document ID:"+str(document_item.document_id)+", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
+            self._generate_insights_with_2_factors_by_dictionary_id(batch_id=document_item.batch_id, dictionary_type=document_item.dictionary_type, dictionary_id=document_item.dictionary_id, document_id = document_item.document_id, document_name=document_item.document_name)
 
 
     def _generate_insights_with_2_factors_by_dictionary_id(self, batch_id=0, dictionary_type = 0, dictionary_id = 0, document_id =0, document_name=''):
@@ -353,13 +380,11 @@ class db_Insight_Generator(insightGenerator):
 
 
 class file_folder_Insight_Generator(insightGenerator):
-    def __init__(self, folder_path:str, company_name:str, reporting_year:int) -> None:
+    def __init__(self, folder_path:str) -> None:
         super().__init__()
         self.folder_path = folder_path
-        self.reporting_year = reporting_year
-        self.company_name = company_name
-    
-    def _load_content(self, document_name:str, document_id:int, year:int, qtr:int):
+
+    def _load_content(self, document_name:str, document_id:int, year:int):
     
         self.document_id = document_id
         self.document_name = document_name
@@ -404,8 +429,14 @@ class file_folder_Insight_Generator(insightGenerator):
 
 
 insight_gen = file_folder_Insight_Generator(folder_path=PARM_STAGE1_FOLDER, company_name='Marathon OIL', reporting_year=2022)
-insight_gen.generate_keyword_location_map()
-insight_gen.generate_insights_with_2_factors(2, 1000)
+insight_gen.generate_keyword_location_map_for_exposure_pathway()
+print("Generating Insights for Exposure Pathway Dictionary Terms")
+insight_gen.generate_insights_with_2_factors()
+
+insight_gen.generate_keyword_location_map_for_internalization()
+print("Generating Insights for Internalization Dictionary Terms")
+insight_gen.generate_insights_with_2_factors()
+
 insight_gen.cleanup()
 
 

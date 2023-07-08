@@ -9,6 +9,7 @@ from DBEntities.DictionaryEntity import DictionaryEntity
 from DBEntities.ProximityEntity import ProximityEntity
 from DBEntities.ProximityEntity import KeyWordLocationsEntity
 from DBEntities.ProximityEntity import  Insight
+from DBEntities.ProximityEntity import DocumentEntity
 from Utilities.Lookups import Lookups
 from Utilities.LoggingServices import logGenerator
 
@@ -188,12 +189,14 @@ class InsightGeneratorDBManager:
         document_list =[]
         try:
             cursor = self.dbConnection.cursor()
-            cursor.execute("select document_id, document_name from dbo.t_document") 
+            cursor.execute("select document_id, document_name, company_name, year from dbo.t_document where document_processed_ind = 0") 
             rows = cursor.fetchall()
             for row in rows:
-                document_entity = KeyWordLocationsEntity()
+                document_entity = DocumentEntity()
                 document_entity.document_id = row.document_id
-                document_entity.document_name = row.document_name            
+                document_entity.document_name = row.document_name    
+                document_entity.company_name = row.company_name
+                document_entity.year = row.year
                 document_list.append(document_entity)
             cursor.close()
         except Exception as exc:
@@ -300,14 +303,14 @@ class InsightGeneratorDBManager:
 
         pass
 
-    def get_unprocessed_document_items_by_batch(self, batch_id =0, dictionary_type = 0):
+    def get_unprocessed_document_items(self):
 
         document_list =[]
         sql = 'select distinct document_id, dictionary_id, document_name, batch_id,dictionary_type from t_key_word_hits where insights_generated = 0 order by dictionary_id'
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql,batch_id,dictionary_type)
+            cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 keyword_loc_entity = KeyWordLocationsEntity()

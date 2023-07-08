@@ -10,6 +10,14 @@ class KeyWordLocationsEntity:
         self.document_name = document_name
         self.batch_id = 0
 
+class DocumentEntity:
+    def __init__(self, document_id =0, document_name=0, company_name='', year=0, insights_generated=0) -> None:
+        self.document_id = document_id
+        self.document_name = document_name
+        self.company_name=company_name
+        self.year = year
+        self.insights_generated = insights_generated
+
 
 class ProximityEntity:
     def __init__(self,dictionary_id=None,doc_header_id=None) -> None:
