@@ -8,10 +8,11 @@ from DBEntities.DocumentHeaderEntity import DocHeaderEntity
 from DBEntities.DictionaryEntity import DictionaryEntity
 from DBEntities.ProximityEntity import ProximityEntity
 from DBEntities.ProximityEntity import KeyWordLocationsEntity
+from DBEntities.ProximityEntity import  Insight
+from Utilities.Lookups import Lookups
 from Utilities.LoggingServices import logGenerator
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
-
 
 
 class InsightGeneratorDBManager:
@@ -101,10 +102,10 @@ class InsightGeneratorDBManager:
 
     def get_int_dictionary_term_list(self):
 
-        exp_dict_terms_list =[]    
+        int_dict_terms_list =[]    
 
         sql = "select d.dictionary_id,keywords,internalization_id from t_internalization_dictionary d \
-                where d.dictionary_id <1015"
+                where d.dictionary_id <= 1015"
         
         try:
             # Execute the SQL query
@@ -113,7 +114,31 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                exp_dict_terms_list.append(DictionaryEntity(row.dictionary_id,row.keywords, row.internalization_id))
+                int_dict_terms_list.append(DictionaryEntity(dictionary_id=row.dictionary_id,keywords=row.keywords, internalization_id=row.internalization_id))
+            cursor.close()
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return int_dict_terms_list
+    
+
+    def get_exp_dictionary_term_list(self):
+
+        exp_dict_terms_list =[]    
+
+        sql = "select d.dictionary_id,keywords,exposure_path_id from t_exposure_pathway_dictionary d"
+        
+        try:
+            # Execute the SQL query
+
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                exp_dict_terms_list.append(DictionaryEntity(dictionary_id= row.dictionary_id,keywords=row.keywords, exposure_pathway_id=row.exposure_path_id))
             cursor.close()
 
         except Exception as exc:
@@ -159,15 +184,39 @@ class InsightGeneratorDBManager:
             return self.batch_id
         cursor.close()  
 
-    def get_keyword_location_list(self):
+    def get_document_list(self):
+        document_list =[]
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute("select document_id, document_name from dbo.t_document") 
+            rows = cursor.fetchall()
+            for row in rows:
+                document_entity = KeyWordLocationsEntity()
+                document_entity.document_id = row.document_id
+                document_entity.document_name = row.document_name            
+                document_list.append(document_entity)
+            cursor.close()
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+        return document_list
+
+
+
+    def get_keyword_location_list(self, batch_id=0, dictionary_type = 0, dictionary_id = 0, document_id = 0):
 
         keyword_list =[]
-        sql = 'select key_word_hit_id, key_word, locations, frequency from t_key_word_hits where insights_generated = 0 and document_id = 11 and dictionary_id = 1001'
+        sql = 'select key_word_hit_id, key_word, locations, frequency, dictionary_type, dictionary_id, document_id \
+               from t_key_word_hits \
+               where insights_generated = ? and batch_id = ? and dictionary_type =? and dictionary_id = ? and document_id =?\
+               order by key_word_hit_id'
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql)#, company_name)
+            cursor.execute(sql, 0, batch_id, dictionary_type, dictionary_id, document_id)
             rows = cursor.fetchall()
             for row in rows:
 
@@ -176,9 +225,10 @@ class InsightGeneratorDBManager:
                 keyword_loc_entity.key_word = row.key_word
                 keyword_loc_entity.locations = row.locations
                 keyword_loc_entity.frequency = row.frequency
+                keyword_loc_entity.dictionary_id = row.dictionary_id
+                keyword_loc_entity.dictionary_type = row.dictionary_type
                 
                 keyword_list.append(keyword_loc_entity)
-
 
             cursor.close()
 
@@ -198,6 +248,7 @@ class InsightGeneratorDBManager:
 
         proximity: ProximityEntity
         key_word_locations:KeyWordLocationsEntity
+
         total_records_added_to_db = 0
         for proximity in proximity_entity_list:
             dictionary_id = proximity.dictionary_id
@@ -220,9 +271,6 @@ class InsightGeneratorDBManager:
 
 
     def insert_key_word_hits_to_db(self, company_id:int, document_id:str, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int):
-
-        #reconfigure document id   
-        new_doc_id =  int(str(self.batch_id)+str(document_id))
                 
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
@@ -234,7 +282,7 @@ class InsightGeneratorDBManager:
             added_dt,added_by ,modify_dt,modify_by\
             )\
                 VALUES\
-                ({self.batch_id},{dictionary_type},{self.d_current_document_seed},{new_doc_id},N'{document_name}', {company_id}, {reporting_year},\
+                ({self.batch_id},{dictionary_type},{self.d_current_document_seed},{document_id},N'{document_name}', {company_id}, {reporting_year},\
             {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0,  CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
         try:
             # Execute the SQL query
@@ -243,18 +291,122 @@ class InsightGeneratorDBManager:
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
+            print("Error processing hits for word:" + key_word)
             print(f"Error: {str(exc)}")
             raise exc
 
         # Close the cursor and connection
         cursor.close()
 
-
         pass
 
+    def get_unprocessed_document_items_by_batch(self, batch_id =0, dictionary_type = 0):
 
-    def save_insights(self):
-        pass
+        document_list =[]
+        sql = 'select distinct document_id, dictionary_id, document_name, batch_id,dictionary_type from t_key_word_hits where insights_generated = 0 order by dictionary_id'
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql,batch_id,dictionary_type)
+            rows = cursor.fetchall()
+            for row in rows:
+                keyword_loc_entity = KeyWordLocationsEntity()
+                keyword_loc_entity.dictionary_id = row.dictionary_id
+                keyword_loc_entity.document_id = row.document_id
+                keyword_loc_entity.document_name = row.document_name
+                keyword_loc_entity.batch_id = row.batch_id
+                keyword_loc_entity.dictionary_type = row.dictionary_type
+                document_list.append(keyword_loc_entity)
+            cursor.close()
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+        return document_list
+
+
+    def save_insights(self, insightList, dictionary_type):
+        insight: Insight
+    
+        total_records_added_to_db = 0
+        for insight in insightList:
+            key_word_hit_id1 = insight.keyword_hit_id1
+            key_word_hit_id2 = insight.keyword_hit_id2
+            key_word1 = insight.keyword1
+            key_word2 = insight.keyword2
+            factor1 = insight.factor1
+            factor2 = insight.factor2
+            score = insight.score
+            document_name = insight.document_name
+            document_id = insight.document_id
+  
+            # Create a cursor object to execute SQL queries
+            cursor = self.dbConnection.cursor()
+            # Construct the INSERT INTO statement
+
+            if(dictionary_type == Lookups().Internalization_Dictionary_Type):
+                sql = f"INSERT INTO dbo.t_internalization_insights( \
+                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    factor1, factor2, added_dt,added_by ,modify_dt,modify_by\
+                    )\
+                        VALUES\
+                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        {factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
+
+            elif(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+                sql = f"INSERT INTO dbo.t_exposure_pathway_insights( \
+                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    factor1, factor2, added_dt,added_by ,modify_dt,modify_by\
+                    )\
+                        VALUES\
+                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        {factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"    
+
+            try:
+                # Execute the SQL query
+                cursor.execute(sql)
+                total_records_added_to_db = total_records_added_to_db +1 
+                if(total_records_added_to_db % 50 == 0):
+                    self.dbConnection.commit()
+
+            except Exception as exc:
+                # Rollback the transaction if any error occurs
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+
+        # Close the cursor and connection
+        self.dbConnection.commit()
+        cursor.close()
+
+        # self.dbConnection.commit()
+        self.log_generator.log_details("Total Insights added to the Database:"+ str(total_records_added_to_db))
+        self.log_generator.log_details('################################################################################################')
+
+        print("Total Insights added to the Database:"+ str(total_records_added_to_db))
+
+    def update_insights_generated_batch(self, batch_id =0, dictionary_type = 0, dictionary_id = 0, document_id =0):
+        # Create a cursor object to execute SQL queries
+        cursor = self.dbConnection.cursor()
+
+        sql = f"update t_key_word_hits set \
+                insights_generated = 1 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                where batch_id ={batch_id} and insights_generated = 0 and dictionary_type ={dictionary_type} and dictionary_id ={dictionary_id} and document_id ={document_id}"
+        try:
+                # Execute the SQL query
+                cursor.execute(sql)
+                self.dbConnection.commit()
+        except Exception as exc:
+                # Rollback the transaction if any error occurs
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+
+        # Close the cursor and connection
+        cursor.close()
+
 
     def remove_insights(self):
         pass

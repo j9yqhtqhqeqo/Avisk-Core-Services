@@ -31,7 +31,6 @@ class pdfDocumentExtractor:
 					out.write(bytes((12,))) # write page delimiter (form feed 0x0C)
 				out.close()
 
-
 pdf_text_converter = pdfDocumentExtractor()
 
 pdf_text_converter.convert_pdf_files_to_text(PARM_PDF_IN_FOLDER, PARM_PDF_OUT_FOLDER)

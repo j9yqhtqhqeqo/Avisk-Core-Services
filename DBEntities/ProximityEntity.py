@@ -1,9 +1,15 @@
 class KeyWordLocationsEntity:
-    def __init__(self, key_word=None, locations=None, frequency = 0) -> None:
+    def __init__(self, key_word=None, locations=None, frequency = 0, dictionary_type =0, dictionary_id =0, document_id =0, document_name='') -> None:
         self.key_word=key_word
         self.key_word_hit_id:int
         self.locations = locations
         self.frequency = frequency
+        self.dictionary_type = dictionary_type
+        self.dictionary_id = dictionary_id
+        self.document_id = document_id
+        self.document_name = document_name
+        self.batch_id = 0
+
 
 class ProximityEntity:
     def __init__(self,dictionary_id=None,doc_header_id=None) -> None:
@@ -26,3 +32,17 @@ class FD_Factor:
 
 
         # select key_word_hit_id, key_word, locations from t_key_word_hits where insights_generated = 0 and document_id = 11
+
+
+
+class Insight:
+    def __init__(self,keyword_hit_id1:int, keyword1:str, keyword_hit_id2:int, keyword2:str,score:float, factor1:float, factor2:float,document_name:str, document_id:int) -> None:
+        self.keyword_hit_id1 = keyword_hit_id1
+        self.keyword1 = keyword1
+        self.keyword_hit_id2 = keyword_hit_id2
+        self.keyword2 = keyword2
+        self.factor1 = factor1
+        self.factor2 = factor2
+        self.score = score
+        self.document_name = document_name
+        self.document_id = document_id
