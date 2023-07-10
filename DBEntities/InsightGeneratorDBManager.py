@@ -150,6 +150,30 @@ class InsightGeneratorDBManager:
         return exp_dict_terms_list
         
 
+    def get_mitigation_dictionary_term_list(self):
+
+        mitigation_dict_terms_list =[]    
+
+        sql = "select dictionary_id,keywords from t_mitigation"
+        
+        try:
+            # Execute the SQL query
+
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                mitigation_dict_terms_list.append(DictionaryEntity(dictionary_id=row.dictionary_id,keywords=row.keywords))
+            cursor.close()
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return mitigation_dict_terms_list
+    
+
     def int_dictionary_terms():
         pass
     
@@ -185,17 +209,71 @@ class InsightGeneratorDBManager:
             return self.batch_id
         cursor.close()  
 
-    def get_document_list(self):
+    def get_exp_pathway_document_list(self):
         document_list =[]
         try:
             cursor = self.dbConnection.cursor()
-            cursor.execute("select document_id, document_name, company_name, year from dbo.t_document where document_processed_ind = 0") 
+            cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
+                            from dbo.t_document doc, t_sec_company comp \
+                            where \
+                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
                 document_entity.document_id = row.document_id
                 document_entity.document_name = row.document_name    
                 document_entity.company_name = row.company_name
+                document_entity.company_id = row.company_id
+                document_entity.year = row.year
+                document_list.append(document_entity)
+            cursor.close()
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+        return document_list
+
+    def get_internalization_document_list(self):
+        document_list =[]
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
+                            from dbo.t_document doc, t_sec_company comp \
+                            where \
+                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+            rows = cursor.fetchall()
+            for row in rows:
+                document_entity = DocumentEntity()
+                document_entity.document_id = row.document_id
+                document_entity.document_name = row.document_name    
+                document_entity.company_name = row.company_name
+                document_entity.company_id = row.company_id
+                document_entity.year = row.year
+                document_list.append(document_entity)
+            cursor.close()
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+        return document_list
+
+    def get_mitigation_document_list(self):
+        document_list =[]
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
+                            from dbo.t_document doc, t_sec_company comp \
+                            where \
+                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+            rows = cursor.fetchall()
+            for row in rows:
+                document_entity = DocumentEntity()
+                document_entity.document_id = row.document_id
+                document_entity.document_name = row.document_name    
+                document_entity.company_name = row.company_name
+                document_entity.company_id = row.company_id
                 document_entity.year = row.year
                 document_list.append(document_entity)
             cursor.close()
@@ -272,7 +350,6 @@ class InsightGeneratorDBManager:
         print("Total keyword location lists Added to the Database:"+ str(total_records_added_to_db))
         print('################################################################################################')
 
-
     def insert_key_word_hits_to_db(self, company_id:int, document_id:str, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int):
                 
         # Create a cursor object to execute SQL queries
@@ -302,6 +379,67 @@ class InsightGeneratorDBManager:
         cursor.close()
 
         pass
+
+    def update_exp_pathway_keyword_search_completed_ind(self, document_id):
+         # Create a cursor object to execute SQL queries
+        cursor = self.dbConnection.cursor()
+
+        sql = f"update t_document set exp_pathway_keyword_search_completed_ind = 1 \
+                ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                where document_id ={document_id}"
+        try:
+                # Execute the SQL query
+                cursor.execute(sql)
+                self.dbConnection.commit()
+        except Exception as exc:
+                # Rollback the transaction if any error occurs
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+
+        # Close the cursor and connection
+        cursor.close()
+
+    def update_internalization_keyword_search_completed_ind(self, document_id):
+         # Create a cursor object to execute SQL queries
+        cursor = self.dbConnection.cursor()
+
+        sql = f"update t_document set internalization_keyword_search_completed_ind = 1 \
+                ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                where document_id ={document_id}"
+        try:
+                # Execute the SQL query
+                cursor.execute(sql)
+                self.dbConnection.commit()
+        except Exception as exc:
+                # Rollback the transaction if any error occurs
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+
+        # Close the cursor and connection
+        cursor.close()
+
+    def update_mitigation_keyword_search_completed_ind(self, document_id):
+         # Create a cursor object to execute SQL queries
+        cursor = self.dbConnection.cursor()
+
+        sql = f"update t_document set mitigation_search_completed_ind = 1 \
+                ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                where document_id ={document_id}"
+        try:
+                # Execute the SQL query
+                cursor.execute(sql)
+                self.dbConnection.commit()
+        except Exception as exc:
+                # Rollback the transaction if any error occurs
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+
+        # Close the cursor and connection
+        cursor.close()
+
 
     def get_unprocessed_document_items(self):
 

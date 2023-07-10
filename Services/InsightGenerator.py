@@ -56,10 +56,15 @@ class insightGenerator:
 
         self.sic_code: int
         self.company_list:any
+        self.document_list =[]
+
         self.exp_dictionary_term_list =[]
         self.int_dictionary_terms =[]
+        self.mitigation_dictionary_term_list = []
+
         self.proximity_entity_list =[]
-        self.document_list =[]
+
+       
         self.errors: any
         self.log_generator = logGenerator(self.log_file_path)
         self.insightDBMgr = InsightGeneratorDBManager()
@@ -75,21 +80,18 @@ class insightGenerator:
     def generate_keyword_location_map_for_exposure_pathway(self):
         
         self.proximity_entity_list=[]
-        self.document_list = self.insightDBMgr.get_document_list()
+        self.document_list = self.insightDBMgr.get_exp_pathway_document_list()
         if(len(self.document_list) == 0):
             print("All documents processed: No new documents to process - Exiting generate_keyword_location_map")
             return
-        # self.company_list = self._get_company_list()
-        # company: DocHeaderEntity
+
 
         for document in self.document_list:
             self.document_id = document.document_id
             self.document_name = document.document_name
-            self._load_content(document.document_name, document.document_id, document.reporting_year)
-        # for company in self.company_list:
-        #     self.document_id = company.document_id
-        #     self.document_name = company.document_name
-        #     self._load_content(company.document_name, company.document_id, company.reporting_year, company.reporting_quarter)
+            self.company_id = document.company_id
+            self.reporting_year = document.year
+            self._load_content(document.document_name, document.document_id, document.year)
            
             # Generate keyword location map for exposure pathway dictionary terms
             print("Generating keyword location map for exposure pathway dictionary terms ")
@@ -97,28 +99,52 @@ class insightGenerator:
             self._get_exp_dictionary_term_list()
             self._create_exp_dictionary_proximity_map()
             self._save_dictionary_keyword_search_results(Lookups().Exposure_Pathway_Dictionary_Type)
-
+            self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(self.document_id)
     
     def generate_keyword_location_map_for_internalization(self):
         
         self.proximity_entity_list=[]
-        self.document_list = self.insightDBMgr.get_document_list()
+        self.document_list = self.insightDBMgr.get_internalization_document_list()
         if(len(self.document_list) == 0):
             print("All documents processed: No new documents to process - Exiting generate_keyword_location_map")
             return
-        self.company_list = self._get_company_list()
-        company: DocHeaderEntity
-    
-        for company in self.company_list:
-            self.document_id = company.document_id
-            self.document_name = company.document_name
-            self._load_content(company.document_name, company.document_id, company.reporting_year, company.reporting_quarter)
-           
+
+
+        for document in self.document_list:
+            self.document_id = document.document_id
+            self.document_name = document.document_name
+            self.company_id = document.company_id
+            self._load_content(document.document_name, document.document_id, document.year)
+                      
            # Generate keyword location map for internalization pathway dictionary terms
             print('Generating keyword location map for internalization pathway dictionary terms')
             self._get_int_dictionary_term_list()
             self._create_int_dictionary_proximity_map()
             self._save_dictionary_keyword_search_results(Lookups().Internalization_Dictionary_Type)
+            self.insightDBMgr.update_internalization_keyword_search_completed_ind(self.document_id)
+
+    def generate_keyword_location_map_for_mitigation(self):
+        
+        self.proximity_entity_list=[]
+        self.document_list = self.insightDBMgr.get_mitigation_document_list()
+        if(len(self.document_list) == 0):
+            print("All documents processed: No new documents to process - Exiting generate_keyword_location_map")
+            return
+
+
+        for document in self.document_list:
+            self.document_id = document.document_id
+            self.document_name = document.document_name
+            self.company_id = document.company_id
+            self._load_content(document.document_name, document.document_id, document.year)
+                      
+           # Generate keyword location map for internalization pathway dictionary terms
+            print('Generating keyword location map for internalization pathway dictionary terms')
+            self._get_mitigation_dictionary_term_list()
+            self._create_mitigation_dictionary_proximity_map()
+            self._save_dictionary_keyword_search_results(Lookups().Mitigation_Dictionary_Type)
+            self.insightDBMgr.update_mitigation_keyword_search_completed_ind(self.document_id)
+
 
     def _get_exp_dictionary_term_list(self):
 
@@ -195,6 +221,43 @@ class insightGenerator:
         print("Total key words found:"+ str(total_dictionary_hits))
 
 
+
+    def _get_mitigation_dictionary_term_list(self):
+
+        insightDBMgr = InsightGeneratorDBManager()
+        self.mitigation_dictionary_term_list = insightDBMgr.get_mitigation_dictionary_term_list()
+
+
+    def _create_mitigation_dictionary_proximity_map(self):
+        self.proximity_entity_list.clear()
+        total_dictionary_hits =0
+        for DictionaryTermList in self.mitigation_dictionary_term_list:
+            proximity_entity = ProximityEntity(DictionaryTermList.dictionary_id, self.document_id )
+            key_word_list = DictionaryTermList.keywords
+            key_words = key_word_list.split(',')
+            indices:any
+            word_list = self.current_data.split()
+            for keyword in key_words:
+               # For each keyword, identify all the word locations the key word appears in the document
+                indices = [i+1 for i, word in enumerate(word_list) if(keyword.strip().upper() in word.strip().upper())]
+
+                if(indices):
+                    keyword_location_entity = KeyWordLocationsEntity(key_word=keyword, locations=indices, frequency=len(indices))
+                    proximity_entity.key_word_bunch.append(keyword_location_entity)
+                    location_str=''
+                    total_dictionary_hits = total_dictionary_hits + 1
+            
+            self.proximity_entity_list.append(proximity_entity)
+        self.log_generator.log_details('################################################################################################')
+        self.log_generator.log_details("Current Document:" +self.document_name)
+        self.log_generator.log_details("Total keywords found:"+ str(total_dictionary_hits))
+        print('################################################################################################')
+        print("Current Document:" +self.document_name)
+        print("Total key words found:"+ str(total_dictionary_hits))
+
+
+
+
     def _save_dictionary_keyword_search_results(self, dictionary_type:int):
          ## Save Keyword search Results to Database
         if(self.proximity_entity_list):
@@ -203,7 +266,6 @@ class insightGenerator:
 
     def _load_content(self, document_name:str, year:int,document_id=9999,  qtr=1):
         pass
-
 
 
     def generate_aggregate_insights_from_keyword_location_details(self):
@@ -389,7 +451,7 @@ class file_folder_Insight_Generator(insightGenerator):
         self.document_id = document_id
         self.document_name = document_name
         
-        f_input_file_path = f'{self.folder_path}/{self.company_name}/{self.reporting_year}/{document_name}'
+        f_input_file_path = f'{self.folder_path}/{year}/{document_name}'
 
         with open(f_input_file_path, 'r') as fin:
             self.current_data = fin.read()
@@ -428,7 +490,7 @@ class file_folder_Insight_Generator(insightGenerator):
        raise Exception("Document not configured in t_document table")
 
 
-insight_gen = file_folder_Insight_Generator(folder_path=PARM_STAGE1_FOLDER, company_name='Marathon OIL', reporting_year=2022)
+insight_gen = file_folder_Insight_Generator(folder_path=PARM_STAGE1_FOLDER)
 insight_gen.generate_keyword_location_map_for_exposure_pathway()
 print("Generating Insights for Exposure Pathway Dictionary Terms")
 insight_gen.generate_insights_with_2_factors()
@@ -436,6 +498,10 @@ insight_gen.generate_insights_with_2_factors()
 insight_gen.generate_keyword_location_map_for_internalization()
 print("Generating Insights for Internalization Dictionary Terms")
 insight_gen.generate_insights_with_2_factors()
+
+insight_gen.generate_keyword_location_map_for_mitigation()
+print("Generating Insights for Internalization Dictionary Terms")
+# insight_gen.generate_insights_with_2_factors()
 
 insight_gen.cleanup()
 

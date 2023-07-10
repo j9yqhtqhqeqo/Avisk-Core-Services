@@ -15,6 +15,7 @@ class DocumentEntity:
         self.document_id = document_id
         self.document_name = document_name
         self.company_name=company_name
+        self.company_id = 0
         self.year = year
         self.insights_generated = insights_generated
 
