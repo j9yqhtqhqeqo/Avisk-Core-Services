@@ -45,7 +45,7 @@ class FD_Factor:
 
 
 class Insight:
-    def __init__(self,keyword_hit_id1:int, keyword1:str, keyword_hit_id2:int, keyword2:str,score:float, factor1:float, factor2:float,document_name:str, document_id:int) -> None:
+    def __init__(self,keyword_hit_id1=0, keyword1='', keyword_hit_id2=0, keyword2='',score=0.00, factor1=0, factor2=0,document_name='', document_id=0) -> None:
         self.keyword_hit_id1 = keyword_hit_id1
         self.keyword1 = keyword1
         self.keyword_hit_id2 = keyword_hit_id2

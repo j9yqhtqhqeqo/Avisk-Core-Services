@@ -130,7 +130,7 @@ class InsightGeneratorDBManager:
 
         exp_dict_terms_list =[]    
 
-        sql = "select d.dictionary_id,keywords,exposure_path_id from t_exposure_pathway_dictionary d"
+        sql = "select d.dictionary_id,d.keywords,d.exposure_path_id from t_exposure_pathway_dictionary d"
         
         try:
             # Execute the SQL query
@@ -284,7 +284,112 @@ class InsightGeneratorDBManager:
         
         return document_list
 
+    def get_mitigation_exp_document_list(self):
+        document_list =[]
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
+                            from dbo.t_document doc, t_sec_company comp \
+                            where \
+                            doc.mitigation_exp_insights_generated = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+            rows = cursor.fetchall()
+            for row in rows:
+                document_entity = DocumentEntity()
+                document_entity.document_id = row.document_id
+                document_entity.document_name = row.document_name    
+                document_entity.company_name = row.company_name
+                document_entity.company_id = row.company_id
+                document_entity.year = row.year
+                document_list.append(document_entity)
+            cursor.close()
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+        return document_list
 
+    def get_mitigation_lists(self, document_id):
+       
+        mitigation_keyword_list =[]
+        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where insights_generated = 0 and dictionary_type = 1002 and document_id = ?'
+        try:
+            # Execute the SQL query
+
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql, document_id)
+            rows = cursor.fetchall()
+            for row in rows:
+
+                keyword_loc_entity = KeyWordLocationsEntity()
+                keyword_loc_entity.key_word_hit_id = row.key_word_hit_id
+                keyword_loc_entity.key_word = row.key_word
+                keyword_loc_entity.locations = row.locations
+                mitigation_keyword_list.append(keyword_loc_entity)
+
+            cursor.close()
+
+            # print("Record inserted successfully!")
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+
+        exp_keyword_list =[]
+        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where dictionary_type = 1000 and document_id = ?'
+        try:
+            # Execute the SQL query
+
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql, document_id)
+            rows = cursor.fetchall()
+            for row in rows:
+
+                keyword_loc_entity = KeyWordLocationsEntity()
+                keyword_loc_entity.key_word_hit_id = row.key_word_hit_id
+                keyword_loc_entity.key_word = row.key_word
+                keyword_loc_entity.locations = row.locations
+                exp_keyword_list.append(keyword_loc_entity)
+
+            cursor.close()
+
+            # print("Record inserted successfully!")
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+
+        exp_insight_list =[]
+        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2 from t_exposure_pathway_insights where document_id = ? and score > 50'
+        try:
+            # Execute the SQL query
+
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql, document_id)
+            rows = cursor.fetchall()
+            for row in rows:
+
+                insight_entity = Insight()
+                insight_entity.keyword_hit_id1 = row.key_word_hit_id1
+                insight_entity.keyword_hit_id2 = row.key_word_hit_id2
+                insight_entity.keyword1 = row.key_word1
+                insight_entity.keyword2 = row.key_word2
+                exp_insight_list.append(insight_entity)
+
+            cursor.close()
+
+            # print("Record inserted successfully!")
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+        
+        return mitigation_keyword_list,exp_keyword_list, exp_insight_list
 
     def get_keyword_location_list(self, batch_id=0, dictionary_type = 0, dictionary_id = 0, document_id = 0):
 
@@ -441,14 +546,14 @@ class InsightGeneratorDBManager:
         cursor.close()
 
 
-    def get_unprocessed_document_items(self):
+    def get_unprocessed_document_items(self, dictionary_type = 0):
 
         document_list =[]
-        sql = 'select distinct document_id, dictionary_id, document_name, batch_id,dictionary_type from t_key_word_hits where insights_generated = 0 order by dictionary_id'
+        sql = 'select distinct document_id, dictionary_id, document_name, batch_id,dictionary_type from t_key_word_hits where insights_generated = 0 and dictionary_type = ? order by dictionary_id'
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql)
+            cursor.execute(sql, dictionary_type)
             rows = cursor.fetchall()
             for row in rows:
                 keyword_loc_entity = KeyWordLocationsEntity()
@@ -466,7 +571,6 @@ class InsightGeneratorDBManager:
             raise exc
         
         return document_list
-
 
     def save_insights(self, insightList, dictionary_type):
         insight: Insight

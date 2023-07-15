@@ -1,3 +1,9 @@
+
+word ='  forests, '
+print(word.replace('.','').replace(',','').strip())
+
+
+
 # # Import requests to retrive Web Urls example HTML. TXT 
 # import requests
 # from bs4 import BeautifulSoup
@@ -22,12 +28,12 @@
 # else:
 #         print(sic_code_int.group())
 
-batch_id = 1
-document_id = 1
+# batch_id = 1
+# document_id = 1
 
-new_doc_id =  int(str(batch_id)+str(document_id))
+# new_doc_id =  int(str(batch_id)+str(document_id))
 
-print(new_doc_id)
+# print(new_doc_id)
 
 
 
