@@ -312,7 +312,9 @@ class InsightGeneratorDBManager:
     def get_mitigation_lists(self, document_id):
        
         mitigation_keyword_list =[]
-        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where insights_generated = 0 and dictionary_type = 1002 and document_id = ?'
+        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where insights_generated = 0 and dictionary_type = 1002 and document_id = ?  order by key_word_hit_id'
+        # sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where insights_generated = 0 and dictionary_type = 1002 and document_id = ? and key_word_hit_id = 2469 order by key_word_hit_id'
+
         try:
             # Execute the SQL query
 
@@ -609,6 +611,19 @@ class InsightGeneratorDBManager:
                         ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
                         {factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"    
 
+
+            elif(dictionary_type == Lookups().Mitigation_Dictionary_Type): 
+                mitigation_keyword_hit_id = insight.mitigation_keyword_hit_id
+                mitigation_keyword = insight.mitigation_keyword
+
+                sql = f"INSERT INTO dbo.t_mitigation_exp_insights( \
+                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
+                    score,factor1, factor2, added_dt,added_by ,modify_dt,modify_by\
+                    )\
+                        VALUES\
+                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
+                        {score},{factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"   
+                
             try:
                 # Execute the SQL query
                 cursor.execute(sql)
@@ -652,17 +667,27 @@ class InsightGeneratorDBManager:
         # Close the cursor and connection
         cursor.close()
 
+    def update_mitigation_insights_generated_batch(self, dictionary_type, document_id):
+            # Create a cursor object to execute SQL queries
+        if(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+            cursor = self.dbConnection.cursor()
 
-    def remove_insights(self):
-        pass
+            sql = f"update t_document set mitigation_exp_insights_generated = 1 \
+                    ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                    where document_id ={document_id}"
+            try:
+                    # Execute the SQL query
+                    cursor.execute(sql)
+                    self.dbConnection.commit()
+            except Exception as exc:
+                    # Rollback the transaction if any error occurs
+                    self.dbConnection.rollback()
+                    print(f"Error: {str(exc)}")
+                    raise exc
+
+            # Close the cursor and connection
+            cursor.close()
 
     def get_test_company_list(self):
         insightdbMgr = InsightGeneratorDBManager()
         return(insightdbMgr.get_company_list('Metal Mining', 'Lithium'))
-
-
-# insightdbMgr = InsightGeneratorDBManager()
-# exp_dict_terms = insightdbMgr.get_exp_dictionary_terms()
-
-# for term in exp_dict_terms:
-#     print(str(term.dictionary_id) + "    " + str(term.keywords))
