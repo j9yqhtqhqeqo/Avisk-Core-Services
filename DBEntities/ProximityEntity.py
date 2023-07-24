@@ -10,6 +10,8 @@ class KeyWordLocationsEntity:
         self.document_name = document_name
         self.batch_id = 0
 
+        self.temp_place_holder=''
+
 class DocumentEntity:
     def __init__(self, document_id =0, document_name=0, company_name='', year=0, insights_generated=0) -> None:
         self.document_id = document_id
