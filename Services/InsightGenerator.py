@@ -20,7 +20,8 @@ from Utilities.LoggingServices import logGenerator
 from DBEntities.DictionaryEntity import DictionaryEntity
 from DBEntities.ProximityEntity import  Insight
 from Utilities.Lookups import Lookups
-from Utilities.Lookups import ContextResolver
+from Utilities.Lookups import InternalizationContextResolver
+from Utilities.Lookups import ExposurePathwayContextResolver
 import numpy as np
 import copy
 
@@ -129,7 +130,7 @@ class keyWordSearchManager:
         for DictionaryTermList in self.exp_dictionary_term_list:
             proximity_entity = ProximityEntity(DictionaryTermList.dictionary_id, self.document_id )
             key_word_list = DictionaryTermList.keywords
-            
+           
             key_words_natural = key_word_list.split(',')
             key_words =[]
             for keyword in key_words_natural:
@@ -139,6 +140,7 @@ class keyWordSearchManager:
 
             indices:any
             word_list = self.current_data.split()
+
             for keyword in key_words:
              
                 indices:any
@@ -150,12 +152,38 @@ class keyWordSearchManager:
                 else:
                     indices = [i+1 for i, word in enumerate(word_list) if(keyword.strip() == word.replace('.','').replace(',','').replace(')','').replace(';','').replace(':','').strip().upper())]
 
-                if(indices):
-                    # keyword_location_entity = KeyWordLocationsEntity(key_word=keyword, locations=indices, frequency=len(indices))
-                    keyword_location_entity = KeyWordLocationsEntity(key_word=keyword, locations=indices, frequency=len(indices), dictionary_id=DictionaryTermList.dictionary_id, dictionary_type=Lookups().Exposure_Pathway_Dictionary_Type)
+               
+                # Find Partial Hits - corruption in 'anti-corruption' and add to database for disposal except for word "IT"              
+               #########################################
+                keyword_cleaned = keyword.strip().upper()
+                if(keyword_cleaned != 'IT'):
+                    related_keyword_list=[]
+                    for word in word_list:
+                        word_cleaned = word.replace('.','').replace(',','').replace(')','').replace(';','').replace(':','').strip().upper()
+                        if(keyword_cleaned in word_cleaned and keyword_cleaned!= word_cleaned):
+                            if(word_cleaned not in related_keyword_list and word_cleaned.upper() not in key_words):
+                                # print("OROGINAL WORD:"+word)
+                                related_keyword_list.append(word_cleaned)
+                    
+                    contextResolver = ExposurePathwayContextResolver()
+                
+                    if(len(related_keyword_list) >0 ):
+                        for related_keyword in related_keyword_list:
+                            if not contextResolver.is_keyword_in_exclusion_list(keyword,related_keyword):
+                                if contextResolver.is_keyword_in_inclusion_list(keyword, related_keyword):
+                                    related_word_indices = [i+1 for i, word in enumerate(word_list) if(related_keyword.strip() == word.replace('.','').replace(',','').replace(')','').replace(';','').replace(':','').replace('’','').strip().upper())]
+                                    for i in related_word_indices: indices.append(i)
+                                else:
+                                    print('Add \''+ keyword+ '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: '+ str(DictionaryTermList.dictionary_id))    
+                                    self.log_generator.log_details('Add \''+ keyword+ '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion')
+                                    self.is_related_keywords_need_to_be_addressed = True
+                ###############################################
 
+
+                keyword_location_entity = KeyWordLocationsEntity(key_word=keyword, locations=indices, frequency=len(indices), dictionary_id=DictionaryTermList.dictionary_id, dictionary_type=Lookups().Exposure_Pathway_Dictionary_Type)
+
+                if(keyword_location_entity.frequency >0):  
                     proximity_entity.key_word_bunch.append(keyword_location_entity)
-                    location_str=''
                     total_dictionary_hits = total_dictionary_hits + 1
             
             proximity_entity =  self.combine_singular_plural_words(proximity_entity)
@@ -166,7 +194,7 @@ class keyWordSearchManager:
         self.log_generator.log_details("Total keywords found:"+ str(total_dictionary_hits))
 
         print("Total key words found:"+ str(total_dictionary_hits))
-
+        return self.is_related_keywords_need_to_be_addressed
 
 
 ## Search all internalization pathway dictionary terms in the document and save locations 
@@ -250,7 +278,7 @@ class keyWordSearchManager:
                             # print("OROGINAL WORD:"+word)
                             related_keyword_list.append(word_cleaned)
                 
-                contextResolver = ContextResolver()
+                contextResolver = InternalizationContextResolver()
               
                 if(len(related_keyword_list) >0 ):
                     for related_keyword in related_keyword_list:
@@ -752,11 +780,11 @@ class mitigation_Insight_Generator(keyWordSearchManager):
 
 insight_gen = file_folder_keyWordSearchManager(folder_path=PARM_STAGE1_FOLDER)
 
-# insight_gen.generate_keyword_location_map_for_exposure_pathway()
+insight_gen.generate_keyword_location_map_for_exposure_pathway()
 # # print("Generating Insights for Exposure Pathway Dictionary Terms")
 # insight_gen.generate_insights_with_2_factors(Lookups().Exposure_Pathway_Dictionary_Type)
 
-insight_gen.generate_keyword_location_map_for_internalization()
+# insight_gen.generate_keyword_location_map_for_internalization()
 # print("Generating Insights for Internalization Dictionary Terms")
 #insight_gen.generate_insights_with_2_factors(Lookups().Internalization_Dictionary_Type)
 

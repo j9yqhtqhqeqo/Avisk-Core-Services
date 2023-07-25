@@ -8,7 +8,7 @@ class Lookups:
 
 
 
-class ContextResolver:
+class InternalizationContextResolver:
 
     def __init__(self) -> None:
 
@@ -163,7 +163,17 @@ class ContextResolver:
             'EXPENDITURE': ['EXPENDITURES(A'],
             'EXPENDITURES': ['EXPENDITURES(A'],
             'OBLIGATION': ['OBLIGATIONS(D'],
-            'OBLIGATIONS': ['OBLIGATIONS(D']
+            'OBLIGATIONS': ['OBLIGATIONS(D'],
+            'PAY': ['PAYMENTS','PAYBACK','PAYMENT'],
+            'DEVELOPMENT': ['DEVELOPMENTS'],
+            'PERFORMANCE': ['PERFORMANCE1','PERFORMANCEA','NON-PERFORMANCE'],
+            'EXECUTIVE ': ['EXECUTIVES','EXECUTIVE-LEVEL'] ,
+            'STOCK ': ['FEEDSTOCK','STOCKHOLDERS’','STOCKHOLDERS'] ,
+            'APPROACH': ['APPROACHES'] ,
+            'DIVIDEND': ['DIVIDENDS'] ,
+            'REINVESTMENT': ['(REINVESTMENT'] ,
+            'PLAN': ['PLANS','PLANNING','PLANNED','“PLAN”'] ,
+           
                        
         }
 
@@ -201,7 +211,6 @@ class ContextResolver:
             'LABOR': ['COLLABORATION','COLLABORATIVE','COLLABORATIVE”','COLLABORATE','COLLABORATING','LABORATORY'],
             'MINE': ['DETERMINE','DETERMINED','EXAMINE','PREDETERMINED','PROMINENTLY','DETERMINES','NOMINEES','NOMINEE','EXAMINED'],
             'MINES': ['DETERMINES'],
-            'DEVELOPMENT': ['DEVELOPMENTS'],
             'ENVIRONMENT': 'ENVIRONMENTS',
 
             'NEW': ['RENEWABLES','RENEWABLE','NEWBORNS','RENEWAL'],
@@ -217,7 +226,10 @@ class ContextResolver:
             'PRICE': ['PRICEWATERHOUSECOOPERS','/S/PRICEWATERHOUSECOOPERS'] ,
             'RESERVES': ['PRESERVES','PRESERVES'],
             'WEATHER': ['WEATHERFORD'] ,
-            'AUDIT': ['AUDITORIUM']
+            'AUDIT': ['AUDITORIUM'],
+            'EARNINGS': ['LEARNINGS'],
+            'VESTING': ['INVESTING'] ,
+            'PLAN': ['PLANET','PLANT','EXPLANATION'] ,
         }
     
     def is_keyword_in_exclusion_list(self,keyword:str, related_word:str):
@@ -248,3 +260,181 @@ class ContextResolver:
         return False
     
 
+
+class ExposurePathwayContextResolver:
+
+    def __init__(self) -> None:
+
+        self.Inclusion_Dictionary = {
+            'COMBAT': ['COMBATTING','COMBATS'],
+            'FIRE': ['FIREFIGHTING'],
+            'FOREST': ['RAINFOREST'],
+            'PERIODIC': ['PERIODICALLY'],
+            'PRESCRIBE': ['PRESCRIBED'],
+            'RAIN': ['RAINFOREST'],
+            'STORM': ['STORMS'],
+            'HEAT': ['HEATERS'],
+            'CREDIT': ['CREDITS'],
+            'OFFSET': ['OFFSETS'],
+            'DISTRIBUTION': ['DISTRIBUTIONS','DISTRIBUTIONAB'],
+            'OPERATION': ['OPERATIONS','OPERATIONAL','OPERATIONS-FOCUSED','OPERATIONS-','OPERATIONALIZED','OPERATIONALLY','OPERATIONS3','OPERATIONS4'],
+            'ENERGY': ['ENERGY-RELATED','NONENERGY'],
+            'INVESTMENT': ['UNDER-INVESTMENT','(REINVESTMENT','REINVESTMENT','UNDERINVESTMENT','INVESTMENTS'],
+            'PRODUCT ': ['PRODUCTION','CO₂E/PRODUCTION'],
+            'RENEW': ['RENEWABLES'],
+            'RENEWABLE': ['RENEWABLES'],
+            'SHIFT': ['SHIFTED'],
+            'ENERGY ': ['ENERGY-RELATED','NONENERGY'],
+            'GAS': ['GAS/NATURAL','GASES','GAS-','GASKETS','GAS/TOTAL','GASOLINE'],
+            'NATURAL': ['GAS/NATURAL'],
+            'SAND': ['SANDS'],
+            'CARBON': ['HYDROCARBONS','DECARBONIZATION','CARBON-CONSTRAINED','LOW-CARBON','HYDROCARBON','LOWER-CARBON'],
+            'SYSTEM': ['SYSTEMIC','ECOSYSTEM','ECOSYSTEMS','SYSTEMATIC','MULTI-SYSTEM','SYSTEMS'],
+            'SYSTEMS': ['ECOSYSTEMS'],
+            'WATERSHED': ['WATERSHEDS'],
+            'CULTURAL': ['CULTURALLY'],
+            'PROGRAM': ['PROGRAM’S'],
+            'SITE': ['WEBSITE','ONSITE','PRE-SITE','ON-SITE','JOBSITE','PARASITE','OFF-SITE'],
+            'MPAS': ['ENCOMPASSING','ENCOMPASSES'],  
+            'DISRUPT': ['DISRUPTION','DISRUPTIONS'],
+            'DROUGHT': ['DROUGHTS'], 
+            'LEAK': ['LEAKS'],
+            'INVESTMENT': ['INVESTMENTS','UNDER-INVESTMENT','(REINVESTMENT','REINVESTMENT'],
+            'SAVING': ['SAVINGS'],
+            'CORRUPTION': ['ANTI-CORRUPTION'],
+            'ECONOMY': ['ECONOMY-WIDE'],
+            'SECURE': ['SECUREETHICSPOINTCOM/DOMAIN/MEDIA/EN/'],
+            'COMMUNICATION': ['COMMUNICATIONS'],
+            'FRAMEWORK': ['FRAMEWORKS'],
+             'CHARGE': ['DISCHARGE','DISCHARGES','DISCHARGED','DISCHARGE-RELATED'],
+             'CHARGES': ['DISCHARGES'], 
+             'TAX': ['TAX-EXEMPT'], 
+            'MAINTENANCE': ['MAINTENANCE-LEVEL'],
+            'PRODUCTION': ['CO₂E/PRODUCTION'], 
+            'SERVICE': ['SHORT-SERVICE'],
+            'TECHNOLOGY': ['TECHNOLOGY-DRIVEN'],
+            'TRAINING': ['TRAININGS'],
+            'WATER': ['FRESHWATER','WATERSHEDS','(GROUNDWATER','GROUNDWATER','WATER/MILLION','SALTWATER','WASTEWATER','WATER-HANDLING','FRESH-WATER','WATER3','WATER-CONTROL','WATERSHED','WATER/DOMESTIC','FRESHWATER/DOMESTIC'],
+            'EDUCATION': ['EDUCATIONAL','(EDUCATION'],
+            'REGULATIONS': ['CONSTRAINTS/REGULATIONS'],
+            'HEALTH': ['HEALTHIER','HEALTHCARE','HEALTHY','(HEALTH'],
+            'SAFETY': ['SAFETY-BASED','SAFETY-SENSITIVE','SAFETY-'] ,
+            'CAPACITY': ['CAPACITY-'] ,
+            'DEMAND': ['ON-DEMAND'] ,
+            'GOVERNANCE': ['GOVERNANCE1'],
+            'SECURITY': ['SECURITY-RELATED','SECURITY-','INSECURITY','CYBERSECURITY'],
+            'NATURAL ': ['GAS/NATURAL'],
+            'BRIBE': ['ANTI-BRIBERY','BRIBERY'],
+            '401': ['$401','401-1'],
+            'BREAKTHROUGH': ['BREAKTHROUGHS'],
+            'INVENT': ['INVENTORY'],
+            'OUTPUT': ['OUTPUTS'],
+            'PERFORMANCE': ['PERFORMANCE1','PERFORMANCEA','NON-PERFORMANCE','PRODUCTION','PRODUCTS','PRODUCTIVE','CO₂E/PRODUCTION'],
+            'BENEFIT': ['(BENEFIT','HTTPS//WWWMROBENEFITSCOM/','BENEFITING','BENEFITED','(BENEFITS'],
+            'BENEFITS': ['HTTPS//WWWMROBENEFITSCOM/','(BENEFITS'],
+            'PAY': ['PAYMENTS','PAYBACK','PAYMENT'],
+            'EXECUTIVE ': ['EXECUTIVES','EXECUTIVE-LEVEL'] ,
+            'STOCK ': ['FEEDSTOCK','STOCKHOLDERS’','STOCKHOLDERS'] ,
+            'REINVESTMENT': ['(REINVESTMENT'] ,
+            'PRODUCT': ['PRODUCTION','PRODUCTS','PRODUCTIVE','CO₂E/PRODUCTION'] ,
+            'DATA ': ['DATABASE'],
+            'DEVELOPMENT': ['DEVELOPMENTS'],
+             'APPROACH': ['APPROACHES'] ,
+            'DIVIDEND': ['DIVIDENDS'] ,
+            'REINVESTMENT': ['(REINVESTMENT'] ,
+            'PLAN': ['PLANS','PLANNING','PLANNED','“PLAN”'] ,
+            'EXTINGUISH': ['EXTINGUISHMENT'],
+            'FLOODING': ['WATERFLOODING'],
+            'PRESCRIBE': ['PRESCRIBES'],
+            'SPREAD': ['WIDESPREAD','SPREADS'],
+            'FLOOD': ['WATERFLOODING','FLOODING'],
+            'CHARGE': ['CHARGED'],
+            'CREDIT': ['CREDITWORTHINESS','“CREDIT','CREDITED','CREDIT-ADJUSTED-RISK-FREE','(“CREDIT','(CREDIT','(CREDITS','CREDITING','CREDITORS'],
+            'OFFSET': ['OFFSETTING'],
+            'PRICING': ['PRICING”'],
+            'TAX': ['TAXING','TAXABLE','PRETAX','PRE-TAX','TAX-RELATED','(PRETAX','TAXONOMY'],
+            'FUEL': ['FUELS'], 
+            'OPERATION': ['PRESIDENT—OPERATIONS'], 
+            'PRODUCTION': ['UNITS-OF-PRODUCTION','PER-UNIT-OF-PRODUCTION'],
+            'MODERNIZATION': ['“MODERNIZATION'],
+            'PRODUCT ': ['UNITS-OF-PRODUCTION','OF-PRODUCTION','NON-PRODUCTIVE','PER-UNIT-OF-PRODUCTION'],
+            'RENEW': ['RENEWAL'],
+            'SERVICE': ['SERVICE-BASED'], 
+            'SHIFT': ['SHIFTS'],
+            'COAL': ['COALBED','COALSEAM'],
+            'NATURAL ': ['NATURALLY'],
+            'OIL': ['MARATHONOILCOM/SUSTAINABILITY','OIL/CONDENSATE'],
+            'WATER': ['WATERS','WATEROUS','WATERFLOODING'],
+            'CARBON': ['HYDROCARBON-BEARING','CARBON-INTENSIVE'],
+            'PROVISION': ['PROVISIONS','(PROVISION'], 
+            'ART': ['EARTH','HEART','COUNTERPARTIES','PARTICULATE','CHARTERS','COUNTERPARTY','APART','PARTICIPANTS','PARTICIPANT','PARTY-OWNED','STARTING','PARTIAL','COUNTERPARTY’S','QUARTERS','PARTICIPATION”','ARTICLES','START','ARTIFICIAL','PARTICIPATES','ARTICLE'], 'NATURAL ': ['NATURALLY'],
+            'NATURE ': ['NATURE-RELATED'],
+
+
+        }
+
+        self.Exclusion_Dictionary = {   
+            'ICE': ['PRACTICES','SERVICES','SHORT-SERVICE','OFFICER','VICE','OFFICE','PRICE','OFFICES','OFFICERS','SERVICE','TWICE','PRICES','DEVICES','NOTICE','RETURN-TO-OFFICE','LICENSE','DEVICE','PRACTICE','JUSTICE'],
+            'RAIN': ['TRAINING','CONSTRAIN','CARBON-CONSTRAINED','CONSTRAINTS','CONSTRAINTS/REGULATIONS','TRAIN','TRAINED','TRAININGS','TRAINED”','CONSTRAINED'],
+            'PRODUCT ': ['PRODUCTIVE'],
+            'COAL': ['COALITION'],
+            'CORN': ['CORNERSTONE'],
+            'OIL': ['MARATHONOILCOM/SUSTAINABILITY-REPORT','OIL’S','WWWMARATHONOILCOM','INTEGRITY@MARATHONOILCOM','OIL-OPERATED','OILFIELD','OIL-SPECIFIC','OIL”','(OIL','(NON-OIL','NON-OIL','ESGREPORT@MARATHONOILCOM','WWWMARATHONOIL'],
+            'ORE': ['CORE','MORE','UNDERSCORE','SCORECARD','SCORECARDS','THEREFORE','FOREIGN','FORENSICS','OFFSHORE','MOREOVER','FORECASTS','FORECASTING','EXPLORES','FORECAST','UNDERSCORES','AFOREMENTIONED','FORESEEABLE','FORESTS','DEFORESTATION','FOREST','RAINFOREST','RESTORE','BEFORE','ONSHORE','STORES','STORED','TAILORED','EXPLORE','RESTORED','“FORECAST”'],
+            'ORES': ['EXPLORES','UNDERSCORES','FORESEEABLE','FORESTS','DEFORESTATION','FOREST','RAINFOREST','STORES'],
+            'RICE ': ['PRICE','PRICES'],
+            'SAND': ['THOUSANDS','THOUSAND'],
+            'STONE': ['CORNERSTONE'],
+            'FOREST': ['DEFORESTATION','RAINFOREST'],
+            'ART': ['PARTY','PARTICULARLY','PARTNERS','PART','PARTNERSHIPS','PARTICIPATION','CHARTS','CHARTER','QUARTERLY','PARTIES','PARTISAN','PARTICIPATE','PARTNER','PARTICIPATED','SMART','QUARTER','THIRD-PARTY','CHART','PARTICULAR','PARTICIPATING','EARTH’S','PARTNERSHIP','EARTHQUAKES','THIRD-PARTY-LED','PARTNERED','STATE-OF-THE-ART','DEPARTMENTS','HEADQUARTERS','STARTED','DEPARTMENT','SUBPART','PARTIALLY'],
+            'ARTS': ['CHARTS'],
+            'CULTURAL': ['AGRICULTURAL'],
+            'PH': ['PHILOSOPHY','GRAPHIC','PHYSICAL','PHONES','SOPHISTICATION','PHASE','UPHOLD','ATMOSPHERE','PHOTO','ELEPHANTS','PHASES','GEOGRAPHIC','PHONE','EMPHASIS','ORPHAN'],
+            'FEE': ['FEEL','FEEDBACK','FEEDSTOCK','FEET'],
+            'EARNINGS': ['LEARNINGS'],
+            'VESTING': ['INVESTING'] ,
+            'PLAN': ['PLANET','PLANT','EXPLANATION'] ,
+            'FISH': ['KINGFISHER'],
+            'ICE': ['LICENSES','FIXED-PRICE','NOTICES','PRICE-VOLUME','INDICES','PRICE/VOLUME','PRICEWATERHOUSECOOPERS','INVOICED','SERVICE-BASED','NON-OFFICER','NON-OFFICERS','LICENSED','ADVANCE-NOTICE','/S/PRICEWATERHOUSECOOPERS','PRICES”','“PRICE'],
+            'RAIN': ['ENGRAINED','UKRAINE','STRAIN','STRAINS'],
+            'CREDIT': ['ACCREDITATION'],
+            'ORE': ['UNFORESEEN','WELLBORE','FURTHERMORE','FOREGOING','FORECASTED','VALOREM','FAVORED','MONITORED','NON-CORE','BORE','AUTHORED','CO-AUTHORED','SPONSORED','EXPLORER'],
+            'ORES': ['UNFORESEEN'], 
+            'RICE ': ['FIXED-PRICE','PRICE-VOLUME','PRICE/VOLUME','PRICEWATERHOUSECOOPERS','/S/PRICEWATERHOUSECOOPERS','PRICES”','“PRICE'],
+            'STONE': ['MILESTONES'], 
+            'WATER': ['PRICEWATERHOUSECOOPERS','/S/PRICEWATERHOUSECOOPERS'],
+            'WOOD': ['WOODFORD'] ,
+            'TREE': ['STREET'] ,
+            'NATURE ': ['SIGNATURES','SIGNATURE'] ,
+            'SITE': ['REQUISITE'] ,
+
+
+        }
+    
+    def is_keyword_in_exclusion_list(self,keyword:str, related_word:str):
+
+        try:
+
+            related_words = self.Exclusion_Dictionary[keyword.upper()]
+
+        except:
+                return False
+
+        if related_word.upper() in related_words:
+            return True
+
+        return False
+    
+    def is_keyword_in_inclusion_list(self,keyword:str, related_word:str):
+        try:
+
+            related_words = self.Inclusion_Dictionary[keyword.upper()]
+
+        except:
+                return False
+
+        if related_word.upper() in related_words:
+            return True
+
+        return False
+    
