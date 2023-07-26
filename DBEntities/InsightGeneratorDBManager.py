@@ -335,7 +335,6 @@ class InsightGeneratorDBManager:
         
         return document_list
 
-
     def get_exp_mitigation_lists(self, document_id):
        
         mitigation_keyword_list =[]
@@ -419,7 +418,6 @@ class InsightGeneratorDBManager:
             raise exc
         
         return mitigation_keyword_list,exp_keyword_list, exp_insight_list
-
 
     def get_int_mitigation_lists(self, document_id):
        
