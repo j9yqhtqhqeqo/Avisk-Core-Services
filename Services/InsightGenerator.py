@@ -320,7 +320,7 @@ class keyWordSearchManager:
                                 else:
                                     ## DEBUG HERE FOR RESULTS STRAY CHARACTER"
 
-                                    print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
+                                    self.log_generator.log_details('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
                                     self.log_generator.log_details(
                                         'Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion')
@@ -570,7 +570,6 @@ class keyWordSearchManager:
     def cleanup(self):
         self.insightDBMgr.dbConnection.close()
 
-
 class db_Insight_keyWordSearchManager(keyWordSearchManager):
     def __init__(self) -> None:
         super().__init__()
@@ -659,8 +658,8 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
 
                         radius_location_partial = (self._get_related_word_locations_in_Radius_for_child_list(
                             int_master_location, int_child_locations))
-                        factor1_frequency = factor1_frequency + \
-                            len(radius_location_partial)
+                        # factor1_frequency = factor1_frequency + \
+                        #     len(radius_location_partial)
 
                         for location in radius_location_partial:
                             distance = abs(int_master_location - location)
@@ -671,6 +670,7 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
                                 else:
                                     ratio = 1/distance
                                     factor2_distance_list.append(ratio)
+                                    factor1_frequency = factor1_frequency + 1
                             except Exception as exc:
                                 # Rollback the transaction if any error occurs
                                 print(f"Error: {str(exc)}")
@@ -702,7 +702,7 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
         if (insights_genetated > 0):
             self.insightDBMgr.save_insights(
                 insightList=insightList, dictionary_type=dictionary_type)
-            self.insightDBMgr.update_insights_generated_batch(
+            self.insightDBMgr.update_insights_generated_from_keyword_hits_batch(
                 batch_id, dictionary_type=dictionary_type, dictionary_id=dictionary_id, document_id=document_id)
 
     def _load_keyword_location_list(self, batch_id=0, dictionary_type=0, dictionary_id=0, document_id=0):
@@ -978,17 +978,18 @@ class mitigation_Insight_Generator(keyWordSearchManager):
         return (combined_location_list)
 
 
-insight_gen = file_folder_keyWordSearchManager(folder_path=PARM_STAGE1_FOLDER)
+key_word_search_mgr = file_folder_keyWordSearchManager(folder_path=PARM_STAGE1_FOLDER)
 
-insight_gen.generate_keyword_location_map_for_exposure_pathway()
-# # print("Generating Insights for Exposure Pathway Dictionary Terms")
-# insight_gen.generate_insights_with_2_factors(Lookups().Exposure_Pathway_Dictionary_Type)
+key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
 
-insight_gen.generate_keyword_location_map_for_internalization()
+# print("Generating Insights for Exposure Pathway Dictionary Terms")
+exp_int_insght_generator = int_Exp_Insight_Generator()
+# exp_int_insght_generator.generate_insights_with_2_factors(Lookups().Exposure_Pathway_Dictionary_Type)
+
 # print("Generating Insights for Internalization Dictionary Terms")
-# insight_gen.generate_insights_with_2_factors(Lookups().Internalization_Dictionary_Type)
+exp_int_insght_generator.generate_insights_with_2_factors(Lookups().Internalization_Dictionary_Type)
 
-insight_gen.generate_keyword_location_map_for_mitigation()
+# insight_gen.generate_keyword_location_map_for_mitigation()
 # print("Generating Insights for Mitigation Dictionary Terms")
 # insight_gen.generate_insights_with_2_factors(Lookups().Mitigation_Dictionary_Type)
 
