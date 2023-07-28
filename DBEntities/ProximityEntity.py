@@ -47,13 +47,32 @@ class FD_Factor:
 
 
 class Insight:
-    def __init__(self,keyword_hit_id1=0, keyword1='', keyword_hit_id2=0, keyword2='',score=0.00, factor1=0, factor2=0,document_name='', document_id=0, mitigation_keyword_hit_id=0,mitigation_keyword='') -> None:
+    def __init__(self,keyword_hit_id1=0, keyword1='', keyword_hit_id2=0, keyword2='',score=0.00, factor1=0, factor2=0,document_name='', document_id=0, mitigation_keyword_hit_id=0,mitigation_keyword='', locations1='',locations2='') -> None:
         self.mitigation_keyword_hit_id = mitigation_keyword_hit_id
         self.mitigation_keyword = mitigation_keyword
         self.keyword_hit_id1 = keyword_hit_id1
         self.keyword1 = keyword1
         self.keyword_hit_id2 = keyword_hit_id2
         self.keyword2 = keyword2
+        self.factor1 = factor1
+        self.factor2 = factor2
+        self.score = score
+        self.document_name = document_name
+        self.document_id = document_id
+        self.locations1 =locations1
+        self.locations2 =locations2
+    
+
+class ExpIntInsight:
+    def __init__(self,exp_keyword_hit_id1 = 0,exp_keyword1 ='',exp_keyword_hit_id2 =0,exp_keyword2 ='',int_key_word_hit_id1 =0,int_key_word1 ='',int_key_word_hit_id2 =0,int_key_word2='',factor1=0, factor2=0,score=0.00,document_name='', document_id=0) -> None:
+        self.exp_keyword_hit_id1 = exp_keyword_hit_id1
+        self.exp_keyword1 = exp_keyword1
+        self.exp_keyword_hit_id2 = exp_keyword_hit_id2
+        self.exp_keyword2 = exp_keyword2
+        self.int_key_word_hit_id1 = int_key_word_hit_id1
+        self.int_key_word1 = int_key_word1
+        self.int_key_word_hit_id2 = int_key_word_hit_id2
+        self.int_key_word2 = int_key_word2
         self.factor1 = factor1
         self.factor2 = factor2
         self.score = score

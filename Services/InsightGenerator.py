@@ -14,6 +14,7 @@ import numpy as np
 from Utilities.Lookups import ContextResolver
 from Utilities.Lookups import Lookups
 from DBEntities.ProximityEntity import Insight
+from DBEntities.ProximityEntity import  ExpIntInsight
 from DBEntities.DictionaryEntity import DictionaryEntity
 from Utilities.LoggingServices import logGenerator
 from DBEntities.ProximityEntity import ProximityEntity, KeyWordLocationsEntity, FD_Factor
@@ -21,6 +22,7 @@ from DBEntities.DocumentHeaderEntity import DocHeaderEntity
 from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
 import re
 import datetime as dt
+
 
 
 # from DocumentProcessor import tenKXMLProcessor
@@ -151,12 +153,14 @@ class keyWordSearchManager:
                 indices: any
 
                 # Find Exact Match
-                if keyword in ('IT'):                  
-                    indices = [i+1 for i, word in enumerate(word_list) if (keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word))]
+                if keyword in ('IT'):
+                    indices = [i+1 for i, word in enumerate(word_list) if (
+                        keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word))]
 
                 else:
 
-                    indices = [i+1 for i, word in enumerate(word_list) if (keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
+                    indices = [i+1 for i, word in enumerate(word_list) if (
+                        keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
 
                 # Find Partial Hits - corruption in 'anti-corruption' and add to database for disposal except for word "IT"
                #########################################
@@ -166,7 +170,8 @@ class keyWordSearchManager:
                     for word in word_list:
                         word_cleaned = word.replace('.', '').replace(',', '').replace(
                             ')', '').replace(';', '').replace(':', '').strip().upper()
-                        word_cleaned = re.sub(r'[^A-Za-z0-9 /-]+', '', word_cleaned)
+                        word_cleaned = re.sub(
+                            r'[^A-Za-z0-9 /-]+', '', word_cleaned)
 
                         if (keyword_cleaned in word_cleaned and keyword_cleaned != word_cleaned):
                             if (word_cleaned not in related_keyword_list and word_cleaned.upper() not in key_words):
@@ -179,12 +184,13 @@ class keyWordSearchManager:
                         for related_keyword in related_keyword_list:
                             if not contextResolver.is_keyword_in_exclusion_list(keyword, related_keyword):
                                 if contextResolver.is_keyword_in_inclusion_list(keyword, related_keyword):
-                                    related_word_indices = [i+1 for i, word in enumerate(word_list) if (related_keyword.strip().upper() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
-                                    
+                                    related_word_indices = [i+1 for i, word in enumerate(word_list) if (
+                                        related_keyword.strip().upper() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
+
                                     for i in related_word_indices:
                                         indices.append(i)
                                 else:
-                                    ## DEBUG HERE FOR RESULTS STRAY CHARACTER"
+                                    # DEBUG HERE FOR RESULTS STRAY CHARACTER"
 
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
@@ -285,12 +291,14 @@ class keyWordSearchManager:
                 indices: any
 
                 # Find Exact Match
-                if keyword in ('IT'):                  
-                    indices = [i+1 for i, word in enumerate(word_list) if (keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word))]
+                if keyword in ('IT'):
+                    indices = [i+1 for i, word in enumerate(word_list) if (
+                        keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word))]
 
                 else:
 
-                    indices = [i+1 for i, word in enumerate(word_list) if (keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
+                    indices = [i+1 for i, word in enumerate(word_list) if (
+                        keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
 
                 # Find Partial Hits - corruption in 'anti-corruption' and add to database for disposal except for word "IT"
                #########################################
@@ -300,7 +308,8 @@ class keyWordSearchManager:
                     for word in word_list:
                         word_cleaned = word.replace('.', '').replace(',', '').replace(
                             ')', '').replace(';', '').replace(':', '').strip().upper()
-                        word_cleaned = re.sub(r'[^A-Za-z0-9 /-]+', '', word_cleaned)
+                        word_cleaned = re.sub(
+                            r'[^A-Za-z0-9 /-]+', '', word_cleaned)
 
                         if (keyword_cleaned in word_cleaned and keyword_cleaned != word_cleaned):
                             if (word_cleaned not in related_keyword_list and word_cleaned.upper() not in key_words):
@@ -313,14 +322,15 @@ class keyWordSearchManager:
                         for related_keyword in related_keyword_list:
                             if not contextResolver.is_keyword_in_exclusion_list(keyword, related_keyword):
                                 if contextResolver.is_keyword_in_inclusion_list(keyword, related_keyword):
-                                    related_word_indices = [i+1 for i, word in enumerate(word_list) if (related_keyword.strip().upper() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
-                                    
+                                    related_word_indices = [i+1 for i, word in enumerate(word_list) if (
+                                        related_keyword.strip().upper() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
+
                                     for i in related_word_indices:
                                         indices.append(i)
                                 else:
-                                    ## DEBUG HERE FOR RESULTS STRAY CHARACTER"
+                                    # DEBUG HERE FOR RESULTS STRAY CHARACTER"
 
-                                    self.log_generator.log_details('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
+                                    print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
                                     self.log_generator.log_details(
                                         'Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion')
@@ -335,7 +345,6 @@ class keyWordSearchManager:
                         keyword_location_entity)
                     total_dictionary_hits = total_dictionary_hits + 1
 
-         
             proximity_entity = self.combine_singular_plural_words(
                 proximity_entity)
 
@@ -423,14 +432,13 @@ class keyWordSearchManager:
 
             if not self.is_related_keywords_need_to_be_addressed:
                 self._save_dictionary_keyword_search_results(
-                Lookups().Mitigation_Dictionary_Type)
+                    Lookups().Mitigation_Dictionary_Type)
 
                 self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
-                self.document_id)
+                    self.document_id)
             else:
                 print(
                     "Key word search not saved as Related Keywords need to be addressed: Please review the Logfile/Output")
-                    
 
     def _get_mitigation_dictionary_term_list(self):
 
@@ -466,12 +474,14 @@ class keyWordSearchManager:
                 indices: any
 
                 # Find Exact Match
-                if keyword in ('IT'):                  
-                    indices = [i+1 for i, word in enumerate(word_list) if (keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word))]
+                if keyword in ('IT'):
+                    indices = [i+1 for i, word in enumerate(word_list) if (
+                        keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word))]
 
                 else:
 
-                    indices = [i+1 for i, word in enumerate(word_list) if (keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
+                    indices = [i+1 for i, word in enumerate(word_list) if (
+                        keyword.strip() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
 
                 # Find Partial Hits - corruption in 'anti-corruption' and add to database for disposal except for word "IT"
                #########################################
@@ -481,7 +491,8 @@ class keyWordSearchManager:
                     for word in word_list:
                         word_cleaned = word.replace('.', '').replace(',', '').replace(
                             ')', '').replace(';', '').replace(':', '').strip().upper()
-                        word_cleaned = re.sub(r'[^A-Za-z0-9 /-]+', '', word_cleaned)
+                        word_cleaned = re.sub(
+                            r'[^A-Za-z0-9 /-]+', '', word_cleaned)
 
                         if (keyword_cleaned in word_cleaned and keyword_cleaned != word_cleaned):
                             if (word_cleaned not in related_keyword_list and word_cleaned.upper() not in key_words):
@@ -494,12 +505,13 @@ class keyWordSearchManager:
                         for related_keyword in related_keyword_list:
                             if not contextResolver.is_keyword_in_exclusion_list(keyword, related_keyword):
                                 if contextResolver.is_keyword_in_inclusion_list(keyword, related_keyword):
-                                    related_word_indices = [i+1 for i, word in enumerate(word_list) if (related_keyword.strip().upper() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
-                                    
+                                    related_word_indices = [i+1 for i, word in enumerate(word_list) if (
+                                        related_keyword.strip().upper() == re.sub(r'[^A-Za-z0-9 /-]+', '', word).upper())]
+
                                     for i in related_word_indices:
                                         indices.append(i)
                                 else:
-                                    ## DEBUG HERE FOR RESULTS STRAY CHARACTER"
+                                    # DEBUG HERE FOR RESULTS STRAY CHARACTER"
 
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
@@ -570,6 +582,7 @@ class keyWordSearchManager:
     def cleanup(self):
         self.insightDBMgr.dbConnection.close()
 
+
 class db_Insight_keyWordSearchManager(keyWordSearchManager):
     def __init__(self) -> None:
         super().__init__()
@@ -617,10 +630,16 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
     # Generate Insights for two keyword combinations
     def generate_insights_with_2_factors(self, dictionary_type: int):
 
+        print('Generating insights generated for Dictionary Type:' + str(dictionary_type))
+
         batch_id: int
 
         document_list = self.insightDBMgr.get_unprocessed_document_items(
             dictionary_type=dictionary_type)
+
+        if len(document_list) < 1:
+            print('No New Keyword search results to Process: Zero insights generated for Dictionary Type:' + str(dictionary_type))
+            return
 
         document_item: KeyWordLocationsEntity
         for document_item in document_list:
@@ -665,8 +684,8 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
                             distance = abs(int_master_location - location)
                             try:
                                 if (distance == 0):
-                                    print("Distance 0 - Ignoring Weight Calculation: Keyword:" + keyword_location.key_word +
-                                          ", Child Key word:" + child_node.key_word+", Location:"+str(location))
+                                    self.log_generator.log_details("Distance 0 - Ignoring Weight Calculation: Keyword:" + keyword_location.key_word +
+                                                                   ", Child Key word:" + child_node.key_word+", Location:"+str(location))
                                 else:
                                     ratio = 1/distance
                                     factor2_distance_list.append(ratio)
@@ -800,12 +819,20 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
             print("FD Factors:"+str(fd_factor2.fd_factor))
 
 
-class mitigation_Insight_Generator(keyWordSearchManager):
+class triangulation_Insight_Generator(keyWordSearchManager):
 
     def generate_mitigation_exp_insights(self):
+        self.log_generator.log_details(
+            "Generating  Exposure -> Mitigation Insights")
+        print("###########################################################")
+        print("Generating  Exposure -> Mitigation Insights")
 
-        document_list = self.insightDBMgr.get_mitigation_exp_document_list()
+        document_list = self.insightDBMgr.get_exp_mitigation_document_list()
 
+        if(len(document_list) == 0):
+            print('No new document available to process Mitigation-Exposure Insights')
+            return
+        
         document_item: KeyWordLocationsEntity
         for document_item in document_list:
             self.log_generator.log_details(
@@ -825,6 +852,7 @@ class mitigation_Insight_Generator(keyWordSearchManager):
                     exp_insight_entity.keyword_hit_id1, exp_insight_entity.keyword_hit_id2)
                 # compute score against each mitigation key word
                 for mitigation_keyword_locations in self.mitigation_keyword_location_list:
+
                     self._create_mitigation_insights_for_document(mitigation_keyword_locations, doc_location_list, document_item.document_id,
                                                                   document_item.document_name, exp_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id)
 
@@ -837,15 +865,20 @@ class mitigation_Insight_Generator(keyWordSearchManager):
             self.insightDBMgr.save_insights(
                 insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Exp_Insight_Type)
 
-            self.insightDBMgr.update_mitigation_insights_generated_batch(dictionary_type=Lookups(
-            ).Exposure_Pathway_Dictionary_Type, document_id=document_item.document_id)
+            self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
+            ).Mitigation_Exp_Insight_Type, document_id=document_item.document_id)
 
     def generate_mitigation_int_insights(self):
         self.log_generator.log_details(
             "Generating Mitigation Insights for Internalization Pathways")
-        print("Generating Mitigation Insights for Internalization Pathways")
+        print("###########################################################")
+        print("Generating  Internalization -> Mitigation Insights")
 
-        document_list = self.insightDBMgr.get_mitigation_int_document_list()
+        document_list = self.insightDBMgr.get_int_mitigation_document_list()
+
+        if(len(document_list) == 0):
+            print('No new document available to process Mitigation-Internalization Insights')
+            return
 
         document_item: KeyWordLocationsEntity
         for document_item in document_list:
@@ -878,8 +911,8 @@ class mitigation_Insight_Generator(keyWordSearchManager):
             self.insightDBMgr.save_insights(
                 insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Int_Insight_Type)
 
-            self.insightDBMgr.update_mitigation_insights_generated_batch(dictionary_type=Lookups(
-            ).Internalization_Dictionary_Type, document_id=document_item.document_id)
+            self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
+            ).Mitigation_Int_Insight_Type, document_id=document_item.document_id)
 
     def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0):
 
@@ -890,6 +923,9 @@ class mitigation_Insight_Generator(keyWordSearchManager):
 
         doc_location_list = doc_location_list.strip('[').strip(']').split(',')
         int_doc_location_list = np.asarray(doc_location_list, dtype=np.int32)
+
+        #Remove Duplicates - In case of related words: For ex- Forest, Deforestation
+        int_doc_location_list = list(set(int_doc_location_list))
 
         distance_list = np.array([])
         for int_mitigation_keyword_location in int_mitigation_keyword_locations:
@@ -905,8 +941,9 @@ class mitigation_Insight_Generator(keyWordSearchManager):
 
         for distance in distance_list:
             try:
-                ratio = 1/distance
-                factor2_distance_list.append(ratio)
+                if distance >0.00:
+                    ratio = 1/distance
+                    factor2_distance_list.append(ratio)
             except Exception as exc:
                 # Rollback the transaction if any error occurs
                 print(f"Error: {str(exc)}")
@@ -928,6 +965,126 @@ class mitigation_Insight_Generator(keyWordSearchManager):
             self.log_generator.log_details("Mitigation:"+mitigation_keyword+", Keywords:" +
                                            insight_entity.keyword1+' ,'+insight_entity.keyword2 + " ,Score"+str(score))
             # print("Mitigation:"+mitigation_keyword+",Exp Keywords:"+exp_insight_entity.keyword1+' ,'+exp_insight_entity.keyword2, +" , Score"+score)
+
+
+    def generate_exp_int_insights(self):
+            self.log_generator.log_details(
+                "Generating Exposure Pathway ->Internalization Insights")
+            print("###########################################################")
+            print("Generating Exposure Pathway ->Internalization Insights")
+
+            document_list = self.insightDBMgr.get_exp_int_document_list()
+
+            if(len(document_list) == 0):
+                print('No new document available to process Mitigation-Internalization Insights')
+                return
+
+            document_item: KeyWordLocationsEntity
+            for document_item in document_list:
+                self.log_generator.log_details(
+                    "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
+                print("Document ID:"+str(document_item.document_id) +
+                    ", Document Name:"+str(document_item.document_name))
+
+                self.exp_insight_location_list, self.int_insight_location_list = self.insightDBMgr.get_exp_int_lists(
+                    document_item.document_id)
+                print("Exp Insight locations:"+str(len(self.exp_insight_location_list)) +", Int Insight locations:"+str(len(self.int_insight_location_list)))
+
+                exp_insight_entity: Insight
+                self.int_exp_insightList = []
+
+                record_count = len(self.exp_insight_location_list)
+                current_count = 1
+                if(current_count == 2):return
+                for exp_insight_entity in self.exp_insight_location_list:
+                    print('Processing '+str(current_count) +' of '+ str(record_count)+'  Insights')
+
+                    combined_exp_insight_location_list = (exp_insight_entity.locations1.strip(']').strip('[') +','+ exp_insight_entity.locations2.strip(']').strip('[')).split(',')
+                    # print("EXP INSIGHT LOCATIONS for "+exp_insight_entity.keyword1+','+exp_insight_entity.keyword2+':'+str(combined_exp_insight_location_list))
+                    for int_insight_entity in self.int_insight_location_list:
+                            combined_int_insight_location_list = (int_insight_entity.locations1.strip(']').strip('[') +','+ int_insight_entity.locations2.strip(']').strip('[')).split(',')
+                            # print("INT INSIGHT LOCATIONS for"+int_insight_entity.keyword1+','+int_insight_entity.keyword2+':'+str(combined_int_insight_location_list))
+                            self._create_exp_int_insights_for_document(combined_exp_insight_location_list, combined_int_insight_location_list, document_item.document_id,
+                                                                    document_item.document_name, exp_insight_entity, int_insight_entity)
+                    current_count = current_count + 1
+
+
+                self.log_generator.log_details("Dcoument:"+document_item.document_name +
+                                            ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
+
+                print("Dcoument:"+document_item.document_name +
+                    ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
+
+                self.insightDBMgr.save_Exp_Int_Insights(
+                    insightList=self.int_exp_insightList, dictionary_type=Lookups().Exp_Int_Insight_Type)
+
+                self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
+                ).Exp_Int_Insight_Type, document_id=document_item.document_id)
+
+    def _create_exp_int_insights_for_document(self, exp_insight_keyword_locations: None, int_insight_keyword_locations: None, document_id=0, document_name='', exp_insight_entity=None,   int_insight_entity=None):
+
+        integer_exp_insight_keyword_locations = np.asarray(
+            exp_insight_keyword_locations, dtype=np.int32)
+
+        integer_int_insight_keyword_locations = np.asarray(int_insight_keyword_locations, dtype=np.int32)
+
+        #Remove Duplicates - In case of related words: For ex- Forest, Deforestation
+        integer_exp_insight_keyword_locations = list(set(integer_exp_insight_keyword_locations))
+        integer_int_insight_keyword_locations = list(set(integer_int_insight_keyword_locations))
+
+        distance_list = np.array([])
+        for integer_exp_insight_keyword_location in integer_exp_insight_keyword_locations:
+            distance_list = np.append(distance_list, self._get_distance_list_for_locations_in_Radius(
+                integer_exp_insight_keyword_location, integer_int_insight_keyword_locations))
+
+        factor1_frequency = 0
+        factor2_distance_list = []
+        factor2_average_distance = 0.0
+        score = 0.0
+
+        factor1_frequency = factor1_frequency + len(distance_list)
+
+        for distance in distance_list:
+            try:
+                if distance >0.00:
+                    ratio = 1/distance
+                    factor2_distance_list.append(ratio)
+            except Exception as exc:
+                # Rollback the transaction if any error occurs
+                print(f"Error: {str(exc)}")
+                print("Error Processing Exp Key Words:" + exp_insight_entity.keyword1 +',' + exp_insight_entity.keyword2)
+                raise exc
+
+        if (len(factor2_distance_list) > 0):
+            factor2_average_distance = np.average(factor2_distance_list)
+            if (factor2_average_distance > 0.0):
+                score = factor1_frequency * (1/factor2_average_distance)
+
+        if (score > 0.0):
+            exp_int_insight = ExpIntInsight(
+                    exp_keyword_hit_id1=exp_insight_entity.keyword_hit_id1,
+                    exp_keyword1=exp_insight_entity.keyword1,
+                    exp_keyword_hit_id2=exp_insight_entity.keyword_hit_id2,
+                    exp_keyword2=exp_insight_entity.keyword2,
+                    int_key_word_hit_id1=int_insight_entity.keyword_hit_id1,
+                    int_key_word1=int_insight_entity.keyword1,
+                    int_key_word_hit_id2=int_insight_entity.keyword_hit_id2,
+                    int_key_word2=int_insight_entity.keyword2,
+                    factor1= factor1_frequency,
+                    factor2= factor2_average_distance,
+                    score= score,
+                    document_name=document_name,
+                    document_id=document_id
+                    )
+
+            self.int_exp_insightList.append(exp_int_insight)
+
+            # self.log_generator.log_details("Exp Keywords:"+exp_insight_entity.keyword1+"," +exp_insight_entity.keyword2+"  "
+            #                                "Int Keywords:"+int_insight_entity.keyword1+"," +int_insight_entity.keyword2+"  "+ " ,Score:"+str(score))
+            
+            # print("Exp Keywords:"+exp_insight_entity.keyword1+"," +exp_insight_entity.keyword2+"  "
+            #       "Int Keywords:"+int_insight_entity.keyword1+"," +int_insight_entity.keyword2+"  "+ " ,Score:"+str(score))
+
 
     def _get_distance_list_for_locations_in_Radius(self, int_keyword_location: int, int_child_locations: any):
         radius_upper = int_keyword_location + WORD_RADIUS
@@ -978,24 +1135,31 @@ class mitigation_Insight_Generator(keyWordSearchManager):
         return (combined_location_list)
 
 
-key_word_search_mgr = file_folder_keyWordSearchManager(folder_path=PARM_STAGE1_FOLDER)
 
-key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
+
+
+# key_word_search_mgr = file_folder_keyWordSearchManager(
+#     folder_path=PARM_STAGE1_FOLDER)
+
+# key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
+
+# key_word_search_mgr.generate_keyword_location_map_for_internalization()
+
+# key_word_search_mgr.generate_keyword_location_map_for_mitigation()
+
+# exp_int_insght_generator = int_Exp_Insight_Generator()
 
 # print("Generating Insights for Exposure Pathway Dictionary Terms")
-exp_int_insght_generator = int_Exp_Insight_Generator()
-# exp_int_insght_generator.generate_insights_with_2_factors(Lookups().Exposure_Pathway_Dictionary_Type)
+# exp_int_insght_generator.generate_insights_with_2_factors(
+#     Lookups().Exposure_Pathway_Dictionary_Type)
 
 # print("Generating Insights for Internalization Dictionary Terms")
-exp_int_insght_generator.generate_insights_with_2_factors(Lookups().Internalization_Dictionary_Type)
-
-# insight_gen.generate_keyword_location_map_for_mitigation()
-# print("Generating Insights for Mitigation Dictionary Terms")
-# insight_gen.generate_insights_with_2_factors(Lookups().Mitigation_Dictionary_Type)
-
-# mitigation_insight_gen = mitigation_Insight_Generator()
-# # mitigation_insight_gen.generate_mitigation_exp_insights()
+# exp_int_insght_generator.generate_insights_with_2_factors(
+#     Lookups().Internalization_Dictionary_Type)
+mitigation_insight_gen = triangulation_Insight_Generator()
+# mitigation_insight_gen.generate_mitigation_exp_insights()
 # mitigation_insight_gen.generate_mitigation_int_insights()
+mitigation_insight_gen.generate_exp_int_insights()
 
 
 # mitigation_insight_gen.cleanup()

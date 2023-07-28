@@ -5,6 +5,8 @@ class Lookups:
         self.Mitigation_Dictionary_Type = 1002
         self.Mitigation_Exp_Insight_Type = 1003
         self.Mitigation_Int_Insight_Type = 1004
+        self.Exp_Int_Insight_Type = 1004
+
 
 
 class ContextResolver:
