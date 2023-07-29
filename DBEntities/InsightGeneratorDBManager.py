@@ -883,26 +883,26 @@ class InsightGeneratorDBManager:
     
         total_records_added_to_db = 0
         for exp_int_insight_entity in insightList:
-            exp_keyword_hit_id1 :int = exp_int_insight_entity.exp_keyword_hit_id1,
-            exp_keyword1: str = exp_int_insight_entity.exp_keyword1,
-            exp_keyword_hit_id2 :int =exp_int_insight_entity.exp_keyword_hit_id2,
-            exp_keyword2: str=exp_int_insight_entity.exp_keyword2,
-            int_key_word_hit_id1 :int =exp_int_insight_entity.int_key_word_hit_id1,
-            int_key_word1=exp_int_insight_entity.int_key_word1,
-            int_key_word_hit_id2 :int =exp_int_insight_entity.int_key_word_hit_id2,
-            int_key_word2: str=exp_int_insight_entity.int_key_word2,
-            factor1: int =exp_int_insight_entity.factor1,
-            factor2:float =exp_int_insight_entity.factor2,
-            score: float =exp_int_insight_entity.score,
-            document_name: str=exp_int_insight_entity.document_name,
-            document_id:int =exp_int_insight_entity.document_id
+            exp_keyword_hit_id1  = exp_int_insight_entity.exp_keyword_hit_id1
+            exp_keyword1 = exp_int_insight_entity.exp_keyword1
+            exp_keyword_hit_id2  =exp_int_insight_entity.exp_keyword_hit_id2
+            exp_keyword2=exp_int_insight_entity.exp_keyword2
+            int_key_word_hit_id1  =exp_int_insight_entity.int_key_word_hit_id1
+            int_key_word1=exp_int_insight_entity.int_key_word1
+            int_key_word_hit_id2  =exp_int_insight_entity.int_key_word_hit_id2
+            int_key_word2=exp_int_insight_entity.int_key_word2
+            factor1=exp_int_insight_entity.factor1
+            factor2  =exp_int_insight_entity.factor2
+            score  =exp_int_insight_entity.score
+            document_name=exp_int_insight_entity.document_name
+            document_id =exp_int_insight_entity.document_id
   
             # Create a cursor object to execute SQL queries
             cursor = self.dbConnection.cursor()
             # Construct the INSERT INTO statement
 
             if(dictionary_type == Lookups().Exp_Int_Insight_Type):
-                sql = f"INSERT INTO dbo.t_internalization_insights( \
+                sql = f"INSERT INTO dbo.t_exp_int_insights( \
                            document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
                           ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score \
                           ,added_dt,added_by ,modify_dt,modify_by\
@@ -925,6 +925,9 @@ class InsightGeneratorDBManager:
                 self.dbConnection.rollback()
                 print(f"Error: {str(exc)}")
                 raise exc
+            
+            if(total_records_added_to_db % 250 == 0):
+                print("Insights added to the Database So far...:"+ str(total_records_added_to_db))
 
         # Close the cursor and connection
         self.dbConnection.commit()

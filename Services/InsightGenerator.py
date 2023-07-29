@@ -9,20 +9,20 @@ from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-import copy
-import numpy as np
-from Utilities.Lookups import ContextResolver
-from Utilities.Lookups import Lookups
-from DBEntities.ProximityEntity import Insight
-from DBEntities.ProximityEntity import  ExpIntInsight
-from DBEntities.DictionaryEntity import DictionaryEntity
-from Utilities.LoggingServices import logGenerator
-from DBEntities.ProximityEntity import ProximityEntity, KeyWordLocationsEntity, FD_Factor
-from DBEntities.DocumentHeaderEntity import DocHeaderEntity
-from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
-import re
-import datetime as dt
 
+import datetime as dt
+import re
+from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
+from DBEntities.DocumentHeaderEntity import DocHeaderEntity
+from DBEntities.ProximityEntity import ProximityEntity, KeyWordLocationsEntity, FD_Factor
+from Utilities.LoggingServices import logGenerator
+from DBEntities.DictionaryEntity import DictionaryEntity
+from DBEntities.ProximityEntity import ExpIntInsight
+from DBEntities.ProximityEntity import Insight
+from Utilities.Lookups import Lookups
+from Utilities.Lookups import ContextResolver
+import numpy as np
+import copy
 
 
 # from DocumentProcessor import tenKXMLProcessor
@@ -223,6 +223,7 @@ class keyWordSearchManager:
 
 
 # Search all internalization pathway dictionary terms in the document and save locations
+
 
     def generate_keyword_location_map_for_internalization(self):
 
@@ -630,7 +631,8 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
     # Generate Insights for two keyword combinations
     def generate_insights_with_2_factors(self, dictionary_type: int):
 
-        print('Generating insights generated for Dictionary Type:' + str(dictionary_type))
+        print('Generating insights generated for Dictionary Type:' +
+              str(dictionary_type))
 
         batch_id: int
 
@@ -745,7 +747,6 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
 
 # Generate Aggregate Insights
 
-
     def generate_aggregate_insights_from_keyword_location_details(self):
 
         # Create a sorted array of all locations found for a given dictionary list
@@ -829,10 +830,10 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         document_list = self.insightDBMgr.get_exp_mitigation_document_list()
 
-        if(len(document_list) == 0):
+        if (len(document_list) == 0):
             print('No new document available to process Mitigation-Exposure Insights')
             return
-        
+
         document_item: KeyWordLocationsEntity
         for document_item in document_list:
             self.log_generator.log_details(
@@ -846,7 +847,15 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                   ", Exp key word locations:"+str(len(self.exp_keyword_location_list))+", insights:"+str(len(self.exp_insight_list)))
             exp_insight_entity: Insight
             self.mitigation_comon_insightList = []
+
+            record_count = len(self.exp_insight_list)
+            current_count = 1
+
             for exp_insight_entity in self.exp_insight_list:
+
+                print('Processing '+str(current_count) +
+                      ' of ' + str(record_count)+'  Insights')
+
                 # Get combined location list for each insight word combo
                 doc_location_list = self._get_combined_insight_exp_keyword_location_list(
                     exp_insight_entity.keyword_hit_id1, exp_insight_entity.keyword_hit_id2)
@@ -855,6 +864,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
                     self._create_mitigation_insights_for_document(mitigation_keyword_locations, doc_location_list, document_item.document_id,
                                                                   document_item.document_name, exp_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id)
+            current_count = current_count + 1
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
@@ -876,8 +886,9 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         document_list = self.insightDBMgr.get_int_mitigation_document_list()
 
-        if(len(document_list) == 0):
-            print('No new document available to process Mitigation-Internalization Insights')
+        if (len(document_list) == 0):
+            print(
+                'No new document available to process Mitigation-Internalization Insights')
             return
 
         document_item: KeyWordLocationsEntity
@@ -893,7 +904,15 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                   ", Int key word locations:"+str(len(self.int_keyword_location_list))+", insights:"+str(len(self.int_insight_list)))
             int_insight_entity: Insight
             self.mitigation_comon_insightList = []
+
+            record_count = len(self.int_insight_list)
+            current_count = 1
+
             for int_insight_entity in self.int_insight_list:
+
+                print('Processing '+str(current_count) +
+                      ' of ' + str(record_count)+'  Insights')
+
                 # Get combined location list for each insight word combo
                 doc_location_list = self._get_combined_insight_int_keyword_location_list(
                     int_insight_entity.keyword_hit_id1, int_insight_entity.keyword_hit_id2)
@@ -901,6 +920,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 for mitigation_keyword_locations in self.mitigation_keyword_location_list:
                     self._create_mitigation_insights_for_document(mitigation_keyword_locations, doc_location_list, document_item.document_id,
                                                                   document_item.document_name, int_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id)
+            current_count = current_count + 1
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
@@ -924,7 +944,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         doc_location_list = doc_location_list.strip('[').strip(']').split(',')
         int_doc_location_list = np.asarray(doc_location_list, dtype=np.int32)
 
-        #Remove Duplicates - In case of related words: For ex- Forest, Deforestation
+        # Remove Duplicates - In case of related words: For ex- Forest, Deforestation
         int_doc_location_list = list(set(int_doc_location_list))
 
         distance_list = np.array([])
@@ -941,7 +961,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         for distance in distance_list:
             try:
-                if distance >0.00:
+                if distance > 0.00:
                     ratio = 1/distance
                     factor2_distance_list.append(ratio)
             except Exception as exc:
@@ -966,71 +986,76 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                                            insight_entity.keyword1+' ,'+insight_entity.keyword2 + " ,Score"+str(score))
             # print("Mitigation:"+mitigation_keyword+",Exp Keywords:"+exp_insight_entity.keyword1+' ,'+exp_insight_entity.keyword2, +" , Score"+score)
 
-
     def generate_exp_int_insights(self):
+        self.log_generator.log_details(
+            "Generating Exposure Pathway ->Internalization Insights")
+        print("###########################################################")
+        print("Generating Exposure Pathway ->Internalization Insights")
+
+        document_list = self.insightDBMgr.get_exp_int_document_list()
+
+        if (len(document_list) == 0):
+            print(
+                'No new document available to process Mitigation-Internalization Insights')
+            return
+
+        document_item: KeyWordLocationsEntity
+        for document_item in document_list:
             self.log_generator.log_details(
-                "Generating Exposure Pathway ->Internalization Insights")
-            print("###########################################################")
-            print("Generating Exposure Pathway ->Internalization Insights")
+                "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
+            print("Document ID:"+str(document_item.document_id) +
+                  ", Document Name:"+str(document_item.document_name))
 
-            document_list = self.insightDBMgr.get_exp_int_document_list()
+            self.exp_insight_location_list, self.int_insight_location_list = self.insightDBMgr.get_exp_int_lists(
+                document_item.document_id)
+            print("Exp Insight locations:"+str(len(self.exp_insight_location_list)) +
+                  ", Int Insight locations:"+str(len(self.int_insight_location_list)))
 
-            if(len(document_list) == 0):
-                print('No new document available to process Mitigation-Internalization Insights')
-                return
+            exp_insight_entity: Insight
+            self.int_exp_insightList = []
 
-            document_item: KeyWordLocationsEntity
-            for document_item in document_list:
-                self.log_generator.log_details(
-                    "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
-                print("Document ID:"+str(document_item.document_id) +
-                    ", Document Name:"+str(document_item.document_name))
+            record_count = len(self.exp_insight_location_list)
+            current_count = 1
+            for exp_insight_entity in self.exp_insight_location_list:
+                print('Processing '+str(current_count) +
+                      ' of ' + str(record_count)+'  Insights')
 
-                self.exp_insight_location_list, self.int_insight_location_list = self.insightDBMgr.get_exp_int_lists(
-                    document_item.document_id)
-                print("Exp Insight locations:"+str(len(self.exp_insight_location_list)) +", Int Insight locations:"+str(len(self.int_insight_location_list)))
+                combined_exp_insight_location_list = (exp_insight_entity.locations1.strip(
+                    ']').strip('[') + ',' + exp_insight_entity.locations2.strip(']').strip('[')).split(',')
+                # print("EXP INSIGHT LOCATIONS for "+exp_insight_entity.keyword1+','+exp_insight_entity.keyword2+':'+str(combined_exp_insight_location_list))
+                for int_insight_entity in self.int_insight_location_list:
+                    combined_int_insight_location_list = (int_insight_entity.locations1.strip(
+                        ']').strip('[') + ',' + int_insight_entity.locations2.strip(']').strip('[')).split(',')
+                    # print("INT INSIGHT LOCATIONS for"+int_insight_entity.keyword1+','+int_insight_entity.keyword2+':'+str(combined_int_insight_location_list))
+                    self._create_exp_int_insights_for_document(combined_exp_insight_location_list, combined_int_insight_location_list, document_item.document_id,
+                                                               document_item.document_name, exp_insight_entity, int_insight_entity)
+                current_count = current_count + 1
 
-                exp_insight_entity: Insight
-                self.int_exp_insightList = []
+            self.log_generator.log_details("Dcoument:"+document_item.document_name +
+                                           ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
 
-                record_count = len(self.exp_insight_location_list)
-                current_count = 1
-                if(current_count == 2):return
-                for exp_insight_entity in self.exp_insight_location_list:
-                    print('Processing '+str(current_count) +' of '+ str(record_count)+'  Insights')
+            print("Dcoument:"+document_item.document_name +
+                  ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
 
-                    combined_exp_insight_location_list = (exp_insight_entity.locations1.strip(']').strip('[') +','+ exp_insight_entity.locations2.strip(']').strip('[')).split(',')
-                    # print("EXP INSIGHT LOCATIONS for "+exp_insight_entity.keyword1+','+exp_insight_entity.keyword2+':'+str(combined_exp_insight_location_list))
-                    for int_insight_entity in self.int_insight_location_list:
-                            combined_int_insight_location_list = (int_insight_entity.locations1.strip(']').strip('[') +','+ int_insight_entity.locations2.strip(']').strip('[')).split(',')
-                            # print("INT INSIGHT LOCATIONS for"+int_insight_entity.keyword1+','+int_insight_entity.keyword2+':'+str(combined_int_insight_location_list))
-                            self._create_exp_int_insights_for_document(combined_exp_insight_location_list, combined_int_insight_location_list, document_item.document_id,
-                                                                    document_item.document_name, exp_insight_entity, int_insight_entity)
-                    current_count = current_count + 1
+            self.insightDBMgr.save_Exp_Int_Insights(
+                insightList=self.int_exp_insightList, dictionary_type=Lookups().Exp_Int_Insight_Type)
 
-
-                self.log_generator.log_details("Dcoument:"+document_item.document_name +
-                                            ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
-
-                print("Dcoument:"+document_item.document_name +
-                    ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
-
-                self.insightDBMgr.save_Exp_Int_Insights(
-                    insightList=self.int_exp_insightList, dictionary_type=Lookups().Exp_Int_Insight_Type)
-
-                self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
-                ).Exp_Int_Insight_Type, document_id=document_item.document_id)
+            self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
+            ).Exp_Int_Insight_Type, document_id=document_item.document_id)
 
     def _create_exp_int_insights_for_document(self, exp_insight_keyword_locations: None, int_insight_keyword_locations: None, document_id=0, document_name='', exp_insight_entity=None,   int_insight_entity=None):
 
         integer_exp_insight_keyword_locations = np.asarray(
             exp_insight_keyword_locations, dtype=np.int32)
 
-        integer_int_insight_keyword_locations = np.asarray(int_insight_keyword_locations, dtype=np.int32)
+        integer_int_insight_keyword_locations = np.asarray(
+            int_insight_keyword_locations, dtype=np.int32)
 
-        #Remove Duplicates - In case of related words: For ex- Forest, Deforestation
-        integer_exp_insight_keyword_locations = list(set(integer_exp_insight_keyword_locations))
-        integer_int_insight_keyword_locations = list(set(integer_int_insight_keyword_locations))
+        # Remove Duplicates - In case of related words: For ex- Forest, Deforestation
+        integer_exp_insight_keyword_locations = list(
+            set(integer_exp_insight_keyword_locations))
+        integer_int_insight_keyword_locations = list(
+            set(integer_int_insight_keyword_locations))
 
         distance_list = np.array([])
         for integer_exp_insight_keyword_location in integer_exp_insight_keyword_locations:
@@ -1046,13 +1071,14 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         for distance in distance_list:
             try:
-                if distance >0.00:
+                if distance > 0.00:
                     ratio = 1/distance
                     factor2_distance_list.append(ratio)
             except Exception as exc:
                 # Rollback the transaction if any error occurs
                 print(f"Error: {str(exc)}")
-                print("Error Processing Exp Key Words:" + exp_insight_entity.keyword1 +',' + exp_insight_entity.keyword2)
+                print("Error Processing Exp Key Words:" +
+                      exp_insight_entity.keyword1 + ',' + exp_insight_entity.keyword2)
                 raise exc
 
         if (len(factor2_distance_list) > 0):
@@ -1062,29 +1088,28 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         if (score > 0.0):
             exp_int_insight = ExpIntInsight(
-                    exp_keyword_hit_id1=exp_insight_entity.keyword_hit_id1,
-                    exp_keyword1=exp_insight_entity.keyword1,
-                    exp_keyword_hit_id2=exp_insight_entity.keyword_hit_id2,
-                    exp_keyword2=exp_insight_entity.keyword2,
-                    int_key_word_hit_id1=int_insight_entity.keyword_hit_id1,
-                    int_key_word1=int_insight_entity.keyword1,
-                    int_key_word_hit_id2=int_insight_entity.keyword_hit_id2,
-                    int_key_word2=int_insight_entity.keyword2,
-                    factor1= factor1_frequency,
-                    factor2= factor2_average_distance,
-                    score= score,
-                    document_name=document_name,
-                    document_id=document_id
-                    )
+                exp_keyword_hit_id1=exp_insight_entity.keyword_hit_id1,
+                exp_keyword1=exp_insight_entity.keyword1,
+                exp_keyword_hit_id2=exp_insight_entity.keyword_hit_id2,
+                exp_keyword2=exp_insight_entity.keyword2,
+                int_key_word_hit_id1=int_insight_entity.keyword_hit_id1,
+                int_key_word1=int_insight_entity.keyword1,
+                int_key_word_hit_id2=int_insight_entity.keyword_hit_id2,
+                int_key_word2=int_insight_entity.keyword2,
+                factor1=factor1_frequency,
+                factor2=factor2_average_distance,
+                score=score,
+                document_name=document_name,
+                document_id=document_id
+            )
 
             self.int_exp_insightList.append(exp_int_insight)
 
             # self.log_generator.log_details("Exp Keywords:"+exp_insight_entity.keyword1+"," +exp_insight_entity.keyword2+"  "
             #                                "Int Keywords:"+int_insight_entity.keyword1+"," +int_insight_entity.keyword2+"  "+ " ,Score:"+str(score))
-            
+
             # print("Exp Keywords:"+exp_insight_entity.keyword1+"," +exp_insight_entity.keyword2+"  "
             #       "Int Keywords:"+int_insight_entity.keyword1+"," +int_insight_entity.keyword2+"  "+ " ,Score:"+str(score))
-
 
     def _get_distance_list_for_locations_in_Radius(self, int_keyword_location: int, int_child_locations: any):
         radius_upper = int_keyword_location + WORD_RADIUS
@@ -1135,9 +1160,6 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         return (combined_location_list)
 
 
-
-
-
 # key_word_search_mgr = file_folder_keyWordSearchManager(
 #     folder_path=PARM_STAGE1_FOLDER)
 
@@ -1146,13 +1168,10 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 # key_word_search_mgr.generate_keyword_location_map_for_internalization()
 
 # key_word_search_mgr.generate_keyword_location_map_for_mitigation()
-
 # exp_int_insght_generator = int_Exp_Insight_Generator()
-
 # print("Generating Insights for Exposure Pathway Dictionary Terms")
 # exp_int_insght_generator.generate_insights_with_2_factors(
 #     Lookups().Exposure_Pathway_Dictionary_Type)
-
 # print("Generating Insights for Internalization Dictionary Terms")
 # exp_int_insght_generator.generate_insights_with_2_factors(
 #     Lookups().Internalization_Dictionary_Type)
