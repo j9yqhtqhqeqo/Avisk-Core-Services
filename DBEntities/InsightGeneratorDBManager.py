@@ -198,7 +198,7 @@ class InsightGeneratorDBManager:
         
         return document_list
 
-    def insert_key_word_hits_to_db(self, company_id:int, document_id:str, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int):
+    def insert_key_word_hits_to_db(self, company_id:int, document_id:str, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int,exposure_path_id:int, internalization_id:int, impact_category_id:int, esg_category_id:int):
                 
             # Create a cursor object to execute SQL queries
             cursor = self.dbConnection.cursor()
@@ -206,12 +206,15 @@ class InsightGeneratorDBManager:
 
             sql = f"INSERT INTO dbo.t_key_word_hits( \
                 batch_id, dictionary_type, key_word_hit_id , document_id,  document_name, company_id, reporting_year,\
-                dictionary_id ,key_word, locations,frequency, insights_generated,\
+                dictionary_id ,key_word, locations,frequency, insights_generated,exposure_path_id, internalization_id,\
+                impact_category_id, esg_category_id,\
                 added_dt,added_by ,modify_dt,modify_by\
                 )\
                     VALUES\
                     ({self.batch_id},{dictionary_type},{self.d_current_document_seed},{document_id},N'{document_name}', {company_id}, {reporting_year},\
-                {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0,  CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
+                {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0, {exposure_path_id}, {internalization_id},\
+                {impact_category_id},{esg_category_id},\
+                CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
             try:
                 # Execute the SQL query
                 cursor.execute(sql)
@@ -319,15 +322,23 @@ class InsightGeneratorDBManager:
 
         total_records_added_to_db = 0
         for proximity in proximity_entity_list:
+
+            esg_category_id = proximity.esg_category_id
+            impact_category_id = proximity.impact_category_id
+            exposure_path_id = proximity.exposure_path_id
+            internalization_id = proximity.intenalization_id
             dictionary_id = proximity.dictionary_id
+        
             for key_word_locations in proximity.key_word_bunch:
                 batch_id = self.get_current_batch_id()
                 key_word_hit_id = self.get_current_seed()
                 key_word = key_word_locations.key_word
                 locations = key_word_locations.locations
                 frequency = key_word_locations.frequency
-
-                self.insert_key_word_hits_to_db (company_id,document_id, document_name,reporting_year,dictionary_id,key_word_hit_id, key_word, locations,frequency=frequency, dictionary_type=dictionary_type)
+                self.insert_key_word_hits_to_db (company_id=company_id,document_id=document_id, document_name=document_name,
+                                                 reporting_year=reporting_year,dictionary_id=dictionary_id,key_word_hit_id=key_word_hit_id, 
+                                                 key_word=key_word, locations=locations,frequency=frequency, dictionary_type=dictionary_type, 
+                                                 exposure_path_id=exposure_path_id, internalization_id=internalization_id, impact_category_id=impact_category_id, esg_category_id=esg_category_id)
                 total_records_added_to_db = total_records_added_to_db +1
             # Commit current batch 
             self.dbConnection.commit()
@@ -363,8 +374,13 @@ class InsightGeneratorDBManager:
 
         exp_dict_terms_list =[]    
 
-        sql = "select d.dictionary_id,d.keywords,d.exposure_path_id from t_exposure_pathway_dictionary d"
-        
+        # sql = "select d.dictionary_id,d.keywords,d.exposure_path_id from t_exposure_pathway_dictionary d where d.dictionary_id = 1001"
+        sql = "select esg.esg_category_id, imp.impact_category_id, exp.exposure_path_id, d.dictionary_id,d.keywords \
+              from t_exposure_pathway_dictionary d INNER JOIN  t_exposure_pathway exp on d.exposure_path_id = exp.exposure_path_id\
+                                INNER JOIN  t_impact_category imp on imp.impact_category_id = exp.impact_category_id\
+                                INNER JOIN t_esg_category esg on esg.esg_category_id = imp.esg_category_id"
+        # where dictionary_id = 1002"
+
         try:
             # Execute the SQL query
 
@@ -372,7 +388,10 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                exp_dict_terms_list.append(DictionaryEntity(dictionary_id= row.dictionary_id,keywords=row.keywords, exposure_pathway_id=row.exposure_path_id))
+                exp_dict_terms_list.append(DictionaryEntity(
+                                            esg_category_id=row.esg_category_id, impact_category_id=row.impact_category_id, exposure_path_id=row.exposure_path_id,
+                                            dictionary_id= row.dictionary_id,keywords=row.keywords)
+                                           )
             cursor.close()
 
         except Exception as exc:
@@ -432,7 +451,7 @@ class InsightGeneratorDBManager:
 
         int_dict_terms_list =[]    
 
-        sql = "select d.dictionary_id,keywords,internalization_id from t_internalization_dictionary d where d.dictionary_id <= 1015"
+        sql = "select d.dictionary_id,keywords,internalization_id from t_internalization_dictionary d"
          #       where d.dictionary_id <= 1015"
         
         try:

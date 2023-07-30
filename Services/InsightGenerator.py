@@ -135,7 +135,9 @@ class keyWordSearchManager:
         total_dictionary_hits = 0
         for DictionaryTermList in self.exp_dictionary_term_list:
             proximity_entity = ProximityEntity(
-                DictionaryTermList.dictionary_id, self.document_id)
+                esg_category_id=DictionaryTermList.esg_category_id, impact_category_id=DictionaryTermList.impact_category_id,exposure_path_id=DictionaryTermList.exposure_path_id,             
+                dictionary_id=DictionaryTermList.dictionary_id, doc_header_id= self.document_id
+                )
             key_word_list = DictionaryTermList.keywords
 
             key_words_natural = key_word_list.split(',')
@@ -224,7 +226,6 @@ class keyWordSearchManager:
 
 # Search all internalization pathway dictionary terms in the document and save locations
 
-
     def generate_keyword_location_map_for_internalization(self):
 
         self.proximity_entity_list = []
@@ -273,8 +274,9 @@ class keyWordSearchManager:
         self.proximity_entity_list.clear()
         total_dictionary_hits = 0
         for DictionaryTermList in self.int_dictionary_term_list:
-            proximity_entity = ProximityEntity(
-                DictionaryTermList.dictionary_id, self.document_id)
+            proximity_entity = ProximityEntity( dictionary_id=DictionaryTermList.dictionary_id, doc_header_id=self.document_id,
+                                                intenalization_id = DictionaryTermList.internalization_id
+                                               )
             key_word_list = DictionaryTermList.keywords
 
             key_words_natural = key_word_list.split(',')
@@ -380,8 +382,14 @@ class keyWordSearchManager:
                 #    print('Child Item: '+child_item.key_word+", Locations: "+str(child_item.locations))
                 #    print('Combined Word:'+temp_item.key_word+', Locations:'+str(temp_item.locations))
 
+                    combined_entity.esg_category_id=proximity_entity.esg_category_id
+                    combined_entity.impact_category_id=proximity_entity.impact_category_id
+                    combined_entity.exposure_path_id = proximity_entity.exposure_path_id
                     combined_entity.dictionary_id = proximity_entity.dictionary_id
                     combined_entity.doc_header_id = proximity_entity.doc_header_id
+                    combined_entity.intenalization_id = proximity_entity.intenalization_id
+
+                   
                     combined_entity.key_word_bunch.append(temp_item)
 
         # print("Singular/Plural keywords merged:" + str(len(combined_entity.key_word_bunch)))
@@ -395,8 +403,13 @@ class keyWordSearchManager:
                     break
             if (not found):
                 temp_item = copy.deepcopy(master_item)
+                combined_entity.esg_category_id=proximity_entity.esg_category_id
+                combined_entity.impact_category_id=proximity_entity.impact_category_id
+                combined_entity.exposure_path_id = proximity_entity.exposure_path_id
                 combined_entity.dictionary_id = proximity_entity.dictionary_id
                 combined_entity.doc_header_id = proximity_entity.doc_header_id
+                combined_entity.intenalization_id = combined_entity.intenalization_id
+
                 combined_entity.key_word_bunch.append(temp_item)
 
         index = 0
@@ -1160,25 +1173,29 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         return (combined_location_list)
 
 
-# key_word_search_mgr = file_folder_keyWordSearchManager(
-#     folder_path=PARM_STAGE1_FOLDER)
+key_word_search_mgr = file_folder_keyWordSearchManager(
+    folder_path=PARM_STAGE1_FOLDER)
 
 # key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
 
 # key_word_search_mgr.generate_keyword_location_map_for_internalization()
 
-# key_word_search_mgr.generate_keyword_location_map_for_mitigation()
+key_word_search_mgr.generate_keyword_location_map_for_mitigation()
+
 # exp_int_insght_generator = int_Exp_Insight_Generator()
 # print("Generating Insights for Exposure Pathway Dictionary Terms")
+
 # exp_int_insght_generator.generate_insights_with_2_factors(
 #     Lookups().Exposure_Pathway_Dictionary_Type)
 # print("Generating Insights for Internalization Dictionary Terms")
 # exp_int_insght_generator.generate_insights_with_2_factors(
+
 #     Lookups().Internalization_Dictionary_Type)
-mitigation_insight_gen = triangulation_Insight_Generator()
-# mitigation_insight_gen.generate_mitigation_exp_insights()
-# mitigation_insight_gen.generate_mitigation_int_insights()
-mitigation_insight_gen.generate_exp_int_insights()
+# mitigation_insight_gen = triangulation_Insight_Generator()
+# # mitigation_insight_gen.generate_mitigation_exp_insights()
+
+# # mitigation_insight_gen.generate_mitigation_int_insights()
+# mitigation_insight_gen.generate_exp_int_insights()
 
 
 # mitigation_insight_gen.cleanup()

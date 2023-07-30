@@ -23,9 +23,13 @@ class DocumentEntity:
 
 
 class ProximityEntity:
-    def __init__(self,dictionary_id=None,doc_header_id=None) -> None:
+    def __init__(self,dictionary_id=None,doc_header_id=None,exposure_path_id=0, intenalization_id = 0,impact_category_id=0,esg_category_id=0 ) -> None:
         self.dictionary_id = dictionary_id
         self.doc_header_id = doc_header_id
+        self.exposure_path_id = exposure_path_id
+        self.intenalization_id = intenalization_id
+        self.impact_category_id = impact_category_id
+        self.esg_category_id = esg_category_id
         self.key_word_bunch =[]
 
 
