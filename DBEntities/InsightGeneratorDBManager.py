@@ -14,6 +14,8 @@ from DBEntities.ProximityEntity import DocumentEntity
 from Utilities.Lookups import Lookups
 from Utilities.LoggingServices import logGenerator
 
+
+
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
 
 
@@ -115,6 +117,8 @@ class InsightGeneratorDBManager:
             sql = "select max(int_unique_key) from dbo.t_internalization_insights"
         elif(save_type == Lookups().Mitigation_Exp_Insight_Type):
             sql = "select max(int_unique_key) from dbo.t_mitigation_exp_insights"
+        elif(save_type == Lookups().Mitigation_Int_Insight_Type):
+            sql = "select max(int_unique_key) from dbo.t_mitigation_int_insights"
             
         cursor = self.dbConnection.cursor()
 
@@ -304,14 +308,16 @@ class InsightGeneratorDBManager:
             elif(dictionary_type == Lookups().Mitigation_Int_Insight_Type): 
                 mitigation_keyword_hit_id = insight.mitigation_keyword_hit_id
                 mitigation_keyword = insight.mitigation_keyword
+                int_unique_key = self.get_next_surrogate_key(Lookups().Mitigation_Int_Insight_Type)
+
 
                 sql = f"INSERT INTO dbo.t_mitigation_int_insights( \
-                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
-                    score,factor1, factor2, added_dt,added_by ,modify_dt,modify_by\
+                    int_unique_key,document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
+                    score,factor1, factor2, internalization_id, added_dt,added_by ,modify_dt,modify_by\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
-                        {score},{factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"   
+                        ({int_unique_key},{document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
+                        {score},{factor1}, {factor2},{internalization_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"   
       
             try:
                 # Execute the SQL query
@@ -760,7 +766,7 @@ class InsightGeneratorDBManager:
         
 
         int_keyword_list =[]
-        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where dictionary_type = 1001 and document_id = ?'
+        sql = 'select document_id, key_word_hit_id, key_word,locations,internalization_id from t_key_word_hits where dictionary_type = 1001 and document_id = ?'
         try:
             # Execute the SQL query
 
@@ -773,6 +779,7 @@ class InsightGeneratorDBManager:
                 keyword_loc_entity.key_word_hit_id = row.key_word_hit_id
                 keyword_loc_entity.key_word = row.key_word
                 keyword_loc_entity.locations = row.locations
+                keyword_loc_entity.intenalization_id = row.internalization_id
                 int_keyword_list.append(keyword_loc_entity)
 
             cursor.close()
@@ -786,7 +793,7 @@ class InsightGeneratorDBManager:
         
 
         int_insight_list =[]
-        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2 from t_internalization_insights where document_id = ? and score > 50'
+        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,internalization_id from t_internalization_insights where document_id = ? and score > 50'
         try:
             # Execute the SQL query
 
@@ -800,6 +807,8 @@ class InsightGeneratorDBManager:
                 insight_entity.keyword_hit_id2 = row.key_word_hit_id2
                 insight_entity.keyword1 = row.key_word1
                 insight_entity.keyword2 = row.key_word2
+                insight_entity.internalization_id = row.internalization_id
+
                 int_insight_list.append(insight_entity)
 
             cursor.close()

@@ -936,8 +936,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 # compute score against each mitigation key word
                 for mitigation_keyword_locations in self.mitigation_keyword_location_list:
                     self._create_mitigation_insights_for_document(mitigation_keyword_locations, doc_location_list, document_item.document_id,
-                                                                  document_item.document_name, int_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id)
-            current_count = current_count + 1
+                                                                  document_item.document_name, int_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id, internalization_id=int_insight_entity.internalization_id)
+                current_count = current_count + 1
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
@@ -951,7 +951,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
             ).Mitigation_Int_Insight_Type, document_id=document_item.document_id)
 
-    def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0, exposure_path_id = 0):
+    def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0, exposure_path_id = 0, internalization_id = 0):
 
         mitigation_keyword_locations = mitigation_keyword_locations.locations.strip(
             '[').strip(']').split(',')
@@ -997,7 +997,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                               keyword_hit_id1=insight_entity.keyword_hit_id1, keyword1=insight_entity.keyword1,
                               keyword_hit_id2=insight_entity.keyword_hit_id2, keyword2=insight_entity.keyword2, score=score,
                               factor1=factor1_frequency, factor2=factor2_average_distance, document_name=document_name, document_id=document_id,
-                              exposure_path_id=exposure_path_id
+                              exposure_path_id=exposure_path_id, internalization_id=internalization_id
                               )
             self.mitigation_comon_insightList.append(insight)
             self.log_generator.log_details("Mitigation:"+mitigation_keyword+", Keywords:" +
