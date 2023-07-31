@@ -275,7 +275,7 @@ class keyWordSearchManager:
         total_dictionary_hits = 0
         for DictionaryTermList in self.int_dictionary_term_list:
             proximity_entity = ProximityEntity( dictionary_id=DictionaryTermList.dictionary_id, doc_header_id=self.document_id,
-                                                intenalization_id = DictionaryTermList.internalization_id
+                                                internalization_id = DictionaryTermList.internalization_id
                                                )
             key_word_list = DictionaryTermList.keywords
 
@@ -387,7 +387,7 @@ class keyWordSearchManager:
                     combined_entity.exposure_path_id = proximity_entity.exposure_path_id
                     combined_entity.dictionary_id = proximity_entity.dictionary_id
                     combined_entity.doc_header_id = proximity_entity.doc_header_id
-                    combined_entity.intenalization_id = proximity_entity.intenalization_id
+                    combined_entity.internalization_id = proximity_entity.internalization_id
 
                    
                     combined_entity.key_word_bunch.append(temp_item)
@@ -408,7 +408,7 @@ class keyWordSearchManager:
                 combined_entity.exposure_path_id = proximity_entity.exposure_path_id
                 combined_entity.dictionary_id = proximity_entity.dictionary_id
                 combined_entity.doc_header_id = proximity_entity.doc_header_id
-                combined_entity.intenalization_id = combined_entity.intenalization_id
+                combined_entity.internalization_id = combined_entity.internalization_id
 
                 combined_entity.key_word_bunch.append(temp_item)
 
@@ -723,7 +723,9 @@ class int_Exp_Insight_Generator(keyWordSearchManager):
                     if (score > 0.0):
                         insight = Insight(keyword_hit_id1=keyword_location.key_word_hit_id, keyword1=keyword_location.key_word,
                                           keyword_hit_id2=child_node.key_word_hit_id, keyword2=child_node.key_word, score=score,
-                                          factor1=factor1_frequency, factor2=factor2_average_distance, document_name=document_name, document_id=document_id)
+                                          factor1=factor1_frequency, factor2=factor2_average_distance, document_name=document_name, document_id=document_id,
+                                          exposure_path_id=keyword_location.exposure_path_id,internalization_id=keyword_location.internalization_id
+                                          )
                         insightList.append(insight)
         self.log_generator.log_details(
             "Total Insights generated:" + str(len(insightList)))
@@ -876,8 +878,10 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 for mitigation_keyword_locations in self.mitigation_keyword_location_list:
 
                     self._create_mitigation_insights_for_document(mitigation_keyword_locations, doc_location_list, document_item.document_id,
-                                                                  document_item.document_name, exp_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id)
-            current_count = current_count + 1
+                                                                  document_item.document_name, exp_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id,
+                                                                  exposure_path_id=exp_insight_entity.exposure_path_id
+                                                                  )
+                current_count = current_count + 1
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
@@ -947,7 +951,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
             ).Mitigation_Int_Insight_Type, document_id=document_item.document_id)
 
-    def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0):
+    def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0, exposure_path_id = 0):
 
         mitigation_keyword_locations = mitigation_keyword_locations.locations.strip(
             '[').strip(']').split(',')
@@ -992,7 +996,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             insight = Insight(mitigation_keyword_hit_id=mitigation_keyword_hit_id, mitigation_keyword=mitigation_keyword,
                               keyword_hit_id1=insight_entity.keyword_hit_id1, keyword1=insight_entity.keyword1,
                               keyword_hit_id2=insight_entity.keyword_hit_id2, keyword2=insight_entity.keyword2, score=score,
-                              factor1=factor1_frequency, factor2=factor2_average_distance, document_name=document_name, document_id=document_id
+                              factor1=factor1_frequency, factor2=factor2_average_distance, document_name=document_name, document_id=document_id,
+                              exposure_path_id=exposure_path_id
                               )
             self.mitigation_comon_insightList.append(insight)
             self.log_generator.log_details("Mitigation:"+mitigation_keyword+", Keywords:" +
@@ -1173,28 +1178,29 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         return (combined_location_list)
 
 
-key_word_search_mgr = file_folder_keyWordSearchManager(
-    folder_path=PARM_STAGE1_FOLDER)
+# key_word_search_mgr = file_folder_keyWordSearchManager(
+#     folder_path=PARM_STAGE1_FOLDER)
 
 # key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
 
 # key_word_search_mgr.generate_keyword_location_map_for_internalization()
 
-key_word_search_mgr.generate_keyword_location_map_for_mitigation()
+# key_word_search_mgr.generate_keyword_location_map_for_mitigation()
 
 # exp_int_insght_generator = int_Exp_Insight_Generator()
 # print("Generating Insights for Exposure Pathway Dictionary Terms")
 
 # exp_int_insght_generator.generate_insights_with_2_factors(
 #     Lookups().Exposure_Pathway_Dictionary_Type)
+
+
 # print("Generating Insights for Internalization Dictionary Terms")
 # exp_int_insght_generator.generate_insights_with_2_factors(
-
 #     Lookups().Internalization_Dictionary_Type)
-# mitigation_insight_gen = triangulation_Insight_Generator()
-# # mitigation_insight_gen.generate_mitigation_exp_insights()
 
-# # mitigation_insight_gen.generate_mitigation_int_insights()
+mitigation_insight_gen = triangulation_Insight_Generator()
+# mitigation_insight_gen.generate_mitigation_exp_insights()
+mitigation_insight_gen.generate_mitigation_int_insights()
 # mitigation_insight_gen.generate_exp_int_insights()
 
 

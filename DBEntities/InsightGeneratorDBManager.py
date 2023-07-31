@@ -24,7 +24,7 @@ class InsightGeneratorDBManager:
     def __init__(self) -> None:
         self.dbConnection = pyodbc.connect(
             'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
-        self.d_current_document_seed=0
+        self.d_next_seed=0
         self.batch_id =0
         
         self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
@@ -101,21 +101,33 @@ class InsightGeneratorDBManager:
 
         return company_id
 
-    def get_current_seed(self):
+    def get_next_surrogate_key(self, save_type:int):
 
-        if(self.d_current_document_seed >= 1000):
-            self.d_current_document_seed = self.d_current_document_seed+1
-            return self.d_current_document_seed
+        if(self.d_next_seed >= 1000):
+            self.d_next_seed = self.d_next_seed+1
+            return self.d_next_seed
 
+        if(save_type == Lookups().Keyword_Hit_Save):
+            sql = "select max(key_word_hit_id) from dbo.t_key_word_hits"
+        elif(save_type == Lookups().Exposure_Save):
+            sql = "select max(int_unique_key) from dbo.t_exposure_pathway_insights"
+        elif(save_type == Lookups().Internalization_Save):
+            sql = "select max(int_unique_key) from dbo.t_internalization_insights"
+        elif(save_type == Lookups().Mitigation_Exp_Insight_Type):
+            sql = "select max(int_unique_key) from dbo.t_mitigation_exp_insights"
+            
         cursor = self.dbConnection.cursor()
-        cursor.execute("select max(key_word_hit_id) from dbo.t_key_word_hits") 
-        current_seed = cursor.fetchone()[0]
-        if(current_seed):
-            self.d_current_document_seed = current_seed+1
-            return self.d_current_document_seed
+
+        cursor.execute(sql) 
+
+
+        current_db_seed = cursor.fetchone()[0]
+        if(current_db_seed):
+            self.d_next_seed = current_db_seed+1
+            return self.d_next_seed
         else:
-            self.d_current_document_seed = 1001
-            return self.d_current_document_seed
+            self.d_next_seed = 1001
+            return self.d_next_seed
         cursor.close()
 
     def get_current_batch_id(self):
@@ -136,7 +148,7 @@ class InsightGeneratorDBManager:
     def get_keyword_location_list(self, batch_id=0, dictionary_type = 0, dictionary_id = 0, document_id = 0):
 
         keyword_list =[]
-        sql = 'select key_word_hit_id, key_word, locations, frequency, dictionary_type, dictionary_id, document_id \
+        sql = 'select key_word_hit_id, key_word, locations, frequency, dictionary_type, dictionary_id, document_id, exposure_path_id, internalization_id \
                from t_key_word_hits \
                where insights_generated = ? and batch_id = ? and dictionary_type =? and dictionary_id = ? and document_id =?\
                order by key_word_hit_id'
@@ -155,6 +167,8 @@ class InsightGeneratorDBManager:
                 keyword_loc_entity.frequency = row.frequency
                 keyword_loc_entity.dictionary_id = row.dictionary_id
                 keyword_loc_entity.dictionary_type = row.dictionary_type
+                keyword_loc_entity.exposure_path_id = row.exposure_path_id
+                keyword_loc_entity.internalization_id = row.internalization_id
                 
                 keyword_list.append(keyword_loc_entity)
 
@@ -198,7 +212,7 @@ class InsightGeneratorDBManager:
         
         return document_list
 
-    def insert_key_word_hits_to_db(self, company_id:int, document_id:str, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int,exposure_path_id:int, internalization_id:int, impact_category_id:int, esg_category_id:int):
+    def insert_key_word_hits_to_db(self, batch_id:int, company_id:int, document_id:str, document_name:str, reporting_year:int,dictionary_id:int, key_word_hit_id:int, key_word:str, locations:str,frequency:int, dictionary_type:int,exposure_path_id:int, internalization_id:int, impact_category_id:int, esg_category_id:int):
                 
             # Create a cursor object to execute SQL queries
             cursor = self.dbConnection.cursor()
@@ -211,7 +225,7 @@ class InsightGeneratorDBManager:
                 added_dt,added_by ,modify_dt,modify_by\
                 )\
                     VALUES\
-                    ({self.batch_id},{dictionary_type},{self.d_current_document_seed},{document_id},N'{document_name}', {company_id}, {reporting_year},\
+                    ({batch_id},{dictionary_type},{self.d_next_seed},{document_id},N'{document_name}', {company_id}, {reporting_year},\
                 {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0, {exposure_path_id}, {internalization_id},\
                 {impact_category_id},{esg_category_id},\
                 CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
@@ -245,40 +259,47 @@ class InsightGeneratorDBManager:
             score = insight.score
             document_name = insight.document_name
             document_id = insight.document_id
+            exposure_path_id = insight.exposure_path_id
+            internalization_id = insight.internalization_id
+            
   
             # Create a cursor object to execute SQL queries
             cursor = self.dbConnection.cursor()
             # Construct the INSERT INTO statement
 
-            if(dictionary_type == Lookups().Internalization_Dictionary_Type):
-                sql = f"INSERT INTO dbo.t_internalization_insights( \
-                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
-                    factor1, factor2, added_dt,added_by ,modify_dt,modify_by\
-                    )\
-                        VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
-                        {factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
-
-            elif(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+            if(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+                int_unique_key = self.get_next_surrogate_key(Lookups().Exposure_Save)
                 sql = f"INSERT INTO dbo.t_exposure_pathway_insights( \
-                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
-                    factor1, factor2, added_dt,added_by ,modify_dt,modify_by\
+                    int_unique_key,document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    factor1, factor2,exposure_path_id, added_dt,added_by ,modify_dt,modify_by\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
-                        {factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"    
+                        ({int_unique_key},{document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        {factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"    
+
+            elif(dictionary_type == Lookups().Internalization_Dictionary_Type):
+                int_unique_key = self.get_next_surrogate_key(Lookups().Internalization_Save)
+                sql = f"INSERT INTO dbo.t_internalization_insights( \
+                    int_unique_key,document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    factor1, factor2,internalization_id, added_dt,added_by ,modify_dt,modify_by\
+                    )\
+                        VALUES\
+                        ({int_unique_key},{document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        {factor1}, {factor2},{internalization_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
 
             elif(dictionary_type == Lookups().Mitigation_Exp_Insight_Type): 
                 mitigation_keyword_hit_id = insight.mitigation_keyword_hit_id
                 mitigation_keyword = insight.mitigation_keyword
+                int_unique_key = self.get_next_surrogate_key(Lookups().Mitigation_Exp_Insight_Type)
+
 
                 sql = f"INSERT INTO dbo.t_mitigation_exp_insights( \
-                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
-                    score,factor1, factor2, added_dt,added_by ,modify_dt,modify_by\
+                    int_unique_key,document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
+                    score,factor1, factor2, exposure_path_id,added_dt,added_by ,modify_dt,modify_by\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
-                        {score},{factor1}, {factor2},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')" 
+                        ({int_unique_key},{document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
+                        {score},{factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')" 
                   
             elif(dictionary_type == Lookups().Mitigation_Int_Insight_Type): 
                 mitigation_keyword_hit_id = insight.mitigation_keyword_hit_id
@@ -303,7 +324,12 @@ class InsightGeneratorDBManager:
                 # Rollback the transaction if any error occurs
                 self.dbConnection.rollback()
                 print(f"Error: {str(exc)}")
-                raise exc
+                raise exc            
+            
+            if(total_records_added_to_db % 250 == 0):
+                print("Insights added to the Database So far...:"+ str(total_records_added_to_db))
+            
+
 
         # Close the cursor and connection
         self.dbConnection.commit()
@@ -326,16 +352,16 @@ class InsightGeneratorDBManager:
             esg_category_id = proximity.esg_category_id
             impact_category_id = proximity.impact_category_id
             exposure_path_id = proximity.exposure_path_id
-            internalization_id = proximity.intenalization_id
+            internalization_id = proximity.internalization_id
             dictionary_id = proximity.dictionary_id
         
             for key_word_locations in proximity.key_word_bunch:
                 batch_id = self.get_current_batch_id()
-                key_word_hit_id = self.get_current_seed()
+                key_word_hit_id = self.get_next_surrogate_key()
                 key_word = key_word_locations.key_word
                 locations = key_word_locations.locations
                 frequency = key_word_locations.frequency
-                self.insert_key_word_hits_to_db (company_id=company_id,document_id=document_id, document_name=document_name,
+                self.insert_key_word_hits_to_db (batch_id=batch_id,company_id=company_id,document_id=document_id, document_name=document_name,
                                                  reporting_year=reporting_year,dictionary_id=dictionary_id,key_word_hit_id=key_word_hit_id, 
                                                  key_word=key_word, locations=locations,frequency=frequency, dictionary_type=dictionary_type, 
                                                  exposure_path_id=exposure_path_id, internalization_id=internalization_id, impact_category_id=impact_category_id, esg_category_id=esg_category_id)
@@ -617,8 +643,6 @@ class InsightGeneratorDBManager:
 
             cursor.close()
 
-            # print("Record inserted successfully!")
-
         except Exception as exc:
             # Rollback the transaction if any error occurs
             print(f"Error: {str(exc)}")
@@ -626,7 +650,7 @@ class InsightGeneratorDBManager:
         
 
         exp_keyword_list =[]
-        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where dictionary_type = 1000 and document_id = ?'
+        sql = 'select document_id, key_word_hit_id, key_word,locations,exposure_path_id from t_key_word_hits where dictionary_type = 1000 and document_id = ?'
         try:
             # Execute the SQL query
 
@@ -639,6 +663,7 @@ class InsightGeneratorDBManager:
                 keyword_loc_entity.key_word_hit_id = row.key_word_hit_id
                 keyword_loc_entity.key_word = row.key_word
                 keyword_loc_entity.locations = row.locations
+                keyword_loc_entity.exposure_path_id = row.exposure_path_id
                 exp_keyword_list.append(keyword_loc_entity)
 
             cursor.close()
@@ -652,7 +677,7 @@ class InsightGeneratorDBManager:
         
 
         exp_insight_list =[]
-        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2 from t_exposure_pathway_insights where document_id = ? and score > 50'
+        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,exposure_path_id from t_exposure_pathway_insights where document_id = ? and score > 50'
         try:
             # Execute the SQL query
 
@@ -666,6 +691,7 @@ class InsightGeneratorDBManager:
                 insight_entity.keyword_hit_id2 = row.key_word_hit_id2
                 insight_entity.keyword1 = row.key_word1
                 insight_entity.keyword2 = row.key_word2
+                insight_entity.exposure_path_id = row.exposure_path_id
                 exp_insight_list.append(insight_entity)
 
             cursor.close()

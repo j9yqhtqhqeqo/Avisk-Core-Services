@@ -1,5 +1,5 @@
 class KeyWordLocationsEntity:
-    def __init__(self, key_word=None, locations=None, frequency = 0, dictionary_type =0, dictionary_id =0, document_id =0, document_name='') -> None:
+    def __init__(self, key_word=None, locations=None, frequency = 0, dictionary_type =0, dictionary_id =0, document_id =0, document_name='',exposure_path_id=0,intenalization_id=0) -> None:
         self.key_word=key_word
         self.key_word_hit_id:int
         self.locations = locations
@@ -9,7 +9,9 @@ class KeyWordLocationsEntity:
         self.document_id = document_id
         self.document_name = document_name
         self.batch_id = 0
-
+        self.exposure_path_id = exposure_path_id
+        self.intenalization_id = intenalization_id
+    
         self.temp_place_holder=''
 
 class DocumentEntity:
@@ -23,11 +25,11 @@ class DocumentEntity:
 
 
 class ProximityEntity:
-    def __init__(self,dictionary_id=None,doc_header_id=None,exposure_path_id=0, intenalization_id = 0,impact_category_id=0,esg_category_id=0 ) -> None:
+    def __init__(self,dictionary_id=None,doc_header_id=None,exposure_path_id=0, internalization_id = 0,impact_category_id=0,esg_category_id=0 ) -> None:
         self.dictionary_id = dictionary_id
         self.doc_header_id = doc_header_id
         self.exposure_path_id = exposure_path_id
-        self.intenalization_id = intenalization_id
+        self.intenalization_id = internalization_id
         self.impact_category_id = impact_category_id
         self.esg_category_id = esg_category_id
         self.key_word_bunch =[]
@@ -51,7 +53,7 @@ class FD_Factor:
 
 
 class Insight:
-    def __init__(self,keyword_hit_id1=0, keyword1='', keyword_hit_id2=0, keyword2='',score=0.00, factor1=0, factor2=0,document_name='', document_id=0, mitigation_keyword_hit_id=0,mitigation_keyword='', locations1='',locations2='') -> None:
+    def __init__(self,keyword_hit_id1=0, keyword1='', keyword_hit_id2=0, keyword2='',score=0.00, factor1=0, factor2=0,document_name='', document_id=0, mitigation_keyword_hit_id=0,mitigation_keyword='', locations1='',locations2='',exposure_path_id=0,internalization_id=0) -> None:
         self.mitigation_keyword_hit_id = mitigation_keyword_hit_id
         self.mitigation_keyword = mitigation_keyword
         self.keyword_hit_id1 = keyword_hit_id1
@@ -65,6 +67,8 @@ class Insight:
         self.document_id = document_id
         self.locations1 =locations1
         self.locations2 =locations2
+        self.internalization_id = internalization_id
+        self.exposure_path_id = exposure_path_id
     
 
 class ExpIntInsight:
