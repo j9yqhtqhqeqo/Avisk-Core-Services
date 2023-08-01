@@ -72,7 +72,7 @@ class Insight:
     
 
 class ExpIntInsight:
-    def __init__(self,exp_keyword_hit_id1 = 0,exp_keyword1 ='',exp_keyword_hit_id2 =0,exp_keyword2 ='',int_key_word_hit_id1 =0,int_key_word1 ='',int_key_word_hit_id2 =0,int_key_word2='',factor1=0, factor2=0,score=0.00,document_name='', document_id=0) -> None:
+    def __init__(self,exp_keyword_hit_id1 = 0,exp_keyword1 ='',exp_keyword_hit_id2 =0,exp_keyword2 ='',int_key_word_hit_id1 =0,int_key_word1 ='',int_key_word_hit_id2 =0,int_key_word2='',factor1=0, factor2=0,score=0.00,document_name='', document_id=0,internalization_id=0,exposure_path_id=0) -> None:
         self.exp_keyword_hit_id1 = exp_keyword_hit_id1
         self.exp_keyword1 = exp_keyword1
         self.exp_keyword_hit_id2 = exp_keyword_hit_id2
@@ -86,3 +86,5 @@ class ExpIntInsight:
         self.score = score
         self.document_name = document_name
         self.document_id = document_id
+        self.internalization_id = internalization_id
+        self.exposure_path_id = exposure_path_id

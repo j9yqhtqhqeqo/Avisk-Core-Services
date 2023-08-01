@@ -1014,7 +1014,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         if (len(document_list) == 0):
             print(
-                'No new document available to process Mitigation-Internalization Insights')
+                'No new document available to process Exposure Pathway-Internalization Insights')
             return
 
         document_item: KeyWordLocationsEntity
@@ -1118,7 +1118,9 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 factor2=factor2_average_distance,
                 score=score,
                 document_name=document_name,
-                document_id=document_id
+                document_id=document_id,
+                exposure_path_id=exp_insight_entity.exposure_path_id,
+                internalization_id=int_insight_entity.internalization_id
             )
 
             self.int_exp_insightList.append(exp_int_insight)
@@ -1200,8 +1202,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
 mitigation_insight_gen = triangulation_Insight_Generator()
 # mitigation_insight_gen.generate_mitigation_exp_insights()
-mitigation_insight_gen.generate_mitigation_int_insights()
-# mitigation_insight_gen.generate_exp_int_insights()
+# mitigation_insight_gen.generate_mitigation_int_insights()
+mitigation_insight_gen.generate_exp_int_insights()
 
 
 # mitigation_insight_gen.cleanup()

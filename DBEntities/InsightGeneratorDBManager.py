@@ -13,7 +13,7 @@ from DBEntities.ProximityEntity import  ExpIntInsight
 from DBEntities.ProximityEntity import DocumentEntity
 from Utilities.Lookups import Lookups
 from Utilities.LoggingServices import logGenerator
-
+INSIGHT_SCORE_THRESHOLD = 50
 
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
@@ -119,6 +119,8 @@ class InsightGeneratorDBManager:
             sql = "select max(int_unique_key) from dbo.t_mitigation_exp_insights"
         elif(save_type == Lookups().Mitigation_Int_Insight_Type):
             sql = "select max(int_unique_key) from dbo.t_mitigation_int_insights"
+        elif(save_type == Lookups().Exp_Int_Insight_Type):
+            sql = "select max(int_unique_key) from dbo.t_exp_int_insights" 
             
         cursor = self.dbConnection.cursor()
 
@@ -683,12 +685,12 @@ class InsightGeneratorDBManager:
         
 
         exp_insight_list =[]
-        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,exposure_path_id from t_exposure_pathway_insights where document_id = ? and score > 50'
+        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,exposure_path_id from t_exposure_pathway_insights where document_id = ? and score > ?'
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, document_id)
+            cursor.execute(sql, document_id, INSIGHT_SCORE_THRESHOLD)
             rows = cursor.fetchall()
             for row in rows:
 
@@ -793,12 +795,12 @@ class InsightGeneratorDBManager:
         
 
         int_insight_list =[]
-        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,internalization_id from t_internalization_insights where document_id = ? and score > 50'
+        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,internalization_id from t_internalization_insights where document_id = ? and score > ?'
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, document_id)
+            cursor.execute(sql, document_id, INSIGHT_SCORE_THRESHOLD)
             rows = cursor.fetchall()
             for row in rows:
 
@@ -853,16 +855,16 @@ class InsightGeneratorDBManager:
         exp_insight_location_list =[]
         # sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where dictionary_type = 1000 and document_id = ?'
 
-        sql=  f"select exp.key_word_hit_id1, exp.key_word_hit_id2, exp.key_word1, exp.key_word2, hits.locations locationlist1, hits2.locations locationlist2 \
+        sql=  f"select exp.key_word_hit_id1, exp.key_word_hit_id2, exp.key_word1, exp.key_word2, hits.locations locationlist1, hits2.locations locationlist2 , exp.exposure_path_id\
                  from t_exposure_pathway_insights exp inner join  t_key_word_hits hits on hits.key_word_hit_id = exp.key_word_hit_id1 \
                                              inner join   t_key_word_hits hits2 on hits2.key_word_hit_id = exp.key_word_hit_id2 \
-                where exp.document_id = ? and score > 50"
+                where exp.document_id = ? and score > ?"
 
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, document_id)
+            cursor.execute(sql, document_id, INSIGHT_SCORE_THRESHOLD)
             rows = cursor.fetchall()
             for row in rows:
                 insight_entity = Insight()
@@ -872,6 +874,7 @@ class InsightGeneratorDBManager:
                 insight_entity.keyword2 = row.key_word2
                 insight_entity.locations1 = row.locationlist1
                 insight_entity.locations2 = row.locationlist2
+                insight_entity.exposure_path_id = row.exposure_path_id
                 exp_insight_location_list.append(insight_entity)
             cursor.close()
 
@@ -882,15 +885,15 @@ class InsightGeneratorDBManager:
         
         int_insight_location_list =[]
 
-        sql=  f"select int.key_word_hit_id1, int.key_word_hit_id2, int.key_word1, int.key_word2, hits.locations locationlist1, hits2.locations locationlist2 \
+        sql=  f"select int.key_word_hit_id1, int.key_word_hit_id2, int.key_word1, int.key_word2, hits.locations locationlist1, hits2.locations locationlist2, int.internalization_id\
                 from t_internalization_insights int inner join  t_key_word_hits hits on hits.key_word_hit_id = int.key_word_hit_id1 \
                                      inner join   t_key_word_hits hits2 on hits2.key_word_hit_id = int.key_word_hit_id2      \
-                where int.document_id = ? and score > 50 "
+                where int.document_id = ? and score > ? "
 
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, document_id)
+            cursor.execute(sql, document_id, INSIGHT_SCORE_THRESHOLD)
             rows = cursor.fetchall()
             for row in rows:
                 insight_entity = Insight()
@@ -900,6 +903,7 @@ class InsightGeneratorDBManager:
                 insight_entity.keyword2 = row.key_word2
                 insight_entity.locations1 = row.locationlist1
                 insight_entity.locations2 = row.locationlist2
+                insight_entity.internalization_id = row.internalization_id
                 int_insight_location_list.append(insight_entity)
             cursor.close()
 
@@ -950,21 +954,24 @@ class InsightGeneratorDBManager:
             score  =exp_int_insight_entity.score
             document_name=exp_int_insight_entity.document_name
             document_id =exp_int_insight_entity.document_id
+            exposure_path_id = exp_int_insight_entity.exposure_path_id
+            internalization_id = exp_int_insight_entity.internalization_id
   
             # Create a cursor object to execute SQL queries
             cursor = self.dbConnection.cursor()
             # Construct the INSERT INTO statement
 
             if(dictionary_type == Lookups().Exp_Int_Insight_Type):
+                int_unique_key = self.get_next_surrogate_key(Lookups().Exp_Int_Insight_Type)
                 sql = f"INSERT INTO dbo.t_exp_int_insights( \
-                           document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
-                          ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score \
+                            int_unique_key,document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+                          ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
                           ,added_dt,added_by ,modify_dt,modify_by\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
+                        ({int_unique_key},{document_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
                         ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
-                        , {factor1}, {factor2},{score}\
+                        , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
                         ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
       
             try:
