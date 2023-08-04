@@ -29,7 +29,7 @@ class ProximityEntity:
         self.dictionary_id = dictionary_id
         self.doc_header_id = doc_header_id
         self.exposure_path_id = exposure_path_id
-        self.intenalization_id = internalization_id
+        self.internalization_id = internalization_id
         self.impact_category_id = impact_category_id
         self.esg_category_id = esg_category_id
         self.key_word_bunch =[]
@@ -88,3 +88,4 @@ class ExpIntInsight:
         self.document_id = document_id
         self.internalization_id = internalization_id
         self.exposure_path_id = exposure_path_id
+        
