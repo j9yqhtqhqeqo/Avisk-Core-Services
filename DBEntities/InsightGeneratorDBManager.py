@@ -9,11 +9,13 @@ from DBEntities.DictionaryEntity import DictionaryEntity
 from DBEntities.ProximityEntity import ProximityEntity
 from DBEntities.ProximityEntity import KeyWordLocationsEntity
 from DBEntities.ProximityEntity import  Insight
+from DBEntities.ProximityEntity import MitigationExpIntInsight
 from DBEntities.ProximityEntity import  ExpIntInsight
 from DBEntities.ProximityEntity import DocumentEntity
 from Utilities.Lookups import Lookups
 from Utilities.LoggingServices import logGenerator
 INSIGHT_SCORE_THRESHOLD = 50
+EXP_INT_MITIGATION_THRESHOLD = 500
 
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
@@ -121,6 +123,8 @@ class InsightGeneratorDBManager:
             sql = "select max(unique_key) from dbo.t_mitigation_int_insights"
         elif(save_type == Lookups().Exp_Int_Insight_Type):
             sql = "select max(unique_key) from dbo.t_exp_int_insights" 
+        elif(save_type == Lookups().Mitigation_Exp_INT_Insight_Type):
+            sql = "select max(unique_key) from dbo.t_mitigation_exp_int_insights" 
             
         cursor = self.dbConnection.cursor()
 
@@ -633,8 +637,7 @@ class InsightGeneratorDBManager:
         cursor = self.dbConnection.cursor()
 
             # Create a cursor object to execute SQL queries
-        if(dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
-          
+        if(dictionary_type == Lookups().Mitigation_Exp_Insight_Type):  
             sql = f"update t_document set mitigation_exp_insights_generated = 1 \
                     ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                     where document_id ={document_id}"
@@ -644,6 +647,10 @@ class InsightGeneratorDBManager:
                     where document_id ={document_id}"
         elif(dictionary_type == Lookups().Exp_Int_Insight_Type):
             sql = f"update t_document set int_exp_insights_generated = 1 \
+            ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+            where document_id ={document_id}"
+        elif(dictionary_type == Lookups().Mitigation_Exp_INT_Insight_Type):
+            sql = f"update t_document set mitigation_int_exp_insights_generated = 1 \
             ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
             where document_id ={document_id}"
         try:
@@ -1088,65 +1095,118 @@ class InsightGeneratorDBManager:
             print(f"Error: {str(exc)}")
             raise exc
 
-        exp_insight_location_list =[]
+        exp_int_insight_location_list =[]
         # sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where dictionary_type = 1000 and document_id = ?'
 
-        sql=  f"select exp.key_word_hit_id1, exp.key_word_hit_id2, exp.key_word1, exp.key_word2, hits.locations locationlist1, hits2.locations locationlist2 , exp.exposure_path_id\
-                 from t_exposure_pathway_insights exp inner join  t_key_word_hits hits on hits.key_word_hit_id = exp.key_word_hit_id1 \
-                                             inner join   t_key_word_hits hits2 on hits2.key_word_hit_id = exp.key_word_hit_id2 \
-                where exp.document_id = ? and score > ?"
+        sql=  f"SELECT expint.unique_key,expint.document_id, expint.document_name, expint.exp_keyword_hit_id1,expint.exp_keyword1,expint.exp_keyword_hit_id2,expint.exp_keyword2,\
+                expint.int_key_word_hit_id1,expint.int_key_word1, int_key_word_hit_id2,expint.int_key_word2,expint.factor1,expint.factor2,expint.score,expint.exposure_path_id,expint.internalization_id,\
+                exp1_hits.locations 'exp1_locations', exp2_hits.locations 'exp2_locations', int1_hits.locations 'int1_locations', int2_hits.locations 'int2_locations'\
+               from t_exp_int_insights expint \
+                      INNER JOIN t_key_word_hits exp1_hits on exp1_hits.key_word_hit_id = expint.exp_keyword_hit_id1\
+                      INNER JOIN t_key_word_hits exp2_hits on exp2_hits.key_word_hit_id = expint.exp_keyword_hit_id2\
+                      INNER JOIN  t_key_word_hits int1_hits on int1_hits.key_word_hit_id = expint.int_key_word_hit_id1\
+                      INNER JOIN  t_key_word_hits int2_hits on int2_hits.key_word_hit_id = expint.int_key_word_hit_id2\
+                where expint.document_id = ? and expint.score > {EXP_INT_MITIGATION_THRESHOLD}"
 
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, document_id, INSIGHT_SCORE_THRESHOLD)
+            cursor.execute(sql, document_id)
             rows = cursor.fetchall()
             for row in rows:
-                insight_entity = Insight()
-                insight_entity.keyword_hit_id1 = row.key_word_hit_id1
-                insight_entity.keyword_hit_id2 = row.key_word_hit_id2
-                insight_entity.keyword1 = row.key_word1
-                insight_entity.keyword2 = row.key_word2
-                insight_entity.locations1 = row.locationlist1
-                insight_entity.locations2 = row.locationlist2
-                insight_entity.exposure_path_id = row.exposure_path_id
-                exp_insight_location_list.append(insight_entity)
-            cursor.close()
-
-        except Exception as exc:
-            print(f"Error: {str(exc)}")
-            raise exc
-        
-        
-        int_insight_location_list =[]
-
-        sql=  f"select int.key_word_hit_id1, int.key_word_hit_id2, int.key_word1, int.key_word2, hits.locations locationlist1, hits2.locations locationlist2, int.internalization_id\
-                from t_internalization_insights int inner join  t_key_word_hits hits on hits.key_word_hit_id = int.key_word_hit_id1 \
-                                     inner join   t_key_word_hits hits2 on hits2.key_word_hit_id = int.key_word_hit_id2      \
-                where int.document_id = ? and score > ? "
-
-        try:
-            # Execute the SQL query
-            cursor = self.dbConnection.cursor()
-            cursor.execute(sql, document_id, INSIGHT_SCORE_THRESHOLD)
-            rows = cursor.fetchall()
-            for row in rows:
-                insight_entity = Insight()
-                insight_entity.keyword_hit_id1 = row.key_word_hit_id1
-                insight_entity.keyword_hit_id2 = row.key_word_hit_id2
-                insight_entity.keyword1 = row.key_word1
-                insight_entity.keyword2 = row.key_word2
-                insight_entity.locations1 = row.locationlist1
-                insight_entity.locations2 = row.locationlist2
+                insight_entity = MitigationExpIntInsight()
+                insight_entity.document_id = row.document_id
+                insight_entity.exp_keyword_hit_id1 = row.exp_keyword_hit_id1
+                insight_entity.exp_keyword1 = row.exp_keyword1
+                insight_entity.exp_keyword_hit_id2 = row.exp_keyword_hit_id2
+                insight_entity.exp_keyword2 = row.exp_keyword2
+                insight_entity.int_key_word_hit_id1 = row.int_key_word_hit_id1
+                insight_entity.int_key_word1 = row.int_key_word1
+                insight_entity.int_key_word_hit_id2 = row.int_key_word_hit_id2
+                insight_entity.int_key_word2 = row.int_key_word2
+                insight_entity.document_name = row.document_name
+                insight_entity.document_id = document_id
                 insight_entity.internalization_id = row.internalization_id
-                int_insight_location_list.append(insight_entity)
+                insight_entity.exposure_path_id = row.exposure_path_id
+                insight_entity.exp1_locations = row.exp1_locations
+                insight_entity.exp2_locations = row.exp2_locations
+                insight_entity.int1_locations = row.int1_locations
+                insight_entity.int2_locations = row.int2_locations
+                exp_int_insight_location_list.append(insight_entity)
             cursor.close()
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
             raise exc
-    
-
         
-        return exp_insight_location_list, int_insight_location_list,mitigation_keyword_list
+        return exp_int_insight_location_list,mitigation_keyword_list
+
+    def save_Mitigation_Exp_Int_Insights(self, insightList, dictionary_type):
+        mitigation_exp_int_insight_entity: MitigationExpIntInsight
+    
+        total_records_added_to_db = 0
+        for mitigation_exp_int_insight_entity in insightList:
+            exp_keyword_hit_id1  = mitigation_exp_int_insight_entity.exp_keyword_hit_id1
+            exp_keyword1 = mitigation_exp_int_insight_entity.exp_keyword1
+            exp_keyword_hit_id2  =mitigation_exp_int_insight_entity.exp_keyword_hit_id2
+            exp_keyword2=mitigation_exp_int_insight_entity.exp_keyword2
+            int_key_word_hit_id1  =mitigation_exp_int_insight_entity.int_key_word_hit_id1
+            int_key_word1=mitigation_exp_int_insight_entity.int_key_word1
+            int_key_word_hit_id2  =mitigation_exp_int_insight_entity.int_key_word_hit_id2
+            int_key_word2=mitigation_exp_int_insight_entity.int_key_word2
+            factor1=mitigation_exp_int_insight_entity.factor1
+            factor2  =mitigation_exp_int_insight_entity.factor2
+            score  =mitigation_exp_int_insight_entity.score
+            document_name=mitigation_exp_int_insight_entity.document_name
+            document_id =mitigation_exp_int_insight_entity.document_id
+            exposure_path_id = mitigation_exp_int_insight_entity.exposure_path_id
+            internalization_id = mitigation_exp_int_insight_entity.internalization_id
+            mitigation_keyword_hit_id = mitigation_exp_int_insight_entity.mitigation_keyword_hit_id
+            mitigation_keyword = mitigation_exp_int_insight_entity.mitigation_keyword
+  
+            # Create a cursor object to execute SQL queries
+            cursor = self.dbConnection.cursor()
+            # Construct the INSERT INTO statement
+
+            int_unique_key = self.get_next_surrogate_key(Lookups().Mitigation_Exp_INT_Insight_Type)
+            sql = f"INSERT INTO dbo.t_mitigation_exp_int_insights( \
+                        unique_key,document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+                        ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
+                        ,mitigation_keyword_hit_id,mitigation_keyword\
+                        ,added_dt,added_by ,modify_dt,modify_by\
+                )\
+                    VALUES\
+                    ({int_unique_key},{document_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
+                    ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
+                    , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
+                    ,{mitigation_keyword_hit_id},N'{mitigation_keyword}'\
+                    ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
+      
+            try:
+                # Execute the SQL query
+                cursor.execute(sql)
+                total_records_added_to_db = total_records_added_to_db +1 
+                if(total_records_added_to_db % 50 == 0):
+                    self.dbConnection.commit()
+
+            except Exception as exc:
+                # Rollback the transaction if any error occurs
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+            
+            if(total_records_added_to_db % 250 == 0):
+                print("Insights added to the Database So far...:"+ str(total_records_added_to_db))
+
+        # Close the cursor and connection
+        self.dbConnection.commit()
+        cursor.close()
+
+        # self.dbConnection.commit()
+        self.log_generator.log_details("Total Insights added to the Database:"+ str(total_records_added_to_db))
+        self.log_generator.log_details('################################################################################################')
+
+        print("Total Insights added to the Database:"+ str(total_records_added_to_db))
+
+  

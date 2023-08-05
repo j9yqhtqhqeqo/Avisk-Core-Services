@@ -6,6 +6,7 @@ class Lookups:
         self.Mitigation_Exp_Insight_Type = 1003
         self.Mitigation_Int_Insight_Type = 1004
         self.Exp_Int_Insight_Type = 1005
+        self.Mitigation_Exp_INT_Insight_Type = 1006
         self.Keyword_Hit_Save = 2000
         self.Exposure_Save = 2001
         self.Internalization_Save = 2002
