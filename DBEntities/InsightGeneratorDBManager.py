@@ -15,7 +15,7 @@ from DBEntities.ProximityEntity import DocumentEntity
 from Utilities.Lookups import Lookups
 from Utilities.LoggingServices import logGenerator
 INSIGHT_SCORE_THRESHOLD = 50
-EXP_INT_MITIGATION_THRESHOLD = 500
+EXP_INT_MITIGATION_THRESHOLD = 50
 
 
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
@@ -138,6 +138,29 @@ class InsightGeneratorDBManager:
         else:
             self.d_next_seed = 1001
             return self.d_next_seed
+        cursor.close()
+
+    def normalize_document_score(self,  dictionary_type: int, document_id:int):
+         
+        if(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+            sql = "update t_exposure_pathway_insights set score_normalized = (score * 100)/(select max(score) from t_exposure_pathway_insights where document_id = ?) where document_id = ?"
+        elif(dictionary_type == Lookups().Internalization_Dictionary_Type):
+            sql = "update t_internalization_insights set score_normalized = (score * 100)/(select max(score) from t_internalization_insights where document_id = ?) where document_id = ?"
+        elif(dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
+            sql = "update t_mitigation_exp_insights set score_normalized = (score * 100)/(select max(score) from t_mitigation_exp_insights where document_id = ?) where document_id = ?"
+        elif(dictionary_type == Lookups().Mitigation_Int_Insight_Type):
+            sql = "update t_mitigation_int_insights set score_normalized = (score * 100)/(select max(score) from t_mitigation_int_insights where document_id = ?) where document_id = ?"
+        elif(dictionary_type == Lookups().Exp_Int_Insight_Type):
+            sql = "update t_exp_int_insights set score_normalized = (score * 100)/(select max(score) from t_exp_int_insights where document_id = ?) where document_id = ?" 
+        elif(dictionary_type == Lookups().Mitigation_Exp_INT_Insight_Type):
+            sql = "update t_mitigation_exp_int_insights set score_normalized = (score * 100)/(select max(score) from t_mitigation_exp_int_insights where document_id = ?) where document_id = ?" 
+            
+        cursor = self.dbConnection.cursor()
+
+        cursor.execute(sql, document_id,document_id) 
+        self.dbConnection.commit()
+
+
         cursor.close()
 
     def get_current_batch_id(self):
@@ -607,7 +630,6 @@ class InsightGeneratorDBManager:
         
         return document_list
 
-
     def update_mitigation_keyword_search_completed_ind(self, document_id):
          # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
@@ -747,7 +769,7 @@ class InsightGeneratorDBManager:
         
 
         exp_insight_list =[]
-        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,exposure_path_id from t_exposure_pathway_insights where document_id = ? and score > ?'
+        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,exposure_path_id from t_exposure_pathway_insights where document_id = ? and score_normalized > ?'
         try:
             # Execute the SQL query
 
@@ -858,7 +880,7 @@ class InsightGeneratorDBManager:
         
 
         int_insight_list =[]
-        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,internalization_id from t_internalization_insights where document_id = ? and score > ?'
+        sql = 'select key_word_hit_id1, key_word_hit_id2, key_word1, key_word2,internalization_id from t_internalization_insights where document_id = ? and score_normalized > ?'
         try:
             # Execute the SQL query
 
@@ -921,7 +943,7 @@ class InsightGeneratorDBManager:
         sql=  f"select exp.key_word_hit_id1, exp.key_word_hit_id2, exp.key_word1, exp.key_word2, hits.locations locationlist1, hits2.locations locationlist2 , exp.exposure_path_id\
                  from t_exposure_pathway_insights exp inner join  t_key_word_hits hits on hits.key_word_hit_id = exp.key_word_hit_id1 \
                                              inner join   t_key_word_hits hits2 on hits2.key_word_hit_id = exp.key_word_hit_id2 \
-                where exp.document_id = ? and score > ?"
+                where exp.document_id = ? and score_normalized > ?"
 
         try:
             # Execute the SQL query
@@ -951,7 +973,7 @@ class InsightGeneratorDBManager:
         sql=  f"select int.key_word_hit_id1, int.key_word_hit_id2, int.key_word1, int.key_word2, hits.locations locationlist1, hits2.locations locationlist2, int.internalization_id\
                 from t_internalization_insights int inner join  t_key_word_hits hits on hits.key_word_hit_id = int.key_word_hit_id1 \
                                      inner join   t_key_word_hits hits2 on hits2.key_word_hit_id = int.key_word_hit_id2      \
-                where int.document_id = ? and score > ? "
+                where int.document_id = ? and score_normalized > ? "
 
         try:
             # Execute the SQL query
@@ -1071,6 +1093,8 @@ class InsightGeneratorDBManager:
 
         mitigation_keyword_list =[]
         sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where insights_generated = 0 and dictionary_type = 1002 and document_id = ?  order by key_word_hit_id'
+        # sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where  insights_generated = 0 and \
+        #         dictionary_type = 1002 and document_id = ?  and  dictionary_id = 1009 and key_word_hit_id = 1585'
 
         try:
             # Execute the SQL query
@@ -1106,7 +1130,8 @@ class InsightGeneratorDBManager:
                       INNER JOIN t_key_word_hits exp2_hits on exp2_hits.key_word_hit_id = expint.exp_keyword_hit_id2\
                       INNER JOIN  t_key_word_hits int1_hits on int1_hits.key_word_hit_id = expint.int_key_word_hit_id1\
                       INNER JOIN  t_key_word_hits int2_hits on int2_hits.key_word_hit_id = expint.int_key_word_hit_id2\
-                where expint.document_id = ? and expint.score > {EXP_INT_MITIGATION_THRESHOLD}"
+                where expint.document_id = ? and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD}"
+        ##and expint.unique_key = 2441"
 
         try:
             # Execute the SQL query
