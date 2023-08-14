@@ -199,8 +199,7 @@ class keyWordSearchManager:
 
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
-                                    self.log_generator.log_details(
-                                        'Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion')
+                                    self.log_generator.log_details(keyword + '\''+': [\''+related_keyword+'\']', False)
                                     self.is_related_keywords_need_to_be_addressed = True
                 ###############################################
 
@@ -338,8 +337,7 @@ class keyWordSearchManager:
 
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
-                                    self.log_generator.log_details(
-                                        'Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion')
+                                    self.log_generator.log_details( keyword + '\''+': [\''+related_keyword+'\']', False)
                                     self.is_related_keywords_need_to_be_addressed = True
                 ###############################################
 
@@ -528,8 +526,7 @@ class keyWordSearchManager:
 
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
-                                    self.log_generator.log_details(
-                                        'Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion')
+                                    self.log_generator.log_details(keyword + '\''+': [\''+related_keyword+'\']', False)
                                     self.is_related_keywords_need_to_be_addressed = True
                 ###############################################
 

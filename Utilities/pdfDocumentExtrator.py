@@ -1,8 +1,11 @@
 import fitz
 import os
 
-PARM_PDF_IN_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage0SourcePDFFiles/Marathon OIL')
-PARM_PDF_OUT_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/Marathon OIL')
+# PARM_PDF_IN_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage0SourcePDFFiles/Marathon OIL')
+# PARM_PDF_OUT_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/Marathon OIL')
+
+PARM_PDF_IN_FOLDER_BP = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage0SourcePDFFiles/Antero Resources')
+PARM_PDF_OUT_FOLDER_BP = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/2022')
 
 
 class pdfDocumentExtractor:
@@ -33,4 +36,4 @@ class pdfDocumentExtractor:
 
 pdf_text_converter = pdfDocumentExtractor()
 
-pdf_text_converter.convert_pdf_files_to_text(PARM_PDF_IN_FOLDER, PARM_PDF_OUT_FOLDER)
+pdf_text_converter.convert_pdf_files_to_text(PARM_PDF_IN_FOLDER_BP, PARM_PDF_OUT_FOLDER_BP)
