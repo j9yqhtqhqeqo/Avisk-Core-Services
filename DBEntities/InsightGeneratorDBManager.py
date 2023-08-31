@@ -130,7 +130,6 @@ class InsightGeneratorDBManager:
 
         cursor.execute(sql) 
 
-
         current_db_seed = cursor.fetchone()[0]
         if(current_db_seed):
             self.d_next_seed = current_db_seed+1
@@ -183,13 +182,13 @@ class InsightGeneratorDBManager:
         keyword_list =[]
         sql = 'select key_word_hit_id, key_word, locations, frequency, dictionary_type, dictionary_id, document_id, exposure_path_id, internalization_id \
                from t_key_word_hits \
-               where insights_generated = ? and batch_id = ? and dictionary_type =? and dictionary_id = ? and document_id =?\
+               where batch_id = ? and dictionary_type =? and dictionary_id = ? and document_id =?\
                order by key_word_hit_id'
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, 0, batch_id, dictionary_type, dictionary_id, document_id)
+            cursor.execute(sql,batch_id, dictionary_type, dictionary_id, document_id)
             rows = cursor.fetchall()
             for row in rows:
 
@@ -219,10 +218,19 @@ class InsightGeneratorDBManager:
 
         pass
 
-    def get_unprocessed_document_items(self, dictionary_type = 0):
+    def get_unprocessed_document_items_for_insight_gen(self, dictionary_type = 0):
 
         document_list =[]
-        sql = 'select distinct document_id, dictionary_id, document_name, batch_id,dictionary_type from t_key_word_hits where insights_generated = 0 and dictionary_type = ? order by dictionary_id'
+        # sql = 'select distinct document_id, dictionary_id, document_name, batch_id,dictionary_type from t_key_word_hits where insights_generated = 0 and dictionary_type = ? order by dictionary_id'
+
+        if(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):         
+            sql= 'select distinct hits.document_id, hits.dictionary_id, hits.document_name, hits.batch_id,hits.dictionary_type \
+                from t_key_word_hits hits INNER JOIN t_document doc on  hits.document_id = doc.document_id and doc.exp_insights_generated_ind = 0\
+                where dictionary_type = ? order by dictionary_id'
+        elif(dictionary_type == Lookups().Internalization_Dictionary_Type):
+            sql= 'select distinct hits.document_id, hits.dictionary_id, hits.document_name, hits.batch_id,hits.dictionary_type \
+                from t_key_word_hits hits INNER JOIN t_document doc on  hits.document_id = doc.document_id and doc.int_insights_generated_ind = 0\
+                where dictionary_type = ? order by dictionary_id'
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
@@ -280,7 +288,7 @@ class InsightGeneratorDBManager:
 
     def save_insights(self, insightList, dictionary_type):
         insight: Insight
-    
+        self.d_next_seed = 0
         total_records_added_to_db = 0
         for insight in insightList:
             key_word_hit_id1 = insight.keyword_hit_id1
@@ -377,6 +385,7 @@ class InsightGeneratorDBManager:
         print("Total Insights added to the Database:"+ str(total_records_added_to_db))
 
     def save_key_word_hits(self, proximity_entity_list, company_id:int,document_id:int, document_name:str, reporting_year:int, dictionary_type:int):
+        self.d_next_seed = 0
 
         proximity: ProximityEntity
         key_word_locations:KeyWordLocationsEntity
@@ -413,9 +422,18 @@ class InsightGeneratorDBManager:
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
 
-        sql = f"update t_key_word_hits set \
-                insights_generated = 1 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
-                where batch_id ={batch_id} and insights_generated = 0 and dictionary_type ={dictionary_type} and dictionary_id ={dictionary_id} and document_id ={document_id}"
+        # sql = f"update t_key_word_hits set \
+        #         insights_generated = 1 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+        #         where batch_id ={batch_id} and insights_generated = 0 and dictionary_type ={dictionary_type} and dictionary_id ={dictionary_id} and document_id ={document_id}"
+      
+        if(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):  
+            sql = f"update t_document set exp_insights_generated_ind = 1 \
+                    ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                    where document_id ={document_id}"
+        elif(dictionary_type == Lookups().Internalization_Dictionary_Type):
+                    sql = f"update t_document set int_insights_generated_ind = 1 \
+                    ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                    where document_id ={document_id}"
         try:
                 # Execute the SQL query
                 cursor.execute(sql)
@@ -469,7 +487,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name ") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -539,7 +557,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -612,7 +630,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -696,7 +714,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_exp_insights_generated = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+                            doc.mitigation_exp_insights_generated = 0 and doc.company_name = comp.conformed_name") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -805,7 +823,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_int_insights_generated = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+                            doc.mitigation_int_insights_generated = 0 and doc.company_name = comp.conformed_name") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -917,7 +935,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+                            doc.int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -1001,6 +1019,8 @@ class InsightGeneratorDBManager:
 
     def save_Exp_Int_Insights(self, insightList, dictionary_type):
         exp_int_insight_entity: ExpIntInsight
+        self.d_next_seed = 0
+
     
         total_records_added_to_db = 0
         for exp_int_insight_entity in insightList:
@@ -1071,7 +1091,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name and doc.year = comp.reporting_year") 
+                            doc.mitigation_int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -1169,7 +1189,8 @@ class InsightGeneratorDBManager:
 
     def save_Mitigation_Exp_Int_Insights(self, insightList, dictionary_type):
         mitigation_exp_int_insight_entity: MitigationExpIntInsight
-    
+        self.d_next_seed = 0
+
         total_records_added_to_db = 0
         for mitigation_exp_int_insight_entity in insightList:
             exp_keyword_hit_id1  = mitigation_exp_int_insight_entity.exp_keyword_hit_id1

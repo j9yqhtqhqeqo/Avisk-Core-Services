@@ -3,9 +3,12 @@ import os
 
 # PARM_PDF_IN_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage0SourcePDFFiles/Marathon OIL')
 # PARM_PDF_OUT_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/Marathon OIL')
+PARM_BGNYEAR = 2013  # User selected bgn period.  Earliest available is 1993
+PARM_ENDYEAR = 2013 # User selected end period.
 
-PARM_PDF_IN_FOLDER_BP = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage0SourcePDFFiles/Antero Resources')
-PARM_PDF_OUT_FOLDER_BP = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/2022')
+PARM_PDF_IN_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage0SourcePDFFiles')
+PARM_PDF_OUT_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles')
+PARM_ARCHIVE_FOLDER = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/ProcessedPdfFiles')
 
 
 class pdfDocumentExtractor:
@@ -33,7 +36,22 @@ class pdfDocumentExtractor:
 					out.write(text) # write text of page
 					out.write(bytes((12,))) # write page delimiter (form feed 0x0C)
 				out.close()
+				## Archive processed file
+				processed_path_folder = f'{PARM_ARCHIVE_FOLDER}'
+				if not os.path.exists(processed_path_folder):
+					os.makedirs(processed_path_folder)
+		
+				processed_path = f'{processed_path_folder}/{file}'
+				os.rename(inputpath,processed_path)
+				print("Successfully created the text file from pdf file:")
+				print("                    Source:"+inputpath)
+				print("                    Target: "+outputpath)
+
+
 
 pdf_text_converter = pdfDocumentExtractor()
 
-pdf_text_converter.convert_pdf_files_to_text(PARM_PDF_IN_FOLDER_BP, PARM_PDF_OUT_FOLDER_BP)
+for year in range(PARM_BGNYEAR, PARM_ENDYEAR+1):
+	input_path = f'{PARM_PDF_IN_FOLDER}/{year}'
+	ouput_path =  f'{PARM_PDF_OUT_FOLDER}/{year}'
+	pdf_text_converter.convert_pdf_files_to_text(input_path, ouput_path)

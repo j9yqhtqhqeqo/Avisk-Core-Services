@@ -1,7 +1,3 @@
-
-
-
-
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/')
 PARM_SOURCE_INPUT_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/')
 PARM_REPROCESS_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/ReProcessDocHeaders/')
