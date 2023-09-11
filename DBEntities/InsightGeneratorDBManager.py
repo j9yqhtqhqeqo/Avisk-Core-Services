@@ -1021,7 +1021,6 @@ class InsightGeneratorDBManager:
         exp_int_insight_entity: ExpIntInsight
         self.d_next_seed = 0
 
-    
         total_records_added_to_db = 0
         for exp_int_insight_entity in insightList:
             exp_keyword_hit_id1  = exp_int_insight_entity.exp_keyword_hit_id1

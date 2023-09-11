@@ -121,9 +121,6 @@ class keyWordSearchManager:
                 return  
         except:
             self.related_keyword_list_for_validation[keyword] = related_keyword
-
-
-
         exit_loop = False
         while(not exit_loop):
             userInput = input('Enter i to Include, e to Exclude:')

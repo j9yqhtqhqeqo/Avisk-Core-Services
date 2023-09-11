@@ -1,14 +1,31 @@
+import urllib      
+from urllib import request    
+            
+            
+req = request.Request('https://d1io3yog0oux5.cloudfront.net/_7b982f54e1d755807c5fc728a7db0cfe/anteroresources/db/847/7428/esg_report/Antero-Resources-ESG-2023-08-28%21.pdf')
+req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0')
+req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
+req.add_header('Accept-Language', 'en-US,en;q=0.5')
 
-exit_loop = False
-while(not exit_loop):
-        userInput = input('Enter i to Include, e to Exclude:')
-        if(userInput == 'i'):
-            print("Entered i -- exit")
-            exit_loop = True
+file_location = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/TestPdfDownload.pdf'
 
-        if(userInput == 'e'):
-            print("Entered e -- exit")
-            exit_loop = True
+with urllib.request.urlopen(req) as response:
+        with open(file_location, 'wb') as f:
+                    f.write(response.read())
+
+
+
+
+# exit_loop = False
+# while(not exit_loop):
+#         userInput = input('Enter i to Include, e to Exclude:')
+#         if(userInput == 'i'):
+#             print("Entered i -- exit")
+#             exit_loop = True
+
+#         if(userInput == 'e'):
+#             print("Entered e -- exit")
+#             exit_loop = True
 
 
 
