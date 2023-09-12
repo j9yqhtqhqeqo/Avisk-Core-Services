@@ -487,7 +487,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name ") 
+                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name order by doc.document_id") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -557,7 +557,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name") 
+                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name order by doc.document_id") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -630,7 +630,7 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name") 
+                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name order by document_id") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()

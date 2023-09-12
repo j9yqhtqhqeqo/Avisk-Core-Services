@@ -92,6 +92,7 @@ class keyWordSearchManager:
         self.dictionary_Mgr = DictionaryManager()
 
         self.related_keyword_list_for_validation = dict()
+        self.validation_mode = False
 
     def keyword_search_logfile_init(self):
         if os.path.isfile(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}'):
@@ -172,9 +173,11 @@ class keyWordSearchManager:
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
 
-        if(retry_for_new_dicitonary_items):
+        if(retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
             self.generate_keyword_location_map_for_exposure_pathway()
+        else:
+                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
 
     def _get_exp_dictionary_term_list(self):
 
@@ -318,10 +321,11 @@ class keyWordSearchManager:
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
-        if(retry_for_new_dicitonary_items):
+        if(retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_internalization..")
             self.generate_keyword_location_map_for_internalization()
-
+        else:
+                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
 
     def _get_int_dictionary_term_list(self):
         # DEBUG Code
@@ -518,9 +522,12 @@ class keyWordSearchManager:
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
-        if(retry_for_new_dicitonary_items):
+
+        if(retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_mitigation..")
             self.generate_keyword_location_map_for_mitigation()
+        else:
+                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
 
 
     def _get_mitigation_dictionary_term_list(self):
