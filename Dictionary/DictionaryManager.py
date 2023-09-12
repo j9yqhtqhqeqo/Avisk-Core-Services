@@ -31,7 +31,7 @@ EXCLUDE_LOG_FOLDER = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/Dictionary/ExcludeLogs/ExclusionDictionary_bkp_')
 
 VALIDATION_FILES_FOLDER = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/Dictionary/Validation_Files/')
+    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Testing/')
 
 
 
@@ -105,10 +105,10 @@ class DictionaryManager:
 
     def send_Include_Exclude_Dictionary_Files_For_Validation(self, document_name):
 
-        new_include_file_name = 'Include_Recommendation_'+ document_name
-        new_exclude_file_name = 'Exclude_Recommendation_'+ document_name
-        os.rename(NEW_INCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}/{new_include_file_name}')
-        os.rename(NEW_EXCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}/{new_exclude_file_name}')
+        new_include_file_name = 'new_include_list.txt_'+ document_name
+        new_exclude_file_name = 'new_exclude_list.txt_'+ document_name
+        os.rename(NEW_INCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_include_file_name}')
+        os.rename(NEW_EXCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_exclude_file_name}')
 
         print('Sent File'+document_name+'for Validation')
 
@@ -152,5 +152,7 @@ class ContextResolver:
 
         return False
 
-dict_mgr = DictionaryManager()
-dict_mgr.update_Dictionary()
+# dict_mgr = DictionaryManager()
+# dict_mgr.update_Dictionary()
+
+context_resolve = ContextResolver()

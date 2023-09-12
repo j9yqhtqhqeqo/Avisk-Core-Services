@@ -39,6 +39,10 @@ PARM_NEW_INCLUDE_DICT_TERM_PATH = (
 PARM_NEW_EXCLUDE_DICT_TERM_PATH = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/Dictionary/new_exclude_list.txt')
 
+PARM_VALIDATION_LIST_PATH = (
+    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Testing/Dictionary/')
+
+
 PARM_TENK_OUTPUT_PATH = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Extracted10K/')
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
@@ -85,6 +89,7 @@ class keyWordSearchManager:
         self.log_generator = logGenerator(self.log_file_path)
         self.include_log_generator = logGenerator(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
         self.exclude_log_generator = logGenerator(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
+        self.validation_log_generator = logGenerator(f'{PARM_VALIDATION_LIST_PATH}')
 
 
         self.insightDBMgr = InsightGeneratorDBManager()
@@ -124,14 +129,21 @@ class keyWordSearchManager:
             self.related_keyword_list_for_validation[keyword] = related_keyword
         exit_loop = False
         while(not exit_loop):
-            userInput = input('Enter i to Include, e to Exclude:')
-            if(userInput == 'i'):
-                self.include_log_generator.log_details( keyword + ':' +related_keyword, False)
-                exit_loop = True
 
-            if(userInput == 'e'):
-                self.exclude_log_generator.log_details( keyword + ':' +related_keyword, False)
-                exit_loop = True
+            if(not self.validation_mode):
+                userInput = input('Enter i to Include, e to Exclude:')
+                if(userInput == 'i'):
+                    self.include_log_generator.log_details( keyword + ':' +related_keyword, False)
+                    exit_loop = True
+
+                if(userInput == 'e'):
+                    self.exclude_log_generator.log_details( keyword + ':' +related_keyword, False)
+                    exit_loop = True
+            else:
+                    self.include_log_generator.log_details( keyword + ':' +related_keyword, False)
+                    self.exclude_log_generator.log_details( keyword + ':' +related_keyword, False)
+                    exit_loop = True
+
 
 # Search all exposure pathway dictionary terms in the document and save locations
 
@@ -168,16 +180,17 @@ class keyWordSearchManager:
                     Lookups().Exposure_Pathway_Dictionary_Type)
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id)
-            else:
+            elif(not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
+            elif(self.validation_mode):
+                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
 
-        if(retry_for_new_dicitonary_items and not self.validation_mode):
+        if(retry_for_new_dicitonary_items):
             print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
             self.generate_keyword_location_map_for_exposure_pathway()
-        else:
-                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
+        
 
     def _get_exp_dictionary_term_list(self):
 
