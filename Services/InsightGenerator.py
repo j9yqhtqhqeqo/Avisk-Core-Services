@@ -4,6 +4,11 @@
 #  1. Add textfiles to PARM_STAGE1_FOLDER
 #  2. Create entry in table t_document and set document_processed_ind = 0
 ############################################################################################################
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
+import os
 import datetime as dt
 import re
 from DBEntities.DocumentHeaderEntity import DocHeaderEntity
@@ -17,12 +22,9 @@ from DBEntities.ProximityEntity import Insight
 from Utilities.Lookups import Lookups
 from Dictionary.DictionaryManager import DictionaryManager
 from Dictionary.DictionaryManager import ContextResolver
-import numpy as np
 import copy
-import sys
-from pathlib import Path
-import os
-sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+import numpy as np
+
 
 
 EXP_INT_MITIGATION_THRESHOLD = 50
@@ -119,10 +121,12 @@ class keyWordSearchManager:
                 print('Already Found in the current pass')
                 return
             else:
-                self.related_keyword_list_for_validation[keyword+related_keyword] = related_keyword
+                self.related_keyword_list_for_validation[keyword +
+                                                         related_keyword] = related_keyword
 
         except:
-            self.related_keyword_list_for_validation[keyword+related_keyword] = related_keyword
+            self.related_keyword_list_for_validation[keyword +
+                                                     related_keyword] = related_keyword
         exit_loop = False
         while (not exit_loop):
 
@@ -147,23 +151,26 @@ class keyWordSearchManager:
 
 # Search all exposure pathway dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_exposure_pathway(self, end_validation=True):
+    def generate_keyword_location_map_for_exposure_pathway(self):
 
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
 
-        self.document_list = self.insightDBMgr.get_exp_pathway_document_list()
+        self.document_list = self.insightDBMgr.get_exp_pathway_document_list(self.validation_mode)
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_exposure_pathway")
             return
 
         retry_for_new_dicitonary_items = False
+        document_count = 0
         for document in self.document_list:
             self.document_id = document.document_id
             self.document_name = document.document_name
             self.company_id = document.company_id
             self.reporting_year = document.year
+            document_count = document_count + 1
+
             self._load_content(document.document_name,
                                document.document_id, document.year)
 
@@ -184,14 +191,14 @@ class keyWordSearchManager:
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
-                print(
-                    'Completed Validation for Exposure Pathway..Moving to next validation..')
+                print('Completed Exposure Pathway Validation for:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
 
-        if (self.validation_mode and end_validation):
-            self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+        # if (self.validation_mode and end_validation):
+        #     self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
 
         if (retry_for_new_dicitonary_items):
             print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
@@ -305,21 +312,23 @@ class keyWordSearchManager:
 
 # Search all internalization pathway dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_internalization(self, end_validation=True):
+    def generate_keyword_location_map_for_internalization(self):
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
-        self.document_list = self.insightDBMgr.get_internalization_document_list()
+        self.document_list = self.insightDBMgr.get_internalization_document_list(self.validation_mode)
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_internalization")
             return
 
         retry_for_new_dicitonary_items = False
+        document_count = 0
         for document in self.document_list:
             self.document_id = document.document_id
             self.document_name = document.document_name
             self.company_id = document.company_id
             self.reporting_year = document.year
+            document_count = document_count + 1
 
             self._load_content(document.document_name,
                                document.document_id, document.year)
@@ -340,14 +349,14 @@ class keyWordSearchManager:
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
-                print(
-                    'Completed Validation for Internalization Pathway..Moving to next validation..')
+                print('Completed Internalization Pathway Validation for:' +
+                      str(document_count)+' of ' + str(len(self.document_list)))
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
 
-        if (self.validation_mode and end_validation):
-            self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+        # if (self.validation_mode and end_validation):
+        #     self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
 
         if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_internalization..")
@@ -514,21 +523,23 @@ class keyWordSearchManager:
 
 # Search all mitigation dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_mitigation(self, end_validation=True):
+    def generate_keyword_location_map_for_mitigation(self):
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
-        self.document_list = self.insightDBMgr.get_mitigation_document_list()
+        self.document_list = self.insightDBMgr.get_mitigation_document_list(self.validation_mode)
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_mitigation")
             return
 
         retry_for_new_dicitonary_items = False
+        document_count = 0
         for document in self.document_list:
             self.document_id = document.document_id
             self.document_name = document.document_name
             self.company_id = document.company_id
             self.reporting_year = document.year
+            document_count = document_count + 1
 
             self._load_content(document.document_name,
                                document.document_id, document.year)
@@ -548,13 +559,14 @@ class keyWordSearchManager:
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
-                print('Completed Validation for Mitigation..Moving to next validation..')
+                print('Completed Mitigation Validation for:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
 
-        if (self.validation_mode and end_validation):
-            self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+        # if (self.validation_mode and end_validation):
+        #     self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
         if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_mitigation..")
             self.generate_keyword_location_map_for_mitigation()
@@ -668,6 +680,9 @@ class keyWordSearchManager:
             self.insightDBMgr.save_key_word_hits(self.proximity_entity_list, self.company_id, self.document_id,
                                                  self.document_name, self.reporting_year, dictionary_type=dictionary_type)
 
+    def send_Include_Exclude_Dictionary_Files_For_Validation(self):
+        self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+
 
 class db_Insight_keyWordSearchManager(keyWordSearchManager):
     def __init__(self) -> None:
@@ -681,7 +696,11 @@ class db_Insight_keyWordSearchManager(keyWordSearchManager):
         f_input_file_path = f'{PARM_TENK_OUTPUT_PATH}Year{year}Q{qtr}/{document_name}'
 
         with open(f_input_file_path, 'r') as fin:
-            self.current_data = fin.read()
+            # self.current_data = fin.read()
+            sourcedata = fin.read()
+            self.current_data_encoded = sourcedata.encode(('ascii', 'ignore'))
+            self.current_data = self.current_data_encoded.decode(
+                'ascii', errors='ignore')
 
 
 class file_folder_keyWordSearchManager(keyWordSearchManager):
@@ -697,7 +716,12 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
         f_input_file_path = f'{self.folder_path}/{year}/{document_name}'
 
         with open(f_input_file_path, 'r') as fin:
-            self.current_data = fin.read()
+          # self.current_data = fin.read()
+            sourcedata = fin.read()
+            current_data_encoded = sourcedata.encode('ascii', 'replace')
+            current_data_decoded = current_data_encoded.decode(
+                'ascii', errors='replace')
+            self.current_data = current_data_decoded.replace('?', ' ')
 
     def _get_document_id(self, file: str):
         document: KeyWordLocationsEntity

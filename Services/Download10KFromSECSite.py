@@ -19,6 +19,8 @@ PARM_ENDQTR = 4  # Ending quarter of each year
 PARM_PATH_INDEX_DOWNLOAD = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/IndexDownloads'
 PARM_PATH_PROCESSED_FILES = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/ProcessedIndexFiles'
 PARM_PATH_FORM_DOWNLOAD = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads'
+PARM_PATH_FORM_DOWNLOAD_TEST = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/testfile.txt'
+
 
 # Change the file pointer below to reflect your location for the log file
 #    (directory must already exist)
@@ -213,13 +215,15 @@ class IndexDescriptors:
         return file_name
 
 
+url = 'https://app.quotemedia.com/data/downloadFiling?webmasterId=101533&ref=111706116&type=PDF&symbol=CHK&companyName=Chesapeake+Energy+Corporation&formType=10-K&dateFiled=2013-03-01&CK=895126'
+download_single_file(url)
 
-f_10K = ['10-K', '10-K405', '10KSB', '10-KSB', '10KSB40']
-f_10KA = ['10-K/A', '10-K405/A', '10KSB/A', '10-KSB/A', '10KSB40/A']
-f_10KT = ['10-KT', '10KT405', '10-KT/A', '10KT405/A']
+# f_10K = ['10-K', '10-K405', '10KSB', '10-KSB', '10KSB40']
+# f_10KA = ['10-K/A', '10-K405/A', '10KSB/A', '10-KSB/A', '10KSB40/A']
+# f_10KT = ['10-KT', '10KT405', '10-KT/A', '10KT405/A']
 
-tenKlist = f_10K + f_10KA + f_10KT
-download_sec_forms(tenKlist)
+# tenKlist = f_10K + f_10KA + f_10KT
+# download_sec_forms(tenKlist)
 
 # print(tenKlist)
 

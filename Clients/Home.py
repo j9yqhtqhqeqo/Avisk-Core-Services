@@ -2,24 +2,27 @@ import sys
 from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
 from Services.InsightGenerator import file_folder_keyWordSearchManager
 from Services.InsightGenerator import PARM_STAGE1_FOLDER
 from Services.InsightGenerator import Insight_Generator
 from Services.InsightGenerator import triangulation_Insight_Generator
 from Utilities.Lookups import Lookups
+import streamlit as st
+import threading
 
+class StartUpClass:
 
-key_word_search_mgr = file_folder_keyWordSearchManager(
-    folder_path=PARM_STAGE1_FOLDER)
+    def run_online_Mode(self):
 
-key_word_search_mgr.validation_mode = True
+        st.text("ESG Insights Home")
+       
+startup = StartUpClass()
 
-key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway(end_validation=False)
+# startup.run_interact_mode()
+startup.run_online_Mode()
 
-key_word_search_mgr.generate_keyword_location_map_for_internalization(end_validation=False)
+# startup.run_debug_mode()
 
-key_word_search_mgr.generate_keyword_location_map_for_mitigation(end_validation=True)
 
 # exp_int_insght_generator = Insight_Generator()
 # print("Generating Insights for Exposure Pathway Dictionary Terms")

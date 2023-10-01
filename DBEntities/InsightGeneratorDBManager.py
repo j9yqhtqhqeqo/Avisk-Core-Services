@@ -481,14 +481,19 @@ class InsightGeneratorDBManager:
 
         return exp_dict_terms_list
     
-    def get_exp_pathway_document_list(self):
+    def get_exp_pathway_document_list(self,validation_mode:bool):
         document_list =[]
+        if(validation_mode):
+            validation_completed_ind = 0
+        else:
+            validation_completed_ind = 1  
+
         try:
             cursor = self.dbConnection.cursor()
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name order by doc.document_id") 
+                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.exp_valadation_completed_ind={validation_completed_ind} order by doc.document_id") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -551,14 +556,19 @@ class InsightGeneratorDBManager:
 
         return int_dict_terms_list
      
-    def get_internalization_document_list(self):
+    def get_internalization_document_list(self, validation_mode:bool):
         document_list =[]
+        if(validation_mode):
+            validation_completed_ind = 0
+        else:
+            validation_completed_ind = 1    
+
         try:
             cursor = self.dbConnection.cursor()
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name order by doc.document_id") 
+                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.int_valadation_completed_ind ={validation_completed_ind} order by doc.document_id") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -624,14 +634,19 @@ class InsightGeneratorDBManager:
 
         pass
     
-    def get_mitigation_document_list(self):
+    def get_mitigation_document_list(self,validation_mode:bool):
         document_list =[]
+        if(validation_mode):
+            validation_completed_ind = 0
+        else:
+            validation_completed_ind = 1    
+
         try:
             cursor = self.dbConnection.cursor()
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name order by document_id") 
+                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.mit_valadation_completed_ind={validation_completed_ind} order by document_id") 
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()

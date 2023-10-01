@@ -1,18 +1,24 @@
-import urllib      
-from urllib import request    
+# import urllib      
+# from urllib import request    
             
             
-req = request.Request('https://d1io3yog0oux5.cloudfront.net/_7b982f54e1d755807c5fc728a7db0cfe/anteroresources/db/847/7428/esg_report/Antero-Resources-ESG-2023-08-28%21.pdf')
-req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0')
-req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
-req.add_header('Accept-Language', 'en-US,en;q=0.5')
+# req = request.Request('https://d1io3yog0oux5.cloudfront.net/_7b982f54e1d755807c5fc728a7db0cfe/anteroresources/db/847/7428/esg_report/Antero-Resources-ESG-2023-08-28%21.pdf')
+# req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0')
+# req.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8')
+# req.add_header('Accept-Language', 'en-US,en;q=0.5')
 
-file_location = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/TestPdfDownload.pdf'
+# file_location = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/TestPdfDownload.pdf'
 
-with urllib.request.urlopen(req) as response:
-        with open(file_location, 'wb') as f:
-                    f.write(response.read())
+# with urllib.request.urlopen(req) as response:
+#         with open(file_location, 'wb') as f:
+#                     f.write(response.read())
 
+sample =  'Significant�Operational�Changes�In�May�of�2018,�Scott�Saxberg�stepped�down�as�President�and�Chief�Executive�Officer�of�Crescent�Point,�'
+current_data_encoded = sample.encode('ascii',errors='replace')
+current_data = current_data_encoded.decode('ascii', errors='replace')
+new_data =  current_data.replace('?',' ')
+new_other_data = sample.replace('?',' ')
+print('End:')
 
 
 
