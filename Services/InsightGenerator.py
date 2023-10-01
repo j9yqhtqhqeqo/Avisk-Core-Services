@@ -4,26 +4,25 @@
 #  1. Add textfiles to PARM_STAGE1_FOLDER
 #  2. Create entry in table t_document and set document_processed_ind = 0
 ############################################################################################################
+import datetime as dt
+import re
+from DBEntities.DocumentHeaderEntity import DocHeaderEntity
+from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
+from DBEntities.ProximityEntity import ProximityEntity, KeyWordLocationsEntity, FD_Factor
+from Utilities.LoggingServices import logGenerator
+from DBEntities.DictionaryEntity import DictionaryEntity
+from DBEntities.ProximityEntity import MitigationExpIntInsight
+from DBEntities.ProximityEntity import ExpIntInsight
+from DBEntities.ProximityEntity import Insight
+from Utilities.Lookups import Lookups
+from Dictionary.DictionaryManager import DictionaryManager
+from Dictionary.DictionaryManager import ContextResolver
+import numpy as np
+import copy
 import sys
 from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
-import copy
-import numpy as np
-from Dictionary.DictionaryManager import ContextResolver
-from Dictionary.DictionaryManager import DictionaryManager
-from Utilities.Lookups import Lookups
-from DBEntities.ProximityEntity import Insight
-from DBEntities.ProximityEntity import ExpIntInsight
-from DBEntities.ProximityEntity import MitigationExpIntInsight
-from DBEntities.DictionaryEntity import DictionaryEntity
-from Utilities.LoggingServices import logGenerator
-from DBEntities.ProximityEntity import ProximityEntity, KeyWordLocationsEntity, FD_Factor
-from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
-from DBEntities.DocumentHeaderEntity import DocHeaderEntity
-import re
-import datetime as dt
 
 
 EXP_INT_MITIGATION_THRESHOLD = 50
@@ -87,10 +86,12 @@ class keyWordSearchManager:
 
         self.errors: any
         self.log_generator = logGenerator(self.log_file_path)
-        self.include_log_generator = logGenerator(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
-        self.exclude_log_generator = logGenerator(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
-        self.validation_log_generator = logGenerator(f'{PARM_VALIDATION_LIST_PATH}')
-
+        self.include_log_generator = logGenerator(
+            f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
+        self.exclude_log_generator = logGenerator(
+            f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
+        self.validation_log_generator = logGenerator(
+            f'{PARM_VALIDATION_LIST_PATH}')
 
         self.insightDBMgr = InsightGeneratorDBManager()
         self.big_int_location_list = []
@@ -99,18 +100,10 @@ class keyWordSearchManager:
         self.related_keyword_list_for_validation = dict()
         self.validation_mode = False
 
-    def keyword_search_logfile_init(self):
         if os.path.isfile(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}'):
             os.remove(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
         if os.path.isfile(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}'):
             os.remove(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
-
-    def keyword_search_cleanup(self):
-        if os.path.isfile(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}'):
-             self.include_log_generator.log_details('}', False)
-        if os.path.isfile(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}'):
-            self.exclude_log_generator.log_details('}', False)
-
 
     def _get_company_list(self):
         pass
@@ -121,44 +114,50 @@ class keyWordSearchManager:
     def add_new_terms_to_include_exclude_dictionary_file(self, keyword, related_keyword):
 
         try:
-            value = self.related_keyword_list_for_validation[keyword]
-            if(value == related_keyword):
+            value = self.related_keyword_list_for_validation[keyword+related_keyword]
+            if (value == related_keyword):
                 print('Already Found in the current pass')
-                return  
-        except:
-            self.related_keyword_list_for_validation[keyword] = related_keyword
-        exit_loop = False
-        while(not exit_loop):
+                return
+            else:
+                self.related_keyword_list_for_validation[keyword+related_keyword] = related_keyword
 
-            if(not self.validation_mode):
+        except:
+            self.related_keyword_list_for_validation[keyword+related_keyword] = related_keyword
+        exit_loop = False
+        while (not exit_loop):
+
+            if (not self.validation_mode):
                 userInput = input('Enter i to Include, e to Exclude:')
-                if(userInput == 'i'):
-                    self.include_log_generator.log_details( keyword + ':' +related_keyword, False)
+                if (userInput == 'i'):
+                    self.include_log_generator.log_details(
+                        keyword + ':' + related_keyword, False)
                     exit_loop = True
 
-                if(userInput == 'e'):
-                    self.exclude_log_generator.log_details( keyword + ':' +related_keyword, False)
+                if (userInput == 'e'):
+                    self.exclude_log_generator.log_details(
+                        keyword + ':' + related_keyword, False)
                     exit_loop = True
             else:
-                    self.include_log_generator.log_details( keyword + ':' +related_keyword, False)
-                    self.exclude_log_generator.log_details( keyword + ':' +related_keyword, False)
-                    exit_loop = True
+                self.include_log_generator.log_details(
+                    keyword + ':' + related_keyword, False)
+                self.exclude_log_generator.log_details(
+                    keyword + ':' + related_keyword, False)
+                exit_loop = True
 
 
 # Search all exposure pathway dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_exposure_pathway(self):
+    def generate_keyword_location_map_for_exposure_pathway(self, end_validation=True):
 
-        self.keyword_search_logfile_init()
+        # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
-        
+
         self.document_list = self.insightDBMgr.get_exp_pathway_document_list()
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_exposure_pathway")
             return
-        
-        
+
         retry_for_new_dicitonary_items = False
         for document in self.document_list:
             self.document_id = document.document_id
@@ -175,22 +174,28 @@ class keyWordSearchManager:
             self._get_exp_dictionary_term_list()
             self._create_exp_dictionary_proximity_map()
 
-            if not self.is_related_keywords_need_to_be_addressed:
+            if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
                 self._save_dictionary_keyword_search_results(
                     Lookups().Exposure_Pathway_Dictionary_Type)
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id)
-            elif(not self.validation_mode):
+            elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
-            elif(self.validation_mode):
-                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
+            elif (self.validation_mode):
+                print(
+                    'Completed Validation for Exposure Pathway..Moving to next validation..')
+            else:
+                print(
+                    'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
 
-        if(retry_for_new_dicitonary_items):
+        if (self.validation_mode and end_validation):
+            self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+
+        if (retry_for_new_dicitonary_items):
             print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
             self.generate_keyword_location_map_for_exposure_pathway()
-        
 
     def _get_exp_dictionary_term_list(self):
 
@@ -205,8 +210,6 @@ class keyWordSearchManager:
         print("Current Document:" + self.document_name)
 
         self.is_related_keywords_need_to_be_addressed = False
-        # self.related_keyword_list_for_validation.clear()
-
         self.proximity_entity_list.clear()
         total_dictionary_hits = 0
         for DictionaryTermList in self.exp_dictionary_term_list:
@@ -273,7 +276,8 @@ class keyWordSearchManager:
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
                                   #  self.log_generator.log_details( '\''+keyword + '\''+': [\''+related_keyword+'\'],', False)
-                                    self.add_new_terms_to_include_exclude_dictionary_file(keyword,related_keyword)
+                                    self.add_new_terms_to_include_exclude_dictionary_file(
+                                        keyword, related_keyword)
                                     self.is_related_keywords_need_to_be_addressed = True
                 ###############################################
 
@@ -301,8 +305,8 @@ class keyWordSearchManager:
 
 # Search all internalization pathway dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_internalization(self):
-        self.keyword_search_logfile_init()
+    def generate_keyword_location_map_for_internalization(self, end_validation=True):
+        # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
         self.document_list = self.insightDBMgr.get_internalization_document_list()
         if (len(self.document_list) == 0):
@@ -323,22 +327,31 @@ class keyWordSearchManager:
            # Generate keyword location map for internalization pathway dictionary terms
             print(
                 'Generating keyword location map for internalization pathway dictionary terms')
+
             self._get_int_dictionary_term_list()
             self._create_int_dictionary_proximity_map()
-            if not self.is_related_keywords_need_to_be_addressed:
+            if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
                 self._save_dictionary_keyword_search_results(
                     Lookups().Internalization_Dictionary_Type)
                 self.insightDBMgr.update_internalization_keyword_search_completed_ind(
                     self.document_id)
-            else:
+            elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
-        if(retry_for_new_dicitonary_items and not self.validation_mode):
+            elif (self.validation_mode):
+                print(
+                    'Completed Validation for Internalization Pathway..Moving to next validation..')
+            else:
+                print(
+                    'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
+
+        if (self.validation_mode and end_validation):
+            self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+
+        if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_internalization..")
             self.generate_keyword_location_map_for_internalization()
-        else:
-                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
 
     def _get_int_dictionary_term_list(self):
         # DEBUG Code
@@ -352,7 +365,6 @@ class keyWordSearchManager:
         print("Current Document:" + self.document_name)
 
         self.is_related_keywords_need_to_be_addressed = False
-        # self.related_keyword_list_for_validation.clear()
 
         self.proximity_entity_list.clear()
         total_dictionary_hits = 0
@@ -418,8 +430,9 @@ class keyWordSearchManager:
 
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
-                                    #self.log_generator.log_details( '\''+keyword + '\''+': [\''+related_keyword+'\'],', False)
-                                    self.add_new_terms_to_include_exclude_dictionary_file(keyword,related_keyword)
+                                    # self.log_generator.log_details( '\''+keyword + '\''+': [\''+related_keyword+'\'],', False)
+                                    self.add_new_terms_to_include_exclude_dictionary_file(
+                                        keyword, related_keyword)
 
                                     self.is_related_keywords_need_to_be_addressed = True
                 ###############################################
@@ -501,8 +514,8 @@ class keyWordSearchManager:
 
 # Search all mitigation dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_mitigation(self):
-        self.keyword_search_logfile_init()
+    def generate_keyword_location_map_for_mitigation(self, end_validation=True):
+        # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
         self.document_list = self.insightDBMgr.get_mitigation_document_list()
         if (len(self.document_list) == 0):
@@ -525,23 +538,26 @@ class keyWordSearchManager:
             self._get_mitigation_dictionary_term_list()
             self._create_mitigation_dictionary_proximity_map()
 
-            if not self.is_related_keywords_need_to_be_addressed:
+            if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
                 self._save_dictionary_keyword_search_results(
                     Lookups().Mitigation_Dictionary_Type)
                 self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
                     self.document_id)
-            else:
-                # self.keyword_search_cleanup()
+            elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
+            elif (self.validation_mode):
+                print('Completed Validation for Mitigation..Moving to next validation..')
+            else:
+                print(
+                    'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
 
-        if(retry_for_new_dicitonary_items and not self.validation_mode):
+        if (self.validation_mode and end_validation):
+            self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+        if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_mitigation..")
             self.generate_keyword_location_map_for_mitigation()
-        else:
-                self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation(self.document_name)
-
 
     def _get_mitigation_dictionary_term_list(self):
 
@@ -554,7 +570,6 @@ class keyWordSearchManager:
         print("Current Document:" + self.document_name)
 
         self.is_related_keywords_need_to_be_addressed = False
-        # self.related_keyword_list_for_validation.clear()
 
         self.proximity_entity_list.clear()
         total_dictionary_hits = 0
@@ -619,8 +634,9 @@ class keyWordSearchManager:
 
                                     print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
                                         DictionaryTermList.dictionary_id))
-                                    #self.log_generator.log_details( '\''+keyword + '\''+': [\''+related_keyword+'\'],', False)
-                                    self.add_new_terms_to_include_exclude_dictionary_file(keyword,related_keyword)
+                                    # self.log_generator.log_details( '\''+keyword + '\''+': [\''+related_keyword+'\'],', False)
+                                    self.add_new_terms_to_include_exclude_dictionary_file(
+                                        keyword, related_keyword)
 
                                     self.is_related_keywords_need_to_be_addressed = True
                 ###############################################
@@ -646,14 +662,13 @@ class keyWordSearchManager:
 
         print("Total key words found:" + str(total_dictionary_hits))
 
-
     def _save_dictionary_keyword_search_results(self, dictionary_type: int):
         # Save Keyword search Results to Database
         if (self.proximity_entity_list):
             self.insightDBMgr.save_key_word_hits(self.proximity_entity_list, self.company_id, self.document_id,
                                                  self.document_name, self.reporting_year, dictionary_type=dictionary_type)
 
-  
+
 class db_Insight_keyWordSearchManager(keyWordSearchManager):
     def __init__(self) -> None:
         super().__init__()
@@ -798,7 +813,8 @@ class Insight_Generator(keyWordSearchManager):
             # TO BE COMMENTED
             self.insightDBMgr.update_insights_generated_from_keyword_hits_batch(
                 batch_id, dictionary_type=dictionary_type, dictionary_id=dictionary_id, document_id=document_id)
-            self.insightDBMgr.normalize_document_score(dictionary_type=dictionary_type, document_id=document_id)
+            self.insightDBMgr.normalize_document_score(
+                dictionary_type=dictionary_type, document_id=document_id)
 
     def _load_keyword_location_list(self, batch_id=0, dictionary_type=0, dictionary_id=0, document_id=0):
         return (self.insightDBMgr.get_keyword_location_list(batch_id, dictionary_type, dictionary_id, document_id))
@@ -1284,10 +1300,16 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 print('Processing '+str(current_count) +
                       ' of ' + str(record_count)+'  Insights')
 
-                combined_exp_int_insight_location_list = (exp_int_insight_entity.exp1_locations.strip( ']').strip('[')
-                                                          + ',' + exp_int_insight_entity.exp2_locations.strip(']').strip('[')
-                                                           + ',' + exp_int_insight_entity.int1_locations.strip(']').strip('[')
-                                                            + ',' + exp_int_insight_entity.int2_locations.strip(']').strip('[')
+                combined_exp_int_insight_location_list = (exp_int_insight_entity.exp1_locations.strip(']').strip('[')
+                                                          + ',' +
+                                                          exp_int_insight_entity.exp2_locations.strip(
+                                                              ']').strip('[')
+                                                          + ',' +
+                                                          exp_int_insight_entity.int1_locations.strip(
+                                                              ']').strip('[')
+                                                            + ',' +
+                                                          exp_int_insight_entity.int2_locations.strip(
+                                                              ']').strip('[')
                                                           ).split(',')
                 # combined_exp_int_insight_location_list = (exp_int_insight_entity.int2_locations.strip(']').strip('[')
                 #                                           ).split(',')

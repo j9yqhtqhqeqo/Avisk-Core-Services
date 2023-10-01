@@ -92,25 +92,28 @@ class DictionaryManager:
         log_generator.log_details('}',False)
 
     def update_Dictionary(self):
-        include_dict_bkp_path = f'{INCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%c")}.txt' 
-        exclude_dict_bkp_path = f'{EXCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%c")}.txt'  
+        print('Update Dictionary Called..Check Why??')
+        # include_dict_bkp_path = f'{INCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%c")}.txt' 
+        # exclude_dict_bkp_path = f'{EXCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%c")}.txt'  
 
-        dictionary_manager = DictionaryManager()
+        # dictionary_manager = DictionaryManager()
 
-        if os.path.isfile(f'{NEW_INCLUDE_DITCTORY_ITEM_PATH}'):
-            dictionary_manager._update_Dictionary_Items(NEW_INCLUDE_DITCTORY_ITEM_PATH, CURRENT_INCLUDE_DITCTORY_ITEM_PATH, include_dict_bkp_path)
+        # if os.path.isfile(f'{NEW_INCLUDE_DITCTORY_ITEM_PATH}'):
+        #     dictionary_manager._update_Dictionary_Items(NEW_INCLUDE_DITCTORY_ITEM_PATH, CURRENT_INCLUDE_DITCTORY_ITEM_PATH, include_dict_bkp_path)
 
-        if os.path.isfile(f'{NEW_EXCLUDE_DITCTORY_ITEM_PATH}'):
-            dictionary_manager._update_Dictionary_Items(NEW_EXCLUDE_DITCTORY_ITEM_PATH,CURRENT_EXCLUDE_DITCTORY_ITEM_PATH, exclude_dict_bkp_path)
+        # if os.path.isfile(f'{NEW_EXCLUDE_DITCTORY_ITEM_PATH}'):
+        #     dictionary_manager._update_Dictionary_Items(NEW_EXCLUDE_DITCTORY_ITEM_PATH,CURRENT_EXCLUDE_DITCTORY_ITEM_PATH, exclude_dict_bkp_path)
 
-    def send_Include_Exclude_Dictionary_Files_For_Validation(self, document_name):
+    def send_Include_Exclude_Dictionary_Files_For_Validation(self):
 
-        new_include_file_name = 'new_include_list.txt_'+ document_name
-        new_exclude_file_name = 'new_exclude_list.txt_'+ document_name
+        new_include_file_name = 'new_include_list_'+ f'{dt.datetime.now()}.txt'
+        new_exclude_file_name = 'new_exclude_list_'+ f'{dt.datetime.now()}.txt'
         os.rename(NEW_INCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_include_file_name}')
         os.rename(NEW_EXCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_exclude_file_name}')
 
-        print('Sent File'+document_name+'for Validation')
+        print('Sent File'+new_include_file_name+'for Validation')
+        print('Sent File'+new_exclude_file_name+'for Validation')
+
 
                 
 class ContextResolver:

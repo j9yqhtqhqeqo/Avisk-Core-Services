@@ -12,13 +12,14 @@ from Utilities.Lookups import Lookups
 
 key_word_search_mgr = file_folder_keyWordSearchManager(
     folder_path=PARM_STAGE1_FOLDER)
+
 key_word_search_mgr.validation_mode = True
 
-key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
+key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway(end_validation=False)
 
-key_word_search_mgr.generate_keyword_location_map_for_internalization()
+key_word_search_mgr.generate_keyword_location_map_for_internalization(end_validation=False)
 
-key_word_search_mgr.generate_keyword_location_map_for_mitigation()
+key_word_search_mgr.generate_keyword_location_map_for_mitigation(end_validation=True)
 
 # exp_int_insght_generator = Insight_Generator()
 # print("Generating Insights for Exposure Pathway Dictionary Terms")

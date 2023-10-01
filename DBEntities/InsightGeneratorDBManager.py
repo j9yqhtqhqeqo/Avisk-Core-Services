@@ -458,7 +458,8 @@ class InsightGeneratorDBManager:
               from t_exposure_pathway_dictionary d INNER JOIN  t_exposure_pathway exp on d.exposure_path_id = exp.exposure_path_id\
                                 INNER JOIN  t_impact_category imp on imp.impact_category_id = exp.impact_category_id\
                                 INNER JOIN t_esg_category esg on esg.esg_category_id = imp.esg_category_id"
-        # where dictionary_id = 1002"
+            #  where dictionary_id = 1005"
+            ##DEBUG COMMENT LINE ABOVE
 
         try:
             # Execute the SQL query
@@ -530,9 +531,9 @@ class InsightGeneratorDBManager:
 
         int_dict_terms_list =[]    
 
-        sql = "select d.dictionary_id,keywords,internalization_id from t_internalization_dictionary d"
-         #       where d.dictionary_id <= 1015"
-        
+        sql = "select d.dictionary_id,keywords,internalization_id from t_internalization_dictionary d" 
+                #where d.dictionary_id in(1004,1012)"
+        ##DEBUG COMMENT LINE ABOVE
         try:
             # Execute the SQL query
 
