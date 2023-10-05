@@ -52,20 +52,9 @@ PARM_STAGE1_FOLDER = (
 WORD_RADIUS = 25
 
 
-# class insights:
-#     def __init__(self) -> None:
-#         self.document_section:str
-#         self.document_id:str
-#         self.cluster_terms = dict()
-#         self.frequency:int
-
-#     def add_proximity_info(self,term:str, distance:int):
-#         self.cluster_terms.update({term:distance})
-
-
 class keyWordSearchManager:
 
-    def __init__(self) -> None:
+    def __init__(self, database_context:None) -> None:
         self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
 
         self.document_id: int
@@ -95,7 +84,6 @@ class keyWordSearchManager:
         self.validation_log_generator = logGenerator(
             f'{PARM_VALIDATION_LIST_PATH}')
 
-        self.insightDBMgr = InsightGeneratorDBManager()
         self.big_int_location_list = []
         self.dictionary_Mgr = DictionaryManager()
 
@@ -106,6 +94,10 @@ class keyWordSearchManager:
             os.remove(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
         if os.path.isfile(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}'):
             os.remove(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
+
+        self.insightDBMgr = InsightGeneratorDBManager(database_context)
+
+        self.database_context = database_context
 
     def _get_company_list(self):
         pass
@@ -186,6 +178,10 @@ class keyWordSearchManager:
                     Lookups().Exposure_Pathway_Dictionary_Type)
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id)
+
+                print('Completed Processing for:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
+           
             elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
@@ -193,6 +189,8 @@ class keyWordSearchManager:
             elif (self.validation_mode):
                 print('Completed Exposure Pathway Validation for:' +
                         str(document_count)+' of ' + str(len(self.document_list)))
+                 ## Add Logic to update  Validation Completed Flags
+
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
@@ -209,7 +207,7 @@ class keyWordSearchManager:
         # DEBUG Code
         # self.exp_dictionary_term_list.append(DictionaryEntity(dictionary_id=1000,keywords='floods', exposure_pathway_id=10102))
 
-        insightDBMgr = InsightGeneratorDBManager()
+        insightDBMgr = InsightGeneratorDBManager(self.database_context)
         self.exp_dictionary_term_list = insightDBMgr.get_exp_dictionary_term_list()
 
     def _create_exp_dictionary_proximity_map(self):
@@ -344,6 +342,10 @@ class keyWordSearchManager:
                     Lookups().Internalization_Dictionary_Type)
                 self.insightDBMgr.update_internalization_keyword_search_completed_ind(
                     self.document_id)
+
+                print('Completed Processing for:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
+           
             elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
@@ -351,6 +353,7 @@ class keyWordSearchManager:
             elif (self.validation_mode):
                 print('Completed Internalization Pathway Validation for:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
+                ## Add Logic to update  Validation Completed Flags
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
@@ -366,8 +369,8 @@ class keyWordSearchManager:
         # DEBUG Code
         # self.int_dictionary_term_list.append(DictionaryEntity(dictionary_id=1001,keywords='materials', exposure_pathway_id=10102))
 
-        insightDBMgr = InsightGeneratorDBManager()
-        self.int_dictionary_term_list = insightDBMgr.get_int_dictionary_term_list()
+        insightDBMgr = InsightGeneratorDBManager(self.database_context)
+        self.int_dictionary_term_list = self.insightDBMgr.get_int_dictionary_term_list()
 
     def _create_int_dictionary_proximity_map(self):
         print('################################################################################################')
@@ -554,6 +557,9 @@ class keyWordSearchManager:
                     Lookups().Mitigation_Dictionary_Type)
                 self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
                     self.document_id)
+                
+                print('Completed Processing for:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
             elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
@@ -561,6 +567,7 @@ class keyWordSearchManager:
             elif (self.validation_mode):
                 print('Completed Mitigation Validation for:' +
                         str(document_count)+' of ' + str(len(self.document_list)))
+                ## Add logic to update Valdiation Flags
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
@@ -573,8 +580,8 @@ class keyWordSearchManager:
 
     def _get_mitigation_dictionary_term_list(self):
 
-        insightDBMgr = InsightGeneratorDBManager()
-        self.mitigation_dictionary_term_list = insightDBMgr.get_mitigation_dictionary_term_list()
+        insightDBMgr = InsightGeneratorDBManager(self.database_context)
+        self.mitigation_dictionary_term_list = self.insightDBMgr.get_mitigation_dictionary_term_list()
 
     def _create_mitigation_dictionary_proximity_map(self):
 
@@ -704,8 +711,8 @@ class db_Insight_keyWordSearchManager(keyWordSearchManager):
 
 
 class file_folder_keyWordSearchManager(keyWordSearchManager):
-    def __init__(self, folder_path: str) -> None:
-        super().__init__()
+    def __init__(self, folder_path: str, database_context:None) -> None:
+        super().__init__(database_context)
         self.folder_path = folder_path
 
     def _load_content(self, document_name: str, document_id: int, year: int):

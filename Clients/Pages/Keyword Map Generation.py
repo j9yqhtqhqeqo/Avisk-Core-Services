@@ -22,12 +22,8 @@ class StartUpClass:
     def generate_keyword_location_map(self, DebugMode=False):
 
         key_word_search_mgr = file_folder_keyWordSearchManager(
-            folder_path=PARM_STAGE1_FOLDER)
-
-        if (not DebugMode):
-            key_word_search_mgr.validation_mode = self.validation_mode
-        else:
-            key_word_search_mgr.validation_mode = True
+            folder_path=PARM_STAGE1_FOLDER,database_context=self.database_context)
+        key_word_search_mgr.validation_mode = False
 
         if (self.ExposurePathwaySelected):
             key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
@@ -41,7 +37,12 @@ class StartUpClass:
 
     def run_online_Mode(self):
 
-        # self.validation_mode = st.checkbox("Validation Only", value=True)
+        database_context = st.radio("Database Context",["Development","Test"], index=1)
+        if(database_context == 'Development'):
+            self.database_context='Development'
+        else:
+            self.database_context = "Test"
+
         st.text("Select Keyword Location Map Category:")
         self.ExposurePathwaySelected = st.checkbox(
             "Exposure Pathway", value=True)
@@ -52,39 +53,7 @@ class StartUpClass:
         st.button('Generate Location Maps',
                   on_click=self.generate_keyword_location_map)
         
-
-    def run_debug_mode(self):
-        self.generate_keyword_location_map(DebugMode=True)
-
-
-    def run_interact_mode(self):
-        # st.text(key ='status')
-        st.text_input("Your name", key="status")
-
-        t1 = threading.Thread(target=self.run_count_thread)
-        t2 = threading.Thread(target=self.run_refresh_thread,)
-    
-        # starting thread 1
-        t1.start()
-        # starting thread 2
-        t2.start()
-    
-        # wait until thread 1 is completely executed
-        t1.join()
-        # wait until thread 2 is completely executed
-        t2.join()
-    
-
-    def run_count_thread(self):
-        for i in range(1000):
-            print(i)
-            self.counter = self.counter+1
-
-    def run_refresh_thread(self):
-            st.session_state.status = self.counter
          
 
 startup = StartUpClass()
-
-# startup.run_interact_mode()
 startup.run_online_Mode()

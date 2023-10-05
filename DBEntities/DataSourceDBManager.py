@@ -4,14 +4,25 @@ from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 
+DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
+TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
+
 
 class DataSourceDBManager():
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.dbConnection = pyodbc.connect(
-            'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
+    def __init__(self, database_context:None) -> None:
 
+        connection_string =''
+
+        if(database_context == 'Development'):
+            connection_string = DEV_DB_CONNECTION_STRING
+        elif(database_context == 'Test'):
+            connection_string = TEST_DB_CONNECTION_STRING
+        else:
+            raise Exception("Database context Undefined")
+        
+        self.dbConnection = pyodbc.connect(connection_string)
+         
     #Get unprocessed data source List
     def get_unprocessed_content_list(self):
         document_list = []

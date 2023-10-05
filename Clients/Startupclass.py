@@ -10,30 +10,17 @@ from Utilities.Lookups import Lookups
 import streamlit as st
 import threading
 
-class StartUpClass:
+key_word_search_mgr = file_folder_keyWordSearchManager(
+            folder_path=PARM_STAGE1_FOLDER, database_context='Test')
 
+# key_word_search_mgr.database_context = "Test"
 
+key_word_search_mgr.validation_mode = False
 
-    def run_online_Mode(self):
+key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
+key_word_search_mgr.generate_keyword_location_map_for_internalization()
+key_word_search_mgr.generate_keyword_location_map_for_mitigation()
 
-        st.set_page_config(
-        page_title="ESG Insights Inc.,",
-        page_icon="🧊",
-        layout="wide",
-        initial_sidebar_state="expanded",
-        )
-
-
-
-        st.text("ESG Insights Home")
-        st.text("Use Navigations on the Left Side to access system functions")
-       
-startup = StartUpClass()
-
-# startup.run_interact_mode()
-startup.run_online_Mode()
-
-# startup.run_debug_mode()
 
 
 # exp_int_insght_generator = Insight_Generator()

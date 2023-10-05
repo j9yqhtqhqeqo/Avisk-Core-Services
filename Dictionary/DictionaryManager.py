@@ -104,6 +104,9 @@ class DictionaryManager:
         if os.path.isfile(f'{NEW_EXCLUDE_DITCTORY_ITEM_PATH}'):
             dictionary_manager._update_Dictionary_Items(NEW_EXCLUDE_DITCTORY_ITEM_PATH,CURRENT_EXCLUDE_DITCTORY_ITEM_PATH, exclude_dict_bkp_path)
 
+        
+        print('New terms terms added to the dictionary')
+
     def send_Include_Exclude_Dictionary_Files_For_Validation(self):
 
         new_include_file_name = 'new_include_list_'+ f'{dt.datetime.now()}.txt'

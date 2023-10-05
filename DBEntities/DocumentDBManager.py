@@ -5,6 +5,7 @@ sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 import pyodbc
 import datetime as dt
 import re
+from Utilities.Lookups import Lookups
 
 from DocumentHeaderEntity import DocHeaderEntity
 
@@ -74,3 +75,21 @@ class DocumentDBManager():
         conn.close()
         return self.d_current_document_seed
 
+    # def updateValidationFileGenerated(self, Dictionary_Type:int):
+
+    #     if(Dictionary_Type == Lookups().Exposure_Pathway_Dictionary_Type):
+    #         ##
+    #         sql = "update t_exposure_pathway_insights set score_normalized = (score * 100)/(select max(score) from t_exposure_pathway_insights where document_id = ?) where document_id = ?"
+
+    #     elif(Dictionary_Type == Lookups().Internalization_Dictionary_Type):
+    #         ##
+    #         pass
+    #     elif(Dictionary_Type == Lookups().Mitigation_Dictionary_Type):
+    #         pass
+
+    #     cursor = self.dbConnection.cursor()
+
+    #     cursor.execute(sql, document_id, document_id)
+    #     self.dbConnection.commit()
+
+    #     cursor.close()

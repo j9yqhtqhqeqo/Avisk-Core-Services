@@ -26,9 +26,9 @@ PARM_LOGFILE = (
 
 class DataSourceProcessor:
 
-    def __init__(self) -> None:
+    def __init__(self, databse_context:None) -> None:
         self.document_list = []
-        self.datasourceDBMgr = DataSourceDBManager()
+        self.datasourceDBMgr = DataSourceDBManager(databse_context)
         self.logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
         self.flagged_for_review = False
 
@@ -170,10 +170,17 @@ class DataSourceProcessor:
                 print('Failed to download file - check source url:' + source_url)
                 print('Processing next Url')
 
+    def get_unprocessed_source_document_list(self):
+        return  self.datasourceDBMgr.get_unprocessed_content_list()
 
-logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
-l_datasource_processor = DataSourceProcessor()
-l_datasource_processor.download_content_from_source_and_process_text()
+unprocessed_document_list = (DataSourceProcessor("Test")).get_unprocessed_source_document_list()
+print([x.as_dict() for x in unprocessed_document_list])
+
+
+# logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
+# l_datasource_processor = DataSourceProcessor()
+# l_datasource_processor.get_unprocessed_source_document_list()
+# l_datasource_processor.download_content_from_source_and_process_text()
 
 # url = 'https://www.sec.gov/Archives/edgar/data/1163165/000119312513065426/d452384d10k.htm'
 # PARM_PATH_FORM_DOWNLOAD_TEST = r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/testfile.txt'
