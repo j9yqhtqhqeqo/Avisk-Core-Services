@@ -1,4 +1,20 @@
-# import urllib      
+import multiprocessing
+
+process_count = multiprocessing.cpu_count()
+
+queue_size = 230
+
+
+buffer =[0]*process_count
+
+for i in range(queue_size):
+    j = i % process_count
+    buffer[j] = buffer[j] + 1
+
+for item in buffer:
+    print(item)
+
+#import urllib      
 # from urllib import request    
             
             
@@ -13,14 +29,24 @@
 #         with open(file_location, 'wb') as f:
 #                     f.write(response.read())
 
-sample =  'Significant�Operational�Changes�In�May�of�2018,�Scott�Saxberg�stepped�down�as�President�and�Chief�Executive�Officer�of�Crescent�Point,�'
-current_data_encoded = sample.encode('ascii',errors='replace')
-current_data = current_data_encoded.decode('ascii', errors='replace')
-new_data =  current_data.replace('?',' ')
-new_other_data = sample.replace('?',' ')
-print('End:')
+# sample =  'Significant�Operational�Changes�In�May�of�2018,�Scott�Saxberg�stepped�down�as�President�and�Chief�Executive�Officer�of�Crescent�Point,�'
+# current_data_encoded = sample.encode('ascii',errors='replace')
+# current_data = current_data_encoded.decode('ascii', errors='replace')
+# new_data =  current_data.replace('?',' ')
+# new_other_data = sample.replace('?',' ')
+# print('End:')
 
-
+#         sql = f"INSERT INTO dbo.t_key_word_hits( \
+#                 batch_id, dictionary_type,document_id,  document_name, company_id, reporting_year,\
+#                 dictionary_id ,key_word, locations,frequency, insights_generated,exposure_path_id, internalization_id,\
+#                 impact_category_id, esg_category_id,\
+#                 added_dt,added_by ,modify_dt,modify_by\
+#                 )\
+#                     VALUES\
+#                     ({batch_id},{dictionary_type},{document_id},N'{document_name}', {company_id}, {reporting_year},\
+#                 {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0, {exposure_path_id}, {internalization_id},\
+#                 {impact_category_id},{esg_category_id},\
+#                 CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
 
 # exit_loop = False
 # while(not exit_loop):

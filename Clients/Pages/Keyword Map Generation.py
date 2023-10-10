@@ -9,6 +9,9 @@ from Services.InsightGenerator import triangulation_Insight_Generator
 from Utilities.Lookups import Lookups
 import streamlit as st
 import threading
+from Services.SingletonServiceMgr import process_exposure_pathway_document_list
+from Services.SingletonServiceMgr import process_internalization_document_list
+from Services.SingletonServiceMgr import process_mitigation_document_list
 
 class StartUpClass:
 
@@ -26,11 +29,15 @@ class StartUpClass:
         key_word_search_mgr.validation_mode = False
 
         if (self.ExposurePathwaySelected):
-            key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
+            # key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
+            process_exposure_pathway_document_list(self.database_context)
+
         if (self.InternalizationSelected):
-            key_word_search_mgr.generate_keyword_location_map_for_internalization()
+            # key_word_search_mgr.generate_keyword_location_map_for_internalization()
+            process_internalization_document_list(self.database_context)
         if (self.MitigationSelected):
-            key_word_search_mgr.generate_keyword_location_map_for_mitigation()
+            process_mitigation_document_list(self.database_context)
+            # key_word_search_mgr.generate_keyword_location_map_for_mitigation()
 
         if (key_word_search_mgr.validation_mode):
             key_word_search_mgr.send_Include_Exclude_Dictionary_Files_For_Validation()

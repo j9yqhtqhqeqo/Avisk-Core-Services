@@ -10,6 +10,7 @@ from Services.InsightGenerator import triangulation_Insight_Generator
 from Services.InsightGenerator import Insight_Generator
 from Services.InsightGenerator import PARM_STAGE1_FOLDER
 from Services.InsightGenerator import file_folder_keyWordSearchManager
+from Services.SingletonServiceMgr import process_exposure_pathway_document_list
 
 
 
@@ -28,7 +29,7 @@ class StartUpClass:
 
         if (self.ExposurePathwaySelected):
             print('Validating Exposure Pathway Dictionary Terms:')
-            key_word_search_mgr.generate_keyword_location_map_for_exposure_pathway()
+            process_exposure_pathway_document_list(self.database_context)
             
         if (self.InternalizationSelected):
             print('Validating Internalization Dictionary Terms:')
@@ -39,6 +40,10 @@ class StartUpClass:
 
         if (key_word_search_mgr.validation_mode):
             key_word_search_mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+
+    # def run_thread_mode(self, DebugMode=False):
+    #     process_exposure_pathway_document_list()
+
 
     def run_online_Mode(self):
 
@@ -57,6 +62,10 @@ class StartUpClass:
 
         st.button('Run Validations',
                   on_click=self.run_keyword_validations)
+        
+        # st.button('Run Thread Mode',
+        #           on_click=self.run_thread_mode)
+
 
 
 l_startup_class = StartUpClass()

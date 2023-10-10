@@ -16,6 +16,7 @@ import datetime as dt
 import pyodbc
 
 
+
 INSIGHT_SCORE_THRESHOLD = 50
 EXP_INT_MITIGATION_THRESHOLD = 50
 
@@ -127,9 +128,7 @@ class InsightGeneratorDBManager:
             self.d_next_seed = self.d_next_seed+1
             return self.d_next_seed
 
-        if (save_type == Lookups().Keyword_Hit_Save):
-            sql = "select max(key_word_hit_id) from dbo.t_key_word_hits"
-        elif (save_type == Lookups().Exposure_Save):
+        if (save_type == Lookups().Exposure_Save):
             sql = "select max(unique_key) from dbo.t_exposure_pathway_insights"
         elif (save_type == Lookups().Internalization_Save):
             sql = "select max(unique_key) from dbo.t_internalization_insights"
@@ -269,20 +268,20 @@ class InsightGeneratorDBManager:
 
         return document_list
 
-    def insert_key_word_hits_to_db(self, batch_id: int, company_id: int, document_id: str, document_name: str, reporting_year: int, dictionary_id: int, key_word_hit_id: int, key_word: str, locations: str, frequency: int, dictionary_type: int, exposure_path_id: int, internalization_id: int, impact_category_id: int, esg_category_id: int):
+    def insert_key_word_hits_to_db(self, batch_id: int, company_id: int, document_id: str, document_name: str, reporting_year: int, dictionary_id: int, key_word: str, locations: str, frequency: int, dictionary_type: int, exposure_path_id: int, internalization_id: int, impact_category_id: int, esg_category_id: int):
 
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
         # Construct the INSERT INTO statement
 
         sql = f"INSERT INTO dbo.t_key_word_hits( \
-                batch_id, dictionary_type, key_word_hit_id , document_id,  document_name, company_id, reporting_year,\
+                batch_id, dictionary_type, document_id,  document_name, company_id, reporting_year,\
                 dictionary_id ,key_word, locations,frequency, insights_generated,exposure_path_id, internalization_id,\
                 impact_category_id, esg_category_id,\
                 added_dt,added_by ,modify_dt,modify_by\
                 )\
                     VALUES\
-                    ({batch_id},{dictionary_type},{self.d_next_seed},{document_id},N'{document_name}', {company_id}, {reporting_year},\
+                    ({batch_id},{dictionary_type},{document_id},N'{document_name}', {company_id}, {reporting_year},\
                 {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0, {exposure_path_id}, {internalization_id},\
                 {impact_category_id},{esg_category_id},\
                 CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
@@ -421,13 +420,11 @@ class InsightGeneratorDBManager:
 
             for key_word_locations in proximity.key_word_bunch:
                 batch_id = self.get_current_batch_id()
-                key_word_hit_id = self.get_next_surrogate_key(
-                    Lookups().Keyword_Hit_Save)
                 key_word = key_word_locations.key_word
                 locations = key_word_locations.locations
                 frequency = key_word_locations.frequency
                 self.insert_key_word_hits_to_db(batch_id=batch_id, company_id=company_id, document_id=document_id, document_name=document_name,
-                                                reporting_year=reporting_year, dictionary_id=dictionary_id, key_word_hit_id=key_word_hit_id,
+                                                reporting_year=reporting_year, dictionary_id=dictionary_id,
                                                 key_word=key_word, locations=locations, frequency=frequency, dictionary_type=dictionary_type,
                                                 exposure_path_id=exposure_path_id, internalization_id=internalization_id, impact_category_id=impact_category_id, esg_category_id=esg_category_id)
                 total_records_added_to_db = total_records_added_to_db + 1
@@ -438,9 +435,9 @@ class InsightGeneratorDBManager:
         self.log_generator.log_details(
             '################################################################################################')
 
-        print("Total keyword location lists Added to the Database:" +
-              str(total_records_added_to_db))
-        print('################################################################################################')
+        # print("Total keyword location lists Added to the Database:" +
+        #       str(total_records_added_to_db))
+        # print('################################################################################################')
 
     def update_insights_generated_from_keyword_hits_batch(self, batch_id=0, dictionary_type=0, dictionary_id=0, document_id=0):
         # Create a cursor object to execute SQL queries
@@ -1304,7 +1301,7 @@ class InsightGeneratorDBManager:
                       str(total_records_added_to_db))
 
         # Close the cursor and connection
-        if(total_records_added_to_db > 0):
+        if (total_records_added_to_db > 0):
             self.dbConnection.commit()
             cursor.close()
 

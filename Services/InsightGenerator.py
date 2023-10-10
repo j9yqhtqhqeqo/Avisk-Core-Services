@@ -4,27 +4,25 @@
 #  1. Add textfiles to PARM_STAGE1_FOLDER
 #  2. Create entry in table t_document and set document_processed_ind = 0
 ############################################################################################################
+import numpy as np
+import copy
+from Dictionary.DictionaryManager import ContextResolver
+from Dictionary.DictionaryManager import DictionaryManager
+from Utilities.Lookups import Lookups
+from DBEntities.ProximityEntity import Insight
+from DBEntities.ProximityEntity import ExpIntInsight
+from DBEntities.ProximityEntity import MitigationExpIntInsight
+from DBEntities.DictionaryEntity import DictionaryEntity
+from Utilities.LoggingServices import logGenerator
+from DBEntities.ProximityEntity import ProximityEntity, KeyWordLocationsEntity, FD_Factor
+from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
+from DBEntities.DocumentHeaderEntity import DocHeaderEntity
+import re
+import datetime as dt
+import os
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
-import os
-import datetime as dt
-import re
-from DBEntities.DocumentHeaderEntity import DocHeaderEntity
-from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
-from DBEntities.ProximityEntity import ProximityEntity, KeyWordLocationsEntity, FD_Factor
-from Utilities.LoggingServices import logGenerator
-from DBEntities.DictionaryEntity import DictionaryEntity
-from DBEntities.ProximityEntity import MitigationExpIntInsight
-from DBEntities.ProximityEntity import ExpIntInsight
-from DBEntities.ProximityEntity import Insight
-from Utilities.Lookups import Lookups
-from Dictionary.DictionaryManager import DictionaryManager
-from Dictionary.DictionaryManager import ContextResolver
-import copy
-import numpy as np
-
 
 
 EXP_INT_MITIGATION_THRESHOLD = 50
@@ -54,7 +52,7 @@ WORD_RADIUS = 25
 
 class keyWordSearchManager:
 
-    def __init__(self, database_context:None) -> None:
+    def __init__(self, database_context: None) -> None:
         self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
 
         self.document_id: int
@@ -143,12 +141,14 @@ class keyWordSearchManager:
 
 # Search all exposure pathway dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_exposure_pathway(self):
+
+    def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0):
 
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
 
-        self.document_list = self.insightDBMgr.get_exp_pathway_document_list(self.validation_mode)
+        # self.document_list = self.insightDBMgr.get_exp_pathway_document_list(self.validation_mode)
+        self.document_list = document_List
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_exposure_pathway")
@@ -167,8 +167,8 @@ class keyWordSearchManager:
                                document.document_id, document.year)
 
             # Generate keyword location map for exposure pathway dictionary terms
-            print(
-                "Generating keyword location map for exposure pathway dictionary terms ")
+            # print(
+            #     "Generating keyword location map for exposure pathway dictionary terms ")
 
             self._get_exp_dictionary_term_list()
             self._create_exp_dictionary_proximity_map()
@@ -179,17 +179,17 @@ class keyWordSearchManager:
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id)
 
-                print('Completed Processing for:' +
-                        str(document_count)+' of ' + str(len(self.document_list)))
-           
+                print('Completed - Batch#:' + str(batch_num) +', Document:' +
+                      str(document_count)+' of ' + str(len(self.document_list)))
+
             elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
                 print('Completed Exposure Pathway Validation for:' +
-                        str(document_count)+' of ' + str(len(self.document_list)))
-                 ## Add Logic to update  Validation Completed Flags
+                      str(document_count)+' of ' + str(len(self.document_list)))
+                # Add Logic to update  Validation Completed Flags
 
             else:
                 print(
@@ -211,8 +211,8 @@ class keyWordSearchManager:
         self.exp_dictionary_term_list = insightDBMgr.get_exp_dictionary_term_list()
 
     def _create_exp_dictionary_proximity_map(self):
-        print('################################################################################################')
-        print("Current Document:" + self.document_name)
+        # print('################################################################################################')
+        # print("Document In Progress:" + self.document_name)
 
         self.is_related_keywords_need_to_be_addressed = False
         self.proximity_entity_list.clear()
@@ -301,19 +301,20 @@ class keyWordSearchManager:
         self.log_generator.log_details(
             '################################################################################################')
         self.log_generator.log_details(
-            "Current Document:" + self.document_name)
+            "Document In Progress:" + self.document_name)
         self.log_generator.log_details(
             "Total keywords found:" + str(total_dictionary_hits))
 
-        print("Total key words found:" + str(total_dictionary_hits))
+        # print("Total key words found for "+self.document_name +
+        #       ':' + str(total_dictionary_hits))
         return self.is_related_keywords_need_to_be_addressed
 
 # Search all internalization pathway dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_internalization(self):
+    def generate_keyword_location_map_for_internalization(self, document_List=[], batch_num=0):
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
-        self.document_list = self.insightDBMgr.get_internalization_document_list(self.validation_mode)
+        self.document_list = document_List
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_internalization")
@@ -332,8 +333,8 @@ class keyWordSearchManager:
                                document.document_id, document.year)
 
            # Generate keyword location map for internalization pathway dictionary terms
-            print(
-                'Generating keyword location map for internalization pathway dictionary terms')
+            # print(
+            #     'Generating keyword location map for internalization pathway dictionary terms')
 
             self._get_int_dictionary_term_list()
             self._create_int_dictionary_proximity_map()
@@ -343,9 +344,9 @@ class keyWordSearchManager:
                 self.insightDBMgr.update_internalization_keyword_search_completed_ind(
                     self.document_id)
 
-                print('Completed Processing for:' +
-                        str(document_count)+' of ' + str(len(self.document_list)))
-           
+                print('Completed - Batch#:' + str(batch_num) + ', Document:' +
+                      str(document_count)+' of ' + str(len(self.document_list)))
+
             elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
@@ -353,7 +354,7 @@ class keyWordSearchManager:
             elif (self.validation_mode):
                 print('Completed Internalization Pathway Validation for:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
-                ## Add Logic to update  Validation Completed Flags
+                # Add Logic to update  Validation Completed Flags
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
@@ -373,8 +374,8 @@ class keyWordSearchManager:
         self.int_dictionary_term_list = self.insightDBMgr.get_int_dictionary_term_list()
 
     def _create_int_dictionary_proximity_map(self):
-        print('################################################################################################')
-        print("Current Document:" + self.document_name)
+        # print('################################################################################################')
+        # print("Document In Progress:" + self.document_name)
 
         self.is_related_keywords_need_to_be_addressed = False
 
@@ -464,11 +465,12 @@ class keyWordSearchManager:
         self.log_generator.log_details(
             '################################################################################################')
         self.log_generator.log_details(
-            "Current Document:" + self.document_name)
+            "Document In Progress:" + self.document_name)
         self.log_generator.log_details(
             "Total keywords found:" + str(total_dictionary_hits))
 
-        print("Total key words found:" + str(total_dictionary_hits))
+        # print("Total key words found for "+self.document_name +
+        #       ':' + str(total_dictionary_hits))f
         return self.is_related_keywords_need_to_be_addressed
 
     def combine_singular_plural_words(self, proximity_entity: ProximityEntity):
@@ -526,10 +528,10 @@ class keyWordSearchManager:
 
 # Search all mitigation dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_mitigation(self):
+    def generate_keyword_location_map_for_mitigation(self, document_List=[], batch_num=0):
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
-        self.document_list = self.insightDBMgr.get_mitigation_document_list(self.validation_mode)
+        self.document_list = document_List
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_mitigation")
@@ -547,8 +549,8 @@ class keyWordSearchManager:
             self._load_content(document.document_name,
                                document.document_id, document.year)
 
-           # Generate keyword location map for internalization pathway dictionary terms
-            print('Generating keyword location map for mitigation dictionary terms')
+           # Generate keyword location map for Mitigation pathway dictionary terms
+            # print('Generating keyword location map for mitigation dictionary terms')
             self._get_mitigation_dictionary_term_list()
             self._create_mitigation_dictionary_proximity_map()
 
@@ -557,17 +559,17 @@ class keyWordSearchManager:
                     Lookups().Mitigation_Dictionary_Type)
                 self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
                     self.document_id)
-                
-                print('Completed Processing for:' +
-                        str(document_count)+' of ' + str(len(self.document_list)))
+
+                print('Completed - Batch#:' + str(batch_num) + ', Document:' +
+                      str(document_count)+' of ' + str(len(self.document_list)))
             elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
                 print('Completed Mitigation Validation for:' +
-                        str(document_count)+' of ' + str(len(self.document_list)))
-                ## Add logic to update Valdiation Flags
+                      str(document_count)+' of ' + str(len(self.document_list)))
+                # Add logic to update Valdiation Flags
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
@@ -585,8 +587,8 @@ class keyWordSearchManager:
 
     def _create_mitigation_dictionary_proximity_map(self):
 
-        print('################################################################################################')
-        print("Current Document:" + self.document_name)
+        # print('################################################################################################')
+        # print("Document In Progress:" + self.document_name)
 
         self.is_related_keywords_need_to_be_addressed = False
 
@@ -675,11 +677,12 @@ class keyWordSearchManager:
         self.log_generator.log_details(
             '################################################################################################')
         self.log_generator.log_details(
-            "Current Document:" + self.document_name)
+            "Document In Progress:" + self.document_name)
         self.log_generator.log_details(
             "Total keywords found:" + str(total_dictionary_hits))
 
-        print("Total key words found:" + str(total_dictionary_hits))
+        # print("Total key words found for "+self.document_name +
+        #       ':' + str(total_dictionary_hits))
 
     def _save_dictionary_keyword_search_results(self, dictionary_type: int):
         # Save Keyword search Results to Database
@@ -711,7 +714,7 @@ class db_Insight_keyWordSearchManager(keyWordSearchManager):
 
 
 class file_folder_keyWordSearchManager(keyWordSearchManager):
-    def __init__(self, folder_path: str, database_context:None) -> None:
+    def __init__(self, folder_path: str, database_context: None) -> None:
         super().__init__(database_context)
         self.folder_path = folder_path
 
@@ -867,6 +870,7 @@ class Insight_Generator(keyWordSearchManager):
 
 
 # Generate Aggregate Insights
+
 
     def generate_aggregate_insights_from_keyword_location_details(self):
 
