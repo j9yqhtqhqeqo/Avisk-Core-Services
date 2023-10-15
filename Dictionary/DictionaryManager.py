@@ -100,23 +100,113 @@ class DictionaryManager:
 
         if os.path.isfile(f'{NEW_INCLUDE_DITCTORY_ITEM_PATH}'):
             dictionary_manager._update_Dictionary_Items(NEW_INCLUDE_DITCTORY_ITEM_PATH, CURRENT_INCLUDE_DITCTORY_ITEM_PATH, include_dict_bkp_path)
+            print("New Inclusion keywords added to the dictionary")
+        else:
+            print("No new Inclusion keywords found!!. Document(s) already validated or No documents to validate")
+
 
         if os.path.isfile(f'{NEW_EXCLUDE_DITCTORY_ITEM_PATH}'):
             dictionary_manager._update_Dictionary_Items(NEW_EXCLUDE_DITCTORY_ITEM_PATH,CURRENT_EXCLUDE_DITCTORY_ITEM_PATH, exclude_dict_bkp_path)
-
-        
-        print('New terms terms added to the dictionary')
+            print("New Exclusion keywords added to the dictionary")
+        else:
+            print("No new Exclusion keywords found!!. Document(s) already validated or No documents to validate")
 
     def send_Include_Exclude_Dictionary_Files_For_Validation(self):
+       
+        current_dict_items = dict()
+        #Remove duplciate Lines
+        if not os.path.isfile(f'{NEW_INCLUDE_DITCTORY_ITEM_PATH}'):
+                print("No new Inclusion keywords found!!. Document(s) already validated or No documents to validate")
+                
+        else:      
+            with open(NEW_INCLUDE_DITCTORY_ITEM_PATH, 'r') as file:
+                lines = [line.strip() for line in file]
+                for line in lines:
+                    key_value = line.split(':')
+                    key = key_value[0].upper().strip()
+                    value = key_value[1].upper().strip()
 
-        new_include_file_name = 'new_include_list_'+ f'{dt.datetime.now()}.txt'
-        new_exclude_file_name = 'new_exclude_list_'+ f'{dt.datetime.now()}.txt'
-        os.rename(NEW_INCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_include_file_name}')
-        os.rename(NEW_EXCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_exclude_file_name}')
+                    ##FIND IF THE KEY EXISTS IN  DICT, If not Add new Entry
+                    try:
+                        current_values = (current_dict_items[key])
+                        #Copy current values to a new list to append new values
+                        new_list = (current_dict_items[key])
+                        if isinstance(new_list, list):
+                            if(value not in current_values):
+                                new_list.append(value)
+                                del current_dict_items[key]
+                                current_dict_items[key] = new_list
+                         ## Dictionary returns string for a single entry - construct a list to append additional values
+                        elif(value != current_values):
+                            new_list_for_string = [value,current_values]
+                            del current_dict_items[key]
+                            current_dict_items[key] = new_list_for_string
+                          
+                    except KeyError as exc:
+                            current_dict_items[key] = value
+        
+            new_sorted_dict = dict(sorted(current_dict_items.items())) 
+            if os.path.isfile(f'{NEW_INCLUDE_DITCTORY_ITEM_PATH}'):
+                os.remove(f'{NEW_INCLUDE_DITCTORY_ITEM_PATH}')
+            log_generator = logGenerator(NEW_INCLUDE_DITCTORY_ITEM_PATH)  
 
-        print('Sent File'+new_include_file_name+'for Validation')
-        print('Sent File'+new_exclude_file_name+'for Validation')
+            for key, valuelist in new_sorted_dict.items():
+                if isinstance(valuelist, list):
+                    for value in valuelist:     
+                        log_generator.log_details( key.strip()+':'+ str(value),False)  
+                else:
+                    log_generator.log_details( key.strip()+':'+ str(valuelist),False)  
 
+
+            new_include_file_name = 'new_include_list_'+ f'{dt.datetime.now()}.txt'
+            os.rename(NEW_INCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_include_file_name}')
+            print('Sent File'+new_include_file_name+'for Validation')
+
+        if not os.path.isfile(f'{NEW_EXCLUDE_DITCTORY_ITEM_PATH}'):
+                print("No new Exclusion keywords found!!. Document(s) already validated or No documents to validate ")
+        else:
+            with open(NEW_EXCLUDE_DITCTORY_ITEM_PATH, 'r') as file:
+                lines = [line.strip() for line in file]
+                for line in lines:
+                    key_value = line.split(':')
+                    key = key_value[0].upper().strip()
+                    value = key_value[1].upper().strip()
+
+                    ##FIND IF THE KEY EXISTS IN  DICT, If not Add new Entry
+                    try:
+                        current_values = (current_dict_items[key])
+                        #Copy current values to a new list to append new values
+                        new_list = (current_dict_items[key])
+                        if isinstance(new_list, list):
+                            if(value not in current_values):
+                                new_list.append(value)
+                                del current_dict_items[key]
+                                current_dict_items[key] = new_list 
+                          ## Dictionary returns string for a single entry - construct a list to append additional values
+                        elif(value != current_values):
+                            new_list_for_string = [value,current_values]
+                            del current_dict_items[key]
+                            current_dict_items[key] = new_list_for_string
+
+                    except KeyError as exc:
+                            current_dict_items[key] = value
+            
+            new_sorted_dict = dict(sorted(current_dict_items.items())) 
+            if os.path.isfile(f'{NEW_EXCLUDE_DITCTORY_ITEM_PATH}'):
+                os.remove(f'{NEW_EXCLUDE_DITCTORY_ITEM_PATH}')
+            
+            log_generator = logGenerator(NEW_EXCLUDE_DITCTORY_ITEM_PATH)  
+
+            for key, valuelist in new_sorted_dict.items():
+                if isinstance(valuelist, list):
+                    for value in valuelist:     
+                        log_generator.log_details( key.strip()+':'+ str(value),False)  
+                else:
+                    log_generator.log_details( key.strip()+':'+ str(valuelist),False)  
+
+            new_exclude_file_name = 'new_exclude_list_'+ f'{dt.datetime.now()}.txt'
+            os.rename(NEW_EXCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_exclude_file_name}')
+            print('Sent File'+new_exclude_file_name+'for Validation')
 
                 
 class ContextResolver:
@@ -159,6 +249,7 @@ class ContextResolver:
         return False
 
 # dict_mgr = DictionaryManager()
+# dict_mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
 # dict_mgr.update_Dictionary()
 
 # context_resolve = ContextResolver()

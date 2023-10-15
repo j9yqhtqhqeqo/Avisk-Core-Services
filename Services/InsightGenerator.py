@@ -88,10 +88,10 @@ class keyWordSearchManager:
         self.related_keyword_list_for_validation = dict()
         self.validation_mode = False
 
-        if os.path.isfile(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}'):
-            os.remove(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
-        if os.path.isfile(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}'):
-            os.remove(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
+        # if os.path.isfile(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}'):
+        #     os.remove(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
+        # if os.path.isfile(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}'):
+        #     os.remove(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
 
         self.insightDBMgr = InsightGeneratorDBManager(database_context)
 
@@ -108,7 +108,7 @@ class keyWordSearchManager:
         try:
             value = self.related_keyword_list_for_validation[keyword+related_keyword]
             if (value == related_keyword):
-                print('Already Found in the current pass')
+                # print('Already Found in the current pass')
                 return
             else:
                 self.related_keyword_list_for_validation[keyword +
@@ -142,8 +142,9 @@ class keyWordSearchManager:
 # Search all exposure pathway dictionary terms in the document and save locations
 
 
-    def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0):
+    def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0, validation_mode=False):
 
+        self.validation_mode = validation_mode
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
 
@@ -179,7 +180,7 @@ class keyWordSearchManager:
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id)
 
-                print('Completed - Batch#:' + str(batch_num) +', Document:' +
+                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
 
             elif (not self.validation_mode):
@@ -187,7 +188,7 @@ class keyWordSearchManager:
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
-                print('Completed Exposure Pathway Validation for:' +
+               print('Completed Validation - Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
                 # Add Logic to update  Validation Completed Flags
 
@@ -278,8 +279,8 @@ class keyWordSearchManager:
                                 else:
                                     # DEBUG HERE FOR RESULTS STRAY CHARACTER"
 
-                                    print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
-                                        DictionaryTermList.dictionary_id))
+                                    # print('Add \'' + keyword + '\''+': [\''+related_keyword+'\']' + ' to ContextResolver - Inclusion OR Exclusion for Dictionary ID: ' + str(
+                                    #     DictionaryTermList.dictionary_id))
                                   #  self.log_generator.log_details( '\''+keyword + '\''+': [\''+related_keyword+'\'],', False)
                                     self.add_new_terms_to_include_exclude_dictionary_file(
                                         keyword, related_keyword)
@@ -311,7 +312,8 @@ class keyWordSearchManager:
 
 # Search all internalization pathway dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_internalization(self, document_List=[], batch_num=0):
+    def generate_keyword_location_map_for_internalization(self, document_List=[], batch_num=0, validation_mode=False):
+        self.validation_mode = validation_mode
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
         self.document_list = document_List
@@ -344,7 +346,7 @@ class keyWordSearchManager:
                 self.insightDBMgr.update_internalization_keyword_search_completed_ind(
                     self.document_id)
 
-                print('Completed - Batch#:' + str(batch_num) + ', Document:' +
+                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
 
             elif (not self.validation_mode):
@@ -352,9 +354,9 @@ class keyWordSearchManager:
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
-                print('Completed Internalization Pathway Validation for:' +
+                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
-                # Add Logic to update  Validation Completed Flags
+               # Add Logic to update  Validation Completed Flags
             else:
                 print(
                     'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
@@ -528,8 +530,9 @@ class keyWordSearchManager:
 
 # Search all mitigation dictionary terms in the document and save locations
 
-    def generate_keyword_location_map_for_mitigation(self, document_List=[], batch_num=0):
+    def generate_keyword_location_map_for_mitigation(self, document_List=[], batch_num=0, validation_mode=False):
         # self.keyword_search_logfile_init()
+        self.validation_mode = validation_mode
         self.proximity_entity_list = []
         self.document_list = document_List
         if (len(self.document_list) == 0):
@@ -560,14 +563,14 @@ class keyWordSearchManager:
                 self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
                     self.document_id)
 
-                print('Completed - Batch#:' + str(batch_num) + ', Document:' +
+                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
             elif (not self.validation_mode):
                 self.dictionary_Mgr.update_Dictionary()
                 print("New Keywords added to Dictionary...Self Healing in effect...")
                 retry_for_new_dicitonary_items = True
             elif (self.validation_mode):
-                print('Completed Mitigation Validation for:' +
+                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(self.document_list)))
                 # Add logic to update Valdiation Flags
             else:
@@ -748,33 +751,30 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
 class Insight_Generator(keyWordSearchManager):
 
     # Generate Insights for two keyword combinations
-    def generate_insights_with_2_factors(self, dictionary_type: int):
+    def generate_insights_with_2_factors(self, dictionary_type: int, document_keyword_list=[], batch_num=0):
 
-        print('Generating insights for Dictionary Type:' +
-              str(dictionary_type))
+        # print('Generating insights for Dictionary Type:' +
+        #       str(dictionary_type))
 
-        batch_id: int
+        document_keyword_list = document_keyword_list
 
-        document_list = self.insightDBMgr.get_unprocessed_document_items_for_insight_gen(
-            dictionary_type=dictionary_type)
-
-        if len(document_list) < 1:
-            print('No New Keyword search results to Process: Zero insights generated for Dictionary Type:' + str(dictionary_type))
+        if len(document_keyword_list) < 1:
+            print('Document List with Zero Documents:WHY?????:' + str(dictionary_type))
             return
 
         document_item: KeyWordLocationsEntity
-        for document_item in document_list:
-
-            self.log_generator.log_details("Processing Batch:"+str(document_item.batch_id)+", Document ID:"+str(
+        for document_item in document_keyword_list:
+            self.log_generator.log_details("Processing Batch:"+str(batch_num)+", Document ID:"+str(
                 document_item.document_id)+", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
-            print("Processing Batch:"+str(document_item.batch_id)+", Document ID:"+str(document_item.document_id) +
-                  ", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
-            self._generate_insights_with_2_factors_by_dictionary_id(batch_id=document_item.batch_id, dictionary_type=document_item.dictionary_type,
+            # print("Processing Batch:"+str(document_item.batch_id)+", Document ID:"+str(document_item.document_id) +
+            #       ", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
+            self._generate_insights_with_2_factors_by_dictionary_id(dictionary_type=document_item.dictionary_type,
                                                                     dictionary_id=document_item.dictionary_id, document_id=document_item.document_id, document_name=document_item.document_name)
+             
 
-    def _generate_insights_with_2_factors_by_dictionary_id(self, batch_id=0, dictionary_type=0, dictionary_id=0, document_id=0, document_name=''):
+    def _generate_insights_with_2_factors_by_dictionary_id(self, dictionary_type=0, dictionary_id=0, document_id=0, document_name=''):
         keyword_location_list = self._load_keyword_location_list(
-            batch_id, dictionary_type, dictionary_id, document_id)
+            dictionary_type, dictionary_id, document_id)
         insightList = []
         keyword_location: KeyWordLocationsEntity
         for keyword_location in keyword_location_list:
@@ -839,19 +839,20 @@ class Insight_Generator(keyWordSearchManager):
             '################################################################################################')
 
         insights_genetated = len(insightList)
-        print("Total Insights generated:" + str(insights_genetated))
+        # print("Total Insights generated:" + str(insights_genetated))
 
         if (insights_genetated > 0):
             self.insightDBMgr.save_insights(
                 insightList=insightList, dictionary_type=dictionary_type)
-            # TO BE COMMENTED
+
             self.insightDBMgr.update_insights_generated_from_keyword_hits_batch(
-                batch_id, dictionary_type=dictionary_type, dictionary_id=dictionary_id, document_id=document_id)
+                dictionary_type=dictionary_type, dictionary_id=dictionary_id, document_id=document_id)
+
             self.insightDBMgr.normalize_document_score(
                 dictionary_type=dictionary_type, document_id=document_id)
 
-    def _load_keyword_location_list(self, batch_id=0, dictionary_type=0, dictionary_id=0, document_id=0):
-        return (self.insightDBMgr.get_keyword_location_list(batch_id, dictionary_type, dictionary_id, document_id))
+    def _load_keyword_location_list(self, dictionary_type=0, dictionary_id=0, document_id=0):
+        return (self.insightDBMgr.get_keyword_location_list(dictionary_type, dictionary_id, document_id))
 
     def _get_related_word_locations_in_Radius_for_child_list(self, int_keyword_location: int, int_child_locations: any):
         radius_upper = int_keyword_location + WORD_RADIUS
@@ -966,12 +967,11 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         return distance_list
 
     # EXP VS. INT
-    def generate_exp_int_insights(self):
+    def generate_exp_int_insights(self, document_list:[], batch_num=0):
         self.log_generator.log_details(
             "Generating Exposure Pathway ->Internalization Insights")
         print("###########################################################")
         print("Generating Exposure Pathway ->Internalization Insights")
-
         document_list = self.insightDBMgr.get_exp_int_document_list()
 
         if (len(document_list) == 0):
@@ -980,22 +980,23 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             return
 
         document_item: KeyWordLocationsEntity
+        document_count = 0
         for document_item in document_list:
             self.log_generator.log_details(
                 "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
-            print("Document ID:"+str(document_item.document_id) +
-                  ", Document Name:"+str(document_item.document_name))
+            # print("Document ID:"+str(document_item.document_id) +
+            #       ", Document Name:"+str(document_item.document_name))
 
             self.exp_insight_location_list, self.int_insight_location_list = self.insightDBMgr.get_exp_int_lists(
                 document_item.document_id)
-            print("Exp Insight locations:"+str(len(self.exp_insight_location_list)) +
-                  ", Int Insight locations:"+str(len(self.int_insight_location_list)))
+            # print("Exp Insight locations:"+str(len(self.exp_insight_location_list)) +
+            #       ", Int Insight locations:"+str(len(self.int_insight_location_list)))
 
             exp_insight_entity: Insight
             self.int_exp_insightList = []
 
             record_count = len(self.exp_insight_location_list)
-            current_count = 1
+            # current_count = 1
             for exp_insight_entity in self.exp_insight_location_list:
                 # print('Processing '+str(current_count) +
                 #       ' of ' + str(record_count)+'  Insights')
@@ -1009,13 +1010,18 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                     # print("INT INSIGHT LOCATIONS for"+int_insight_entity.keyword1+','+int_insight_entity.keyword2+':'+str(combined_int_insight_location_list))
                     self._create_exp_int_insights_for_document(combined_exp_insight_location_list, combined_int_insight_location_list, document_item.document_id,
                                                                document_item.document_name, exp_insight_entity, int_insight_entity)
-                current_count = current_count + 1
+                # current_count = current_count + 1
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
+            document_count = document_count + 1
+            print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
+                      str(document_count)+' of ' + str(len(self.document_list)))
 
-            print("Dcoument:"+document_item.document_name +
-                  ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
+            # print("Dcoument:"+document_item.document_name +
+            #       ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
+
+            self.insightDBMgr.cleanup_insights_for_document(Lookups().Exp_Int_Insight_Type,document_item.document_id)
 
             self.insightDBMgr.save_Exp_Int_Insights(
                 insightList=self.int_exp_insightList, dictionary_type=Lookups().Exp_Int_Insight_Type)

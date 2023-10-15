@@ -176,34 +176,19 @@ class InsightGeneratorDBManager:
 
         cursor.close()
 
-    def get_current_batch_id(self):
 
-        if (self.batch_id > 0):
-            return self.batch_id
-
-        cursor = self.dbConnection.cursor()
-        cursor.execute("select max(batch_id) from dbo.t_key_word_hits")
-        batch_id = cursor.fetchone()[0]
-        if (batch_id):
-            self.batch_id = batch_id + 1
-            return self.batch_id
-        else:
-            self.batch_id = 1
-            return self.batch_id
-        cursor.close()
-
-    def get_keyword_location_list(self, batch_id=0, dictionary_type=0, dictionary_id=0, document_id=0):
+    def get_keyword_location_list(self,dictionary_type=0, dictionary_id=0, document_id=0):
 
         keyword_list = []
         sql = 'select key_word_hit_id, key_word, locations, frequency, dictionary_type, dictionary_id, document_id, exposure_path_id, internalization_id \
                from t_key_word_hits \
-               where batch_id = ? and dictionary_type =? and dictionary_id = ? and document_id =?\
+               where dictionary_type =? and dictionary_id = ? and document_id =?\
                order by key_word_hit_id'
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, batch_id, dictionary_type,
+            cursor.execute(sql, dictionary_type,
                            dictionary_id, document_id)
             rows = cursor.fetchall()
             for row in rows:
@@ -236,28 +221,26 @@ class InsightGeneratorDBManager:
     def get_unprocessed_document_items_for_insight_gen(self, dictionary_type=0):
 
         document_list = []
-        # sql = 'select distinct document_id, dictionary_id, document_name, batch_id,dictionary_type from t_key_word_hits where insights_generated = 0 and dictionary_type = ? order by dictionary_id'
 
         if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
-            sql = 'select distinct hits.document_id, hits.dictionary_id, hits.document_name, hits.batch_id,hits.dictionary_type \
-                from t_key_word_hits hits INNER JOIN t_document doc on  hits.document_id = doc.document_id and doc.exp_insights_generated_ind = 0\
-                where dictionary_type = ? order by dictionary_id'
+            sql = 'select doc.document_id \
+                from  t_document doc where doc.exp_insights_generated_ind = 0\
+                order by document_id'
         elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
-            sql = 'select distinct hits.document_id, hits.dictionary_id, hits.document_name, hits.batch_id,hits.dictionary_type \
-                from t_key_word_hits hits INNER JOIN t_document doc on  hits.document_id = doc.document_id and doc.int_insights_generated_ind = 0\
-                where dictionary_type = ? order by dictionary_id'
+            sql = 'select doc.document_id \
+                from  t_document doc where doc.int_insights_generated_ind = 0\
+                order by document_id'      
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql, dictionary_type)
+            cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 keyword_loc_entity = KeyWordLocationsEntity()
-                keyword_loc_entity.dictionary_id = row.dictionary_id
+                # keyword_loc_entity.dictionary_id = row.dictionary_id
                 keyword_loc_entity.document_id = row.document_id
-                keyword_loc_entity.document_name = row.document_name
-                keyword_loc_entity.batch_id = row.batch_id
-                keyword_loc_entity.dictionary_type = row.dictionary_type
+                # keyword_loc_entity.document_name = row.document_name
+                # keyword_loc_entity.dictionary_type = row.dictionary_type
                 document_list.append(keyword_loc_entity)
             cursor.close()
 
@@ -268,20 +251,51 @@ class InsightGeneratorDBManager:
 
         return document_list
 
-    def insert_key_word_hits_to_db(self, batch_id: int, company_id: int, document_id: str, document_name: str, reporting_year: int, dictionary_id: int, key_word: str, locations: str, frequency: int, dictionary_type: int, exposure_path_id: int, internalization_id: int, impact_category_id: int, esg_category_id: int):
+
+    def get_keyword_hits_for_insight_gen(self, dictionary_type:int, document_id:int):
+
+        document_keyword_list = []
+
+        sql = f"select distinct hits.document_id, hits.dictionary_id, hits.document_name,hits.dictionary_type \
+            from t_key_word_hits hits \
+            where  hits.dictionary_type = ? and hits.document_id = ?"
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql, dictionary_type, document_id)
+            rows = cursor.fetchall()
+            for row in rows:
+                keyword_loc_entity = KeyWordLocationsEntity()
+                keyword_loc_entity.dictionary_id = row.dictionary_id
+                keyword_loc_entity.document_id = row.document_id
+                keyword_loc_entity.document_name = row.document_name
+                keyword_loc_entity.dictionary_type = row.dictionary_type
+                document_keyword_list.append(keyword_loc_entity)
+            cursor.close()
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return document_keyword_list
+
+
+
+    def insert_key_word_hits_to_db(self,company_id: int, document_id: str, document_name: str, reporting_year: int, dictionary_id: int, key_word: str, locations: str, frequency: int, dictionary_type: int, exposure_path_id: int, internalization_id: int, impact_category_id: int, esg_category_id: int):
 
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
         # Construct the INSERT INTO statement
 
         sql = f"INSERT INTO dbo.t_key_word_hits( \
-                batch_id, dictionary_type, document_id,  document_name, company_id, reporting_year,\
+                dictionary_type, document_id,  document_name, company_id, reporting_year,\
                 dictionary_id ,key_word, locations,frequency, insights_generated,exposure_path_id, internalization_id,\
                 impact_category_id, esg_category_id,\
                 added_dt,added_by ,modify_dt,modify_by\
                 )\
                     VALUES\
-                    ({batch_id},{dictionary_type},{document_id},N'{document_name}', {company_id}, {reporting_year},\
+                ({dictionary_type},{document_id},N'{document_name}', {company_id}, {reporting_year},\
                 {dictionary_id} ,N'{key_word}', N'{locations}', {frequency},0, {exposure_path_id}, {internalization_id},\
                 {impact_category_id},{esg_category_id},\
                 CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
@@ -323,25 +337,21 @@ class InsightGeneratorDBManager:
             # Construct the INSERT INTO statement
 
             if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
-                int_unique_key = self.get_next_surrogate_key(
-                    Lookups().Exposure_Save)
                 sql = f"INSERT INTO dbo.t_exposure_pathway_insights( \
-                    unique_key,document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                     document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
                     factor1, factor2,exposure_path_id, added_dt,added_by ,modify_dt,modify_by\
                     )\
                         VALUES\
-                        ({int_unique_key},{document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
                         {factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
 
             elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
-                int_unique_key = self.get_next_surrogate_key(
-                    Lookups().Internalization_Save)
                 sql = f"INSERT INTO dbo.t_internalization_insights( \
-                    unique_key,document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
                     factor1, factor2,internalization_id, added_dt,added_by ,modify_dt,modify_by\
                     )\
                         VALUES\
-                        ({int_unique_key},{document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
                         {factor1}, {factor2},{internalization_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
 
             elif (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
@@ -385,9 +395,9 @@ class InsightGeneratorDBManager:
                 print(f"Error: {str(exc)}")
                 raise exc
 
-            if (total_records_added_to_db % 250 == 0):
-                print("Insights added to the Database So far...:" +
-                      str(total_records_added_to_db))
+            # if (total_records_added_to_db % 250 == 0):
+            #     print("Insights added to the Database So far...:" +
+            #           str(total_records_added_to_db))
 
         # Close the cursor and connection
         if (total_records_added_to_db > 0):
@@ -400,10 +410,58 @@ class InsightGeneratorDBManager:
         self.log_generator.log_details(
             '################################################################################################')
 
-        print("Total Insights added to the Database:" +
-              str(total_records_added_to_db))
+        # print("Total Insights added to the Database:" +
+        #       str(total_records_added_to_db))
+
+
+    def cleanup_insights_for_document(self, dictionary_type, document_id):
+       
+        cursor = self.dbConnection.cursor()
+        if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+            sql = f"delete dbo.t_exposure_pathway_insights where document_id = ?"
+
+        elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
+            int_unique_key = self.get_next_surrogate_key(
+                Lookups().Internalization_Save)
+            sql = f"delete dbo.t_internalization_insights where document_id = ?"
+        
+        elif (dictionary_type == Lookups().Exp_Int_Insight_Type):
+            sql = f"delete  dbo.t_exp_int_insights where document_id = ?"
+
+
+        # elif (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
+        #     sql = f"delete  dbo.t_mitigation_exp_insights where document_id = ?"
+
+        # elif (dictionary_type == Lookups().Mitigation_Int_Insight_Type): 
+        #     sql = f"delete t_mitigation_int_insights where document_id = ?"
+        try:
+            # Execute the SQL query
+            cursor.execute(sql, document_id)
+            self.dbConnection.commit()
+
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            self.dbConnection.rollback()
+            print(f"Error: {str(exc)}")
+            raise exc
+
+
 
     def save_key_word_hits(self, proximity_entity_list, company_id: int, document_id: int, document_name: str, reporting_year: int, dictionary_type: int):
+
+        # Delete existing records for the same document
+        try:
+            sql = 'delete t_key_word_hits where document_id = ? and dictionary_type = ?'
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql,document_id, dictionary_type)
+            self.dbConnection.commit()
+            # print("deleted previous search data for document:" + document_name +", dictionary type:" + str(dictionary_type))
+        except Exception as exc:
+            # Rollback the transaction if any error occurs
+            self.dbConnection.rollback()
+            print(f"Error: {str(exc)}")
+            raise exc
+
         self.d_next_seed = 0
 
         proximity: ProximityEntity
@@ -419,11 +477,11 @@ class InsightGeneratorDBManager:
             dictionary_id = proximity.dictionary_id
 
             for key_word_locations in proximity.key_word_bunch:
-                batch_id = self.get_current_batch_id()
+                # batch_id = self.get_current_batch_id()
                 key_word = key_word_locations.key_word
                 locations = key_word_locations.locations
                 frequency = key_word_locations.frequency
-                self.insert_key_word_hits_to_db(batch_id=batch_id, company_id=company_id, document_id=document_id, document_name=document_name,
+                self.insert_key_word_hits_to_db(company_id=company_id, document_id=document_id, document_name=document_name,
                                                 reporting_year=reporting_year, dictionary_id=dictionary_id,
                                                 key_word=key_word, locations=locations, frequency=frequency, dictionary_type=dictionary_type,
                                                 exposure_path_id=exposure_path_id, internalization_id=internalization_id, impact_category_id=impact_category_id, esg_category_id=esg_category_id)
@@ -439,7 +497,7 @@ class InsightGeneratorDBManager:
         #       str(total_records_added_to_db))
         # print('################################################################################################')
 
-    def update_insights_generated_from_keyword_hits_batch(self, batch_id=0, dictionary_type=0, dictionary_id=0, document_id=0):
+    def update_insights_generated_from_keyword_hits_batch(self, dictionary_type=0, dictionary_id=0, document_id=0):
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
 
@@ -468,9 +526,58 @@ class InsightGeneratorDBManager:
         # Close the cursor and connection
         cursor.close()
 
+    def update_validation_keywords_generated_status(self, document_list, dictionary_type, status):
+        if(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+             sql = f"UPDATE t_document set exp_validation_completed_ind = ? where document_id = ?"
+        elif(dictionary_type == Lookups().Internalization_Dictionary_Type):
+             sql = f"UPDATE t_document set int_validation_completed_ind = ? where document_id = ?"
+        elif(dictionary_type == Lookups().Mitigation_Dictionary_Type):
+             sql = f"UPDATE t_document set mit_validation_completed_ind = ? where document_id = ?"
+
+        for document in document_list:
+            # print('Document ID:'+str(document.document_id) +', Status:'+str(status))
+            # print(sql)
+            try:
+                cursor = self.dbConnection.cursor()
+                cursor.execute(sql,status, document.document_id)
+  
+            except Exception as exc:
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+        self.dbConnection.commit()
+        cursor.close()
+
+    def update_validation_completed_status(self):
+        exp_sql = f"UPDATE t_document set \
+                        exp_validation_completed_ind = 1\
+                  where \
+                        exp_validation_completed_ind = 2 and exp_pathway_keyword_search_completed_ind = 0"
+
+        int_sql = f"UPDATE t_document set \
+                        int_validation_completed_ind =1\
+                    where \
+                        int_validation_completed_ind = 2 and internalization_keyword_search_completed_ind = 0"
+
+        mit_sql = f"UPDATE t_document set \
+                        mit_validation_completed_ind = 1\
+                    where \
+                        mit_validation_completed_ind = 2 and mitigation_search_completed_ind = 0"
+        try:
+                cursor = self.dbConnection.cursor()
+                cursor.execute(exp_sql)
+                cursor.execute(int_sql)
+                cursor.execute(mit_sql)
+  
+        except Exception as exc:
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+        self.dbConnection.commit()
+        cursor.close()
+
 
 # EXPOSURE PATHWAY
-
 
     def get_exp_dictionary_term_list(self):
 
@@ -1090,19 +1197,16 @@ class InsightGeneratorDBManager:
             cursor = self.dbConnection.cursor()
             # Construct the INSERT INTO statement
 
-            if (dictionary_type == Lookups().Exp_Int_Insight_Type):
-                int_unique_key = self.get_next_surrogate_key(
-                    Lookups().Exp_Int_Insight_Type)
-                sql = f"INSERT INTO dbo.t_exp_int_insights( \
-                            unique_key,document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
-                          ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
-                          ,added_dt,added_by ,modify_dt,modify_by\
-                    )\
-                        VALUES\
-                        ({int_unique_key},{document_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
-                        ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
-                        , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
-                        ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
+            sql = f"INSERT INTO dbo.t_exp_int_insights( \
+                        document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+                        ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
+                        ,added_dt,added_by ,modify_dt,modify_by\
+                )\
+                    VALUES\
+                    ({document_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
+                    ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
+                    , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
+                    ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
 
             try:
                 # Execute the SQL query
@@ -1117,9 +1221,9 @@ class InsightGeneratorDBManager:
                 print(f"Error: {str(exc)}")
                 raise exc
 
-            if (total_records_added_to_db % 250 == 0):
-                print("Insights added to the Database So far...:" +
-                      str(total_records_added_to_db))
+            # if (total_records_added_to_db % 250 == 0):
+            #     print("Insights added to the Database So far...:" +
+            #           str(total_records_added_to_db))
 
         # Close the cursor and connection
 
@@ -1133,8 +1237,8 @@ class InsightGeneratorDBManager:
         self.log_generator.log_details(
             '################################################################################################')
 
-        print("Total Insights added to the Database:" +
-              str(total_records_added_to_db))
+        # print("Total Insights added to the Database:" +
+        #       str(total_records_added_to_db))
 
     # EXP INT MITIGATION
     def get_mitigation_exp_int_document_list(self):
@@ -1296,9 +1400,9 @@ class InsightGeneratorDBManager:
                 print(f"Error: {str(exc)}")
                 raise exc
 
-            if (total_records_added_to_db % 250 == 0):
-                print("Insights added to the Database So far...:" +
-                      str(total_records_added_to_db))
+            # if (total_records_added_to_db % 250 == 0):
+            #     print("Insights added to the Database So far...:" +
+            #           str(total_records_added_to_db))
 
         # Close the cursor and connection
         if (total_records_added_to_db > 0):
@@ -1311,5 +1415,5 @@ class InsightGeneratorDBManager:
         self.log_generator.log_details(
             '################################################################################################')
 
-        print("Total Insights added to the Database:" +
-              str(total_records_added_to_db))
+        # print("Total Insights added to the Database:" +
+        #       str(total_records_added_to_db))

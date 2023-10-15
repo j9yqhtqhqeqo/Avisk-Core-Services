@@ -6,39 +6,31 @@ from Services.InsightGenerator import file_folder_keyWordSearchManager
 from Services.InsightGenerator import PARM_STAGE1_FOLDER
 from Services.InsightGenerator import Insight_Generator
 from Services.InsightGenerator import triangulation_Insight_Generator
+from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_exposure
+from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_internalization
+from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_exposure_internalization
+
+from DBEntities.ProximityEntity import DocumentEntity
+
 from Utilities.Lookups import Lookups
 import streamlit as st
 import threading
 
 class StartUpClass:
 
-    # def __init__(self) -> None:
-        # self.generate_exp_insights = True
-        # self.generate_int_insights = True
-        # self.generate_exp_int_insights = True
-        # self.generate_exp_mitigation_insights = True
-        # self.generate_int_mitigation_insights = True
-        # self.generate_exp_int_mitigation_insights = True
-
-
     def generate_Insights(self, DebugMode=False):
         exp_int_insght_generator = Insight_Generator(self.database_context)
         triangulation_insight_gen = triangulation_Insight_Generator(self.database_context)
 
         if (self.generate_exp_insights):
-            print("Generating Insights for EXP Dictionary Terms")
-
-            exp_int_insght_generator.generate_insights_with_2_factors(
-                Lookups().Exposure_Pathway_Dictionary_Type)
-
+           batch_process_generate_insights_for_exposure(self.database_context)
         if (self.generate_int_insights):
             print("Generating Insights for Internalization Dictionary Terms")
-            exp_int_insght_generator.generate_insights_with_2_factors(
-                Lookups().Internalization_Dictionary_Type)
+            batch_process_generate_insights_for_internalization(self.database_context)
 
         if (self.generate_exp_int_insights):
             print("Generating EXP->INT Insights")
-            triangulation_insight_gen.generate_exp_int_insights()
+            batch_process_generate_insights_for_exposure_internalization(self.database_context)
 
         if (self.generate_exp_mitigation_insights):
             print("Generating EXP->MIT Insights")
@@ -54,7 +46,7 @@ class StartUpClass:
 
     def run_online_Mode(self):
 
-        database_context = st.radio("Database Context",["Development","Test"], index=1)
+        database_context = st.radio("Database Context",["Development","Test"], index=0)
         if(database_context == 'Development'):
             self.database_context='Development'
         else:
@@ -63,18 +55,18 @@ class StartUpClass:
         st.text("Select Insight Generation  Category:")
 
         self.generate_exp_insights = st.checkbox(
-            "Exposure Pathway", value=True)
+            "Exposure Pathway", value=False)
         
         self.generate_int_insights = st.checkbox(
-            "Internalization", value=True)
+            "Internalization", value=False)
        
-        self.generate_exp_int_insights = st.checkbox("Exposure -> Internalization", value=True)
+        self.generate_exp_int_insights = st.checkbox("Exposure -> Internalization", value=False)
         
-        self.generate_exp_mitigation_insights = st.checkbox("Exposure ->  Mitigation", value=True)
+        self.generate_exp_mitigation_insights = st.checkbox("Exposure ->  Mitigation", value=False)
         
-        self.generate_int_mitigation_insights = st.checkbox("Internalization ->Mitigation", value=True)
+        self.generate_int_mitigation_insights = st.checkbox("Internalization ->Mitigation", value=False)
         
-        self.generate_exp_int_mitigation_insights = st.checkbox("Exposure->Internalization->Mitigation", value=True)
+        self.generate_exp_int_mitigation_insights = st.checkbox("Exposure->Internalization->Mitigation", value=False)
 
         st.button('Generate Insights',
                   on_click=self.generate_Insights)
