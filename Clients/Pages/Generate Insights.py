@@ -9,6 +9,10 @@ from Services.InsightGenerator import triangulation_Insight_Generator
 from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_exposure
 from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_internalization
 from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_exposure_internalization
+from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_exposure_mitigation_insights
+from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_internalization_mitigation_insights
+from Services.InsightGenSingletonServiceMgr import batch_process_generate_insights_for_exp_int_mitigation_insights
+
 
 from DBEntities.ProximityEntity import DocumentEntity
 
@@ -34,15 +38,14 @@ class StartUpClass:
 
         if (self.generate_exp_mitigation_insights):
             print("Generating EXP->MIT Insights")
-            triangulation_insight_gen.generate_mitigation_exp_insights()
+            batch_process_generate_insights_for_exposure_mitigation_insights(self.database_context)
         
         if(self.generate_int_mitigation_insights):
             print("Generating INT->MIT Insights")
-            triangulation_insight_gen.generate_mitigation_int_insights()
+            batch_process_generate_insights_for_internalization_mitigation_insights(self.database_context)
         
         if(self.generate_exp_int_mitigation_insights):
-            print("Generating EXP->INT->MIT Insights")
-            triangulation_insight_gen.generate_mitigation_exp_int_insights()
+            batch_process_generate_insights_for_exp_int_mitigation_insights(self.database_context)
 
     def run_online_Mode(self):
 
