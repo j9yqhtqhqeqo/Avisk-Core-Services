@@ -27,6 +27,7 @@ class StartUpClass:
         triangulation_insight_gen = triangulation_Insight_Generator(self.database_context)
 
         if (self.generate_exp_insights):
+           print("Generating Insights for Exposure Pathway")
            batch_process_generate_insights_for_exposure(self.database_context)
         if (self.generate_int_insights):
             print("Generating Insights for Internalization Dictionary Terms")
@@ -45,6 +46,7 @@ class StartUpClass:
             batch_process_generate_insights_for_internalization_mitigation_insights(self.database_context)
         
         if(self.generate_exp_int_mitigation_insights):
+            print("Generating EXP->INT->MIT Insights")
             batch_process_generate_insights_for_exp_int_mitigation_insights(self.database_context)
 
     def run_online_Mode(self):

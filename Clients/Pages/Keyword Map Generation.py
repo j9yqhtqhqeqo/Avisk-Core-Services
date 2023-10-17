@@ -37,7 +37,7 @@ class StartUpClass:
            process_exposure_pathway_document_list(self.database_context)
           
         if (self.InternalizationSelected):
-           self.exp_queuue_size = process_internalization_document_list(self.database_context)
+           process_internalization_document_list(self.database_context)
       
 
         if (self.MitigationSelected):

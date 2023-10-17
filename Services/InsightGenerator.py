@@ -48,6 +48,7 @@ PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
 PARM_STAGE1_FOLDER = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/')
 WORD_RADIUS = 25
+IGNORE_ZERO_CALC_WARNING = True
 
 
 class keyWordSearchManager:
@@ -803,7 +804,7 @@ class Insight_Generator(keyWordSearchManager):
                         for location in radius_location_partial:
                             distance = abs(int_master_location - location)
                             try:
-                                if (distance == 0):
+                                if (distance == 0 and not IGNORE_ZERO_CALC_WARNING):
                                     self.log_generator.log_details("Distance 0 - Ignoring Weight Calculation: Keyword:" + keyword_location.key_word +
                                                                    ", Child Key word:" + child_node.key_word+", Location:"+str(location))
                                 else:
@@ -1184,8 +1185,6 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
             document_count = document_count + 1
-            document_count = document_count + 1
-
             print('Completed EXP->MITIGATION INSGHT GEN- Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(document_list)))
 
@@ -1248,10 +1247,10 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
-
+            document_count = document_count+1
             print('Completed INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(document_list)))
- 
+    
             self.insightDBMgr.cleanup_insights_for_document(Lookups().Mitigation_Int_Insight_Type,document_item.document_id)
 
             self.insightDBMgr.save_insights(
@@ -1318,7 +1317,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
     def generate_mitigation_exp_int_insights(self, document_list:[], batch_num=0):
         self.log_generator.log_details(
-            "Generating Exposure Pathway, Internalization -> Mitigation Insights")
+            "Generating Exposure Pathway, ->Internalization -> Mitigation Insights")
         # print("###########################################################")
         # print("Generating Exposure Pathway, Internalization -> Mitigation Insights")
 

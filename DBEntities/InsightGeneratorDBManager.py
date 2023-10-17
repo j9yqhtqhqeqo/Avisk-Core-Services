@@ -25,6 +25,7 @@ PARM_LOGFILE = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
 DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
 TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
+DB_LOGGING_ENABLED = False
 
 
 class InsightGeneratorDBManager:
@@ -405,10 +406,11 @@ class InsightGeneratorDBManager:
             cursor.close()
 
         # self.dbConnection.commit()
-        self.log_generator.log_details(
-            "Total Insights added to the Database:" + str(total_records_added_to_db))
-        self.log_generator.log_details(
-            '################################################################################################')
+        if(DB_LOGGING_ENABLED):
+            self.log_generator.log_details(
+                "Total Insights added to the Database:" + str(total_records_added_to_db))
+            self.log_generator.log_details(
+                '################################################################################################')
 
         # print("Total Insights added to the Database:" +
         #       str(total_records_added_to_db))
@@ -1236,10 +1238,11 @@ class InsightGeneratorDBManager:
             cursor.close()
 
         # self.dbConnection.commit()
-        self.log_generator.log_details(
-            "Total Insights added to the Database:" + str(total_records_added_to_db))
-        self.log_generator.log_details(
-            '################################################################################################')
+        if(DB_LOGGING_ENABLED):
+            self.log_generator.log_details(
+                "Total Insights added to the Database:" + str(total_records_added_to_db))
+            self.log_generator.log_details(
+                '################################################################################################')
 
         # print("Total Insights added to the Database:" +
         #       str(total_records_added_to_db))
@@ -1416,10 +1419,11 @@ class InsightGeneratorDBManager:
             cursor.close()
 
         # self.dbConnection.commit()
-        self.log_generator.log_details(
-            "Total Insights added to the Database:" + str(total_records_added_to_db))
-        self.log_generator.log_details(
-            '################################################################################################')
+        if(DB_LOGGING_ENABLED):
+            self.log_generator.log_details(
+                "Total Insights added to the Database:" + str(total_records_added_to_db))
+            self.log_generator.log_details(
+                '################################################################################################')
 
         # print("Total Insights added to the Database:" +
         #       str(total_records_added_to_db))

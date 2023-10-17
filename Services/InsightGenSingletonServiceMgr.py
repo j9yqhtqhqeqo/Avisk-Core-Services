@@ -17,12 +17,18 @@ from Services.InsightGenerator import triangulation_Insight_Generator
 
 
 ##  COMMON SERVICE
-def get_process_buffer(queue_length:int):
+def get_process_buffer(queue_length:int, io_bound = False):
 
-    process_count = multiprocessing.cpu_count()
+    
+    processor_count = multiprocessing.cpu_count()
+    if(io_bound):
+                process_count = processor_count * 5
+    else:
+                process_count = processor_count
     buffer =[]
     if(queue_length >= 10):
-        buffer =[0]*process_count
+            buffer =[0]*(process_count)
+
     else:
         for i in range(queue_length):
             # buffer[i] = 0
@@ -37,7 +43,6 @@ def get_process_buffer(queue_length:int):
 ## EXPOSURE INSIGHTS
 def load_document_cache_for_exposure_pathway(database_context, queue: Queue, queue_size=Queue):
     
-    print('Loading Documents  for Exposure Pathway Insight Generation')
 
     exposure_document_list = InsightGeneratorDBManager(
         database_context).get_unprocessed_document_items_for_insight_gen(dictionary_type=Lookups().Exposure_Pathway_Dictionary_Type)
@@ -74,7 +79,7 @@ def batch_process_generate_insights_for_exposure(database_context, validation_mo
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int)
+    batches = get_process_buffer(queue_size_int,io_bound=False)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))
@@ -102,15 +107,13 @@ def batch_process_generate_insights_for_exposure(database_context, validation_mo
 ## INTERNALIZATION INSIGHTS
 def load_document_cache_for_internalization(database_context, queue: Queue, queue_size=Queue):
     
-    print('Loading Documents  for Internalization Insight Generation')
-
     exposure_document_list = InsightGeneratorDBManager(
         database_context).get_unprocessed_document_items_for_insight_gen(dictionary_type=Lookups().Internalization_Dictionary_Type)
     for document in exposure_document_list:
         queue.put(document)
 
     queue_size.put(len(exposure_document_list))
-    print('Documents Loaded for Exposure Pathway Insight Generation')
+    print('Documents Loaded for Internalization  Insight Generation')
 
 def process_next_unprocessed_internalization_document_list(batch_size, database_context, queue: Queue, batch_num, validation_mode):
     exp_int_insght_generator = Insight_Generator(database_context)
@@ -139,7 +142,7 @@ def batch_process_generate_insights_for_internalization(database_context, valida
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int)
+    batches = get_process_buffer(queue_size_int,io_bound=True)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))
@@ -148,7 +151,7 @@ def batch_process_generate_insights_for_internalization(database_context, valida
     for i in range(num_batches):
         # Check if the batch is set to run, if not exit
         l_dbmgr = LookupsDBManager(database_context=database_context)
-        process_state = (l_dbmgr.get_insight_gen_status(Lookups().Exposure_Pathway_Dictionary_Type))
+        process_state = (l_dbmgr.get_insight_gen_status(Lookups().Internalization_Dictionary_Type))
         if(process_state == 'Run'):
             p = (Process(target=process_next_unprocessed_internalization_document_list,
                 args=(batches[i], database_context, queue, i+1,validation_mode,)))
@@ -196,7 +199,7 @@ def batch_process_generate_insights_for_exposure_internalization(database_contex
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int)
+    batches = get_process_buffer(queue_size_int,io_bound=True)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))
@@ -254,7 +257,7 @@ def batch_process_generate_insights_for_exposure_mitigation_insights(database_co
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int)
+    batches = get_process_buffer(queue_size_int,io_bound=True)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))
@@ -290,7 +293,7 @@ def load_document_cache_for_internalization_mitigation_insights(database_context
         queue.put(document)
 
     queue_size.put(len(int_mit_document_list))
-    print('Documents Loaded for Exposure ->Mitigation Insight Generation')
+    print('Documents Loaded for Internalization ->Mitigation Insight Generation')
 
 def process_next_unprocessed_int_mit_document_list(batch_size, database_context, queue: Queue, batch_num):
     triangulation_insight_gen = triangulation_Insight_Generator(database_context)
@@ -312,7 +315,7 @@ def batch_process_generate_insights_for_internalization_mitigation_insights(data
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int)
+    batches = get_process_buffer(queue_size_int,io_bound=True)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))
@@ -321,7 +324,7 @@ def batch_process_generate_insights_for_internalization_mitigation_insights(data
     for i in range(num_batches):
         # Check if the batch is set to run, if not exit
         l_dbmgr = LookupsDBManager(database_context=database_context)
-        process_state = (l_dbmgr.get_insight_gen_status(Lookups().Mitigation_Exp_Insight_Type))
+        process_state = (l_dbmgr.get_insight_gen_status(Lookups().Mitigation_Int_Insight_Type))
         if(process_state == 'Run'):
             p = (Process(target=process_next_unprocessed_int_mit_document_list,
                 args=(batches[i], database_context, queue, i+1,)))
@@ -370,7 +373,7 @@ def batch_process_generate_insights_for_exp_int_mitigation_insights(database_con
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int)
+    batches = get_process_buffer(queue_size_int,io_bound=True)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))
@@ -396,6 +399,10 @@ def batch_process_generate_insights_for_exp_int_mitigation_insights(database_con
     print("All Batches processed successfully")
 
 
+# buffer = get_process_buffer(100, True)
+# print(buffer)
+
+# batch_process_generate_insights_for_internalization("Test")
 # triangulation_insight_gen = triangulation_Insight_Generator("Development")
 
 # exp_int_document_list = InsightGeneratorDBManager(
