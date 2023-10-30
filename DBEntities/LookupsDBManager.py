@@ -103,34 +103,49 @@ class LookupsDBManager():
 
 
     def get_current_processing_status(self,processing_type:int):
-            if(processing_type == Processing_Type().KEYWORD_GEN_INT):
-                sql = f"select count(*) remaining_documents from t_document where internalization_keyword_search_completed_ind = 0 and int_validation_completed_ind = 1"
-            if(processing_type == Processing_Type().KEYWORD_GEN_EXP):
-                sql = f"select count(*) remaining_documents from t_document where exp_pathway_keyword_search_completed_ind = 0 and exp_validation_completed_ind = 1"
-            if(processing_type == Processing_Type().KEYWORD_GEN_MIT):
-                sql = f"select count(*) remaining_documents from t_document where mitigation_search_completed_ind = 0 and mit_validation_completed_ind = 1"
-            if(processing_type == Processing_Type().EXPOSURE_INSIGHTS_GEN):
-                sql = f"select count(*) remaining_documents from t_document where exp_insights_generated_ind = 0"
-            if(processing_type == Processing_Type().INTERNALIZATION_INSIGHTS_GEN):
-                sql = f"select count(*) remaining_documents from t_document where int_insights_generated_ind = 0"
-            if(processing_type == Processing_Type().Exp_Int_Insight_GEN):
-                sql = f"select count(*) remaining_documents from t_document where int_exp_insights_generated = 0"
-            if(processing_type == Processing_Type().Mitigation_Exp_Insight_GEN):
-                sql = f"select count(*) remaining_documents from t_document where mitigation_exp_insights_generated = 0"
-            if(processing_type == Processing_Type().Mitigation_Int_Insight_GEN):
-                sql = f"select count(*) remaining_documents from t_document where mitigation_int_insights_generated = 0"
-            if(processing_type == Processing_Type().Mitigation_Exp_INT_Insight_GEN):
-                sql = f"select count(*) remaining_documents from t_document where mitigation_int_exp_insights_generated = 0"
+            failedsql ='EMPTY'
 
-            remaining_documents:int
+            if(processing_type == Processing_Type().KEYWORD_GEN_EXP):
+                remainsql = f"select count(*) remaining_documents from t_document where exp_pathway_keyword_search_completed_ind = 0 and exp_validation_completed_ind = 1"
+                failedsql = f"select count(*) failed_docs from t_document where exp_pathway_keyword_search_completed_ind =  2"
+
+            if(processing_type == Processing_Type().KEYWORD_GEN_INT):
+                remainsql = f"select count(*) remaining_documents from t_document where internalization_keyword_search_completed_ind = 0 and int_validation_completed_ind = 1"
+                failedsql = f"select count(*) failed_docs from t_document where internalization_keyword_search_completed_ind = 2"
+
+
+            if(processing_type == Processing_Type().KEYWORD_GEN_MIT):
+                remainsql = f"select count(*) remaining_documents from t_document where mitigation_search_completed_ind = 0 and mit_validation_completed_ind = 1"
+                failedsql = f"select count(*) failed_docs from t_document where mitigation_search_completed_ind = 2"
+
+            if(processing_type == Processing_Type().EXPOSURE_INSIGHTS_GEN):
+                remainsql = f"select count(*) remaining_documents from t_document where exp_insights_generated_ind = 0"
+            if(processing_type == Processing_Type().INTERNALIZATION_INSIGHTS_GEN):
+                remainsql = f"select count(*) remaining_documents from t_document where int_insights_generated_ind = 0"
+            if(processing_type == Processing_Type().Exp_Int_Insight_GEN):
+                remainsql = f"select count(*) remaining_documents from t_document where int_exp_insights_generated = 0"
+            if(processing_type == Processing_Type().Mitigation_Exp_Insight_GEN):
+                remainsql = f"select count(*) remaining_documents from t_document where mitigation_exp_insights_generated = 0"
+            if(processing_type == Processing_Type().Mitigation_Int_Insight_GEN):
+                remainsql = f"select count(*) remaining_documents from t_document where mitigation_int_insights_generated = 0"
+            if(processing_type == Processing_Type().Mitigation_Exp_INT_Insight_GEN):
+                remainsql = f"select count(*) remaining_documents from t_document where mitigation_int_exp_insights_generated = 0"
+
+            remaining_documents=0
+            failed_documents = 0
             try:
                 cursor = self.dbConnection.cursor()
-                cursor.execute(sql)
+                cursor.execute(remainsql)
                 rows = cursor.fetchone()
                 remaining_documents = rows.remaining_documents
+
+                if(failedsql != 'EMPTY'):
+                    cursor.execute(failedsql)
+                    rows = cursor.fetchone()
+                    failed_documents = rows.failed_docs
                 
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
 
-            return remaining_documents
+            return failed_documents,remaining_documents

@@ -252,7 +252,6 @@ class InsightGeneratorDBManager:
 
         return document_list
 
-
     def get_keyword_hits_for_insight_gen(self, dictionary_type:int, document_id:int):
 
         document_keyword_list = []
@@ -307,7 +306,9 @@ class InsightGeneratorDBManager:
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
-            print("Error processing hits for word:" + key_word)
+            print("Error processing hits for word:" + key_word +" , Document ID:"+str(document_id))
+            # print('Location Size:'+ str(len(locations)))
+            # print(locations)
             print(f"Error: {str(exc)}")
             raise exc
 
@@ -415,7 +416,6 @@ class InsightGeneratorDBManager:
         # print("Total Insights added to the Database:" +
         #       str(total_records_added_to_db))
 
-
     def cleanup_insights_for_document(self, dictionary_type, document_id):
        
         cursor = self.dbConnection.cursor()
@@ -465,6 +465,7 @@ class InsightGeneratorDBManager:
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
+            print(f"Error Deleting Keyword hits for :"+document_name)
             print(f"Error: {str(exc)}")
             raise exc
 
@@ -582,6 +583,29 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
+    def update_validation_failed_status(self,document_id,dictionary_type):
+
+            exp_sql = f"UPDATE t_document set exp_validation_completed_ind = 0 where document_id ={document_id}"
+            int_sql = f"UPDATE t_document set int_validation_completed_ind = 0 where document_id ={document_id}"
+            mit_sql = f"UPDATE t_document set  mit_validation_completed_ind = 0 where document_id ={document_id}"
+            
+            try:
+                    cursor = self.dbConnection.cursor()
+
+                    if(dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+                        cursor.execute(exp_sql)
+                    if(dictionary_type == Lookups().Internalization_Dictionary_Type):
+                        cursor.execute(int_sql)
+                    if(dictionary_type == Lookups().Internalization_Dictionary_Type):
+                        cursor.execute(mit_sql)
+            except Exception as exc:
+                    self.dbConnection.rollback()
+                    print(f"Error: {str(exc)}")
+                    raise exc
+            
+            self.dbConnection.commit()
+            cursor.close()
+
 
 # EXPOSURE PATHWAY
 
@@ -630,7 +654,7 @@ class InsightGeneratorDBManager:
             sql = "select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.exp_pathway_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.exp_validation_completed_ind=? order by doc.document_id"
+                            doc.exp_pathway_keyword_search_completed_ind in(0,2) and doc.company_name = comp.conformed_name and doc.exp_validation_completed_ind=? order by doc.document_id"
 
             cursor.execute(sql, validation_completed_ind)
 
@@ -651,11 +675,17 @@ class InsightGeneratorDBManager:
 
         return document_list
 
-    def update_exp_pathway_keyword_search_completed_ind(self, document_id):
+    def update_exp_pathway_keyword_search_completed_ind(self, document_id, search_failed = False, validation_failed=False):
         # Create a cursor object to execute SQL queries
+        if(validation_failed):
+            self.update_validation_failed_status(document_id=document_id,dictionary_type=Lookups().Exposure_Pathway_Dictionary_Type)
+        if(not search_failed):
+            completed_ind = 1
+        else:
+            completed_ind = 2
         cursor = self.dbConnection.cursor()
 
-        sql = f"update t_document set exp_pathway_keyword_search_completed_ind = 1 \
+        sql = f"update t_document set exp_pathway_keyword_search_completed_ind ={completed_ind} \
                 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                 where document_id ={document_id}"
         try:
@@ -709,7 +739,7 @@ class InsightGeneratorDBManager:
             sql = "select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.internalization_keyword_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.int_validation_completed_ind =?  order by doc.document_id"
+                            doc.internalization_keyword_search_completed_ind in(0,2) and doc.company_name = comp.conformed_name and doc.int_validation_completed_ind =?  order by doc.document_id"
 
             cursor.execute(sql, validation_completed_ind)
             rows = cursor.fetchall()
@@ -729,11 +759,19 @@ class InsightGeneratorDBManager:
 
         return document_list
 
-    def update_internalization_keyword_search_completed_ind(self, document_id):
+    def update_internalization_keyword_search_completed_ind(self, document_id, search_failed = False, validation_failed=False):
+        
+        if(validation_failed):
+            self.update_validation_failed_status(document_id=document_id,dictionary_type=Lookups().Internalization_Dictionary_Type)
+
+        if(not search_failed):
+            completed_ind = 1
+        else:
+            completed_ind = 2
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
 
-        sql = f"update t_document set internalization_keyword_search_completed_ind = 1 \
+        sql = f"update t_document set internalization_keyword_search_completed_ind = {completed_ind} \
                 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                 where document_id ={document_id}"
         try:
@@ -751,7 +789,6 @@ class InsightGeneratorDBManager:
 
 
 # MITIGATION
-
 
     def get_mitigation_dictionary_term_list(self):
 
@@ -791,7 +828,7 @@ class InsightGeneratorDBManager:
             sql = "select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_search_completed_ind = 0 and doc.company_name = comp.conformed_name and doc.mit_validation_completed_ind=? order by document_id"
+                            doc.mitigation_search_completed_ind in(0,2) and doc.company_name = comp.conformed_name and doc.mit_validation_completed_ind=? order by document_id"
 
             cursor.execute(sql, validation_completed_ind)
 
@@ -812,11 +849,20 @@ class InsightGeneratorDBManager:
 
         return document_list
 
-    def update_mitigation_keyword_search_completed_ind(self, document_id):
+    def update_mitigation_keyword_search_completed_ind(self, document_id, search_failed = False, validation_failed=False):
+        
+        if(validation_failed):
+            self.update_validation_failed_status(document_id=document_id, dictionary_type=Lookups().Mitigation_Dictionary_Type)
+
+        if(not search_failed):
+            completed_ind = 1
+        else:
+            completed_ind = 2
+       
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
 
-        sql = f"update t_document set mitigation_search_completed_ind = 1 \
+        sql = f"update t_document set mitigation_search_completed_ind = {completed_ind} \
                 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                 where document_id ={document_id}"
         try:
@@ -832,11 +878,9 @@ class InsightGeneratorDBManager:
         # Close the cursor and connection
         cursor.close()
 
-
 # TRIANGULATION
 
     # COMMON
-
 
     def update_triangulation_insights_generated_batch(self, dictionary_type, document_id):
 
@@ -880,7 +924,9 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_exp_insights_generated = 0 and doc.company_name = comp.conformed_name")
+                            doc.mitigation_exp_insights_generated = 0 and doc.company_name = comp.conformed_name\
+                            and doc.exp_insights_generated_ind = 1 and doc.mitigation_search_completed_ind = 1\
+                           ")
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -901,7 +947,7 @@ class InsightGeneratorDBManager:
     def get_exp_mitigation_lists(self, document_id):
 
         mitigation_keyword_list = []
-        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where insights_generated = 0 and dictionary_type = 1002 and document_id = ?  order by key_word_hit_id'
+        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where  dictionary_type = 1002 and document_id = ?  order by key_word_hit_id'
 
         try:
             # Execute the SQL query
@@ -925,7 +971,7 @@ class InsightGeneratorDBManager:
             raise exc
 
         exp_keyword_list = []
-        sql = 'select document_id, key_word_hit_id, key_word,locations,exposure_path_id from t_key_word_hits where dictionary_type = 1000 and document_id = ?'
+        sql = 'select document_id, key_word_hit_id, key_word,locations,exposure_path_id from t_key_word_hits where dictionary_type = 1000 and document_id = ? order by key_word_hit_id'
         try:
             # Execute the SQL query
 
@@ -987,7 +1033,9 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_int_insights_generated = 0 and doc.company_name = comp.conformed_name")
+                            doc.mitigation_int_insights_generated = 0 and doc.company_name = comp.conformed_name\
+                           and doc.int_insights_generated_ind = 1 and doc.mitigation_search_completed_ind = 1\
+                           ")
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -1008,7 +1056,7 @@ class InsightGeneratorDBManager:
     def get_int_mitigation_lists(self, document_id):
 
         mitigation_keyword_list = []
-        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where insights_generated = 0 and dictionary_type = 1002 and document_id = ?  order by key_word_hit_id'
+        sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where  dictionary_type = 1002 and document_id = ?  order by key_word_hit_id'
 
         try:
             # Execute the SQL query
@@ -1034,7 +1082,7 @@ class InsightGeneratorDBManager:
             raise exc
 
         int_keyword_list = []
-        sql = 'select document_id, key_word_hit_id, key_word,locations,internalization_id from t_key_word_hits where dictionary_type = 1001 and document_id = ?'
+        sql = 'select document_id, key_word_hit_id, key_word,locations,internalization_id from t_key_word_hits where dictionary_type = 1001 and document_id = ? order by key_word_hit_id'
         try:
             # Execute the SQL query
 
@@ -1097,7 +1145,9 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name")
+                            doc.int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name\
+                            and doc.exp_insights_generated_ind = 1 and doc.int_insights_generated_ind = 1\
+                           ")
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()
@@ -1255,7 +1305,9 @@ class InsightGeneratorDBManager:
             cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                             from dbo.t_document doc, t_sec_company comp \
                             where \
-                            doc.mitigation_int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name")
+                            doc.mitigation_int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name\
+                            and doc.exp_insights_generated_ind=1 and doc.int_insights_generated_ind=1 and doc.mitigation_search_completed_ind = 1\
+                           ")
             rows = cursor.fetchall()
             for row in rows:
                 document_entity = DocumentEntity()

@@ -4,6 +4,11 @@
 #  1. Add textfiles to PARM_STAGE1_FOLDER
 #  2. Create entry in table t_document and set document_processed_ind = 0
 ############################################################################################################
+import os
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
 import numpy as np
 import copy
 from Dictionary.DictionaryManager import ContextResolver
@@ -19,10 +24,8 @@ from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
 from DBEntities.DocumentHeaderEntity import DocHeaderEntity
 import re
 import datetime as dt
-import os
-import sys
-from pathlib import Path
-sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+from  Utilities.CustomExceptions import DataValidationException
+
 
 
 EXP_INT_MITIGATION_THRESHOLD = 50
@@ -89,14 +92,15 @@ class keyWordSearchManager:
         self.related_keyword_list_for_validation = dict()
         self.validation_mode = False
 
-        # if os.path.isfile(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}'):
-        #     os.remove(f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
-        # if os.path.isfile(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}'):
-        #     os.remove(f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
-
         self.insightDBMgr = InsightGeneratorDBManager(database_context)
 
         self.database_context = database_context
+
+        # Capture count of documents failed to process due to erors
+        self.exp_documents_failed_to_process = 0
+        self.int_documents_failed_to_process = 0
+        self.mit_documents_failed_to_process = 0
+
 
     def _get_company_list(self):
         pass
@@ -122,16 +126,21 @@ class keyWordSearchManager:
         while (not exit_loop):
 
             if (not self.validation_mode):
-                userInput = input('Enter i to Include, e to Exclude:')
-                if (userInput == 'i'):
-                    self.include_log_generator.log_details(
-                        keyword + ':' + related_keyword, False)
-                    exit_loop = True
 
-                if (userInput == 'e'):
-                    self.exclude_log_generator.log_details(
-                        keyword + ':' + related_keyword, False)
-                    exit_loop = True
+                # userInput = input('Enter i to Include, e to Exclude:')
+                # if (userInput == 'i'):
+                #     self.include_log_generator.log_details(
+                #         keyword + ':' + related_keyword, False)
+                #     exit_loop = True
+
+                # if (userInput == 'e'):
+                #     self.exclude_log_generator.log_details(
+                #         keyword + ':' + related_keyword, False)
+                #     exit_loop = True
+               data_validation_exception = DataValidationException()
+               data_validation_exception.init_exception(document_id=self.document_id, document_name=self.document_name,error_type=DataValidationException().NEW_KEYWORDS_FOUND)
+               raise data_validation_exception
+            
             else:
                 self.include_log_generator.log_details(
                     keyword + ':' + related_keyword, False)
@@ -159,46 +168,55 @@ class keyWordSearchManager:
         retry_for_new_dicitonary_items = False
         document_count = 0
         for document in self.document_list:
-            self.document_id = document.document_id
-            self.document_name = document.document_name
-            self.company_id = document.company_id
-            self.reporting_year = document.year
-            document_count = document_count + 1
+            try:
+                self.document_id = document.document_id
+                self.document_name = document.document_name
+                self.company_id = document.company_id
+                self.reporting_year = document.year
+                document_count = document_count + 1
 
-            self._load_content(document.document_name,
-                               document.document_id, document.year)
+                self._load_content(document.document_name,
+                                document.document_id, document.year)
 
-            # Generate keyword location map for exposure pathway dictionary terms
-            # print(
-            #     "Generating keyword location map for exposure pathway dictionary terms ")
+                # Generate keyword location map for exposure pathway dictionary terms
+                # print(
+                #     "Generating keyword location map for exposure pathway dictionary terms ")
 
-            self._get_exp_dictionary_term_list()
-            self._create_exp_dictionary_proximity_map()
+                self._get_exp_dictionary_term_list()
+                self._create_exp_dictionary_proximity_map()
 
-            if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
-                self._save_dictionary_keyword_search_results(
-                    Lookups().Exposure_Pathway_Dictionary_Type)
-                self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
-                    self.document_id)
+                if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
+                    self._save_dictionary_keyword_search_results(
+                        Lookups().Exposure_Pathway_Dictionary_Type)
+                    self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
+                        self.document_id)
 
-                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
-                      str(document_count)+' of ' + str(len(self.document_list)))
+                    print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
 
-            elif (not self.validation_mode):
-                self.dictionary_Mgr.update_Dictionary()
-                print("New Keywords added to Dictionary...Self Healing in effect...")
-                retry_for_new_dicitonary_items = True
-            elif (self.validation_mode):
-               print('Completed Validation - Batch#:' + str(batch_num) +', Document:' +
-                      str(document_count)+' of ' + str(len(self.document_list)))
-                # Add Logic to update  Validation Completed Flags
+                elif (not self.validation_mode):
+                    self.dictionary_Mgr.update_Dictionary()
+                    print("New Keywords added to Dictionary...Self Healing in effect...")
+                    retry_for_new_dicitonary_items = True
+                elif (self.validation_mode):
+                    print('Completed Validation - Batch#:' + str(batch_num) +', Document:' +
+                            str(document_count)+' of ' + str(len(self.document_list)))
+                        # Add Logic to update  Validation Completed Flags
 
-            else:
-                print(
-                    'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
-
-        # if (self.validation_mode and end_validation):
-        #     self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+                else:
+                    print(
+                        'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
+                    
+            except DataValidationException as exc:
+                    # Rollback the transaction if any error occurs
+                    print(f"Error: {exc.get_error_description()}")
+                    self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
+                        self.document_id, search_failed=True, validation_failed=True)
+            
+            except Exception as exc:
+                    print(f"Error: {str(exc)}")
+                    self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
+                        self.document_id, search_failed=True)
 
         if (retry_for_new_dicitonary_items):
             print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
@@ -326,44 +344,52 @@ class keyWordSearchManager:
         retry_for_new_dicitonary_items = False
         document_count = 0
         for document in self.document_list:
-            self.document_id = document.document_id
-            self.document_name = document.document_name
-            self.company_id = document.company_id
-            self.reporting_year = document.year
-            document_count = document_count + 1
+            try:
+                self.document_id = document.document_id
+                self.document_name = document.document_name
+                self.company_id = document.company_id
+                self.reporting_year = document.year
+                document_count = document_count + 1
 
-            self._load_content(document.document_name,
-                               document.document_id, document.year)
+                self._load_content(document.document_name,
+                                document.document_id, document.year)
 
-           # Generate keyword location map for internalization pathway dictionary terms
-            # print(
-            #     'Generating keyword location map for internalization pathway dictionary terms')
+            # Generate keyword location map for internalization pathway dictionary terms
+                # print(
+                #     'Generating keyword location map for internalization pathway dictionary terms')
 
-            self._get_int_dictionary_term_list()
-            self._create_int_dictionary_proximity_map()
-            if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
-                self._save_dictionary_keyword_search_results(
-                    Lookups().Internalization_Dictionary_Type)
-                self.insightDBMgr.update_internalization_keyword_search_completed_ind(
-                    self.document_id)
+                self._get_int_dictionary_term_list()
+                self._create_int_dictionary_proximity_map()
+                if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
+                    self._save_dictionary_keyword_search_results(
+                        Lookups().Internalization_Dictionary_Type)
+                    self.insightDBMgr.update_internalization_keyword_search_completed_ind(
+                        self.document_id)
 
-                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
-                      str(document_count)+' of ' + str(len(self.document_list)))
+                    print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
 
-            elif (not self.validation_mode):
-                self.dictionary_Mgr.update_Dictionary()
-                print("New Keywords added to Dictionary...Self Healing in effect...")
-                retry_for_new_dicitonary_items = True
-            elif (self.validation_mode):
-                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
-                      str(document_count)+' of ' + str(len(self.document_list)))
-               # Add Logic to update  Validation Completed Flags
-            else:
-                print(
-                    'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
-
-        # if (self.validation_mode and end_validation):
-        #     self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+                elif (not self.validation_mode):
+                    self.dictionary_Mgr.update_Dictionary()
+                    print("New Keywords added to Dictionary...Self Healing in effect...")
+                    retry_for_new_dicitonary_items = True
+                elif (self.validation_mode):
+                    print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
+                # Add Logic to update  Validation Completed Flags
+                else:
+                    print(
+                        'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
+                    
+            except DataValidationException as exc:
+                    # Rollback the transaction if any error occurs
+                    print(f"Error: {exc.get_error_description()}")
+                    self.insightDBMgr.update_internalization_keyword_search_completed_ind(
+                        self.document_id, search_failed=True, validation_failed=True)           
+            except Exception as exc:
+                    print(f"Error: {str(exc)}")
+                    self.insightDBMgr.update_internalization_keyword_search_completed_ind(
+                        self.document_id, search_failed=True)
 
         if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_internalization..")
@@ -518,7 +544,7 @@ class keyWordSearchManager:
                 combined_entity.exposure_path_id = proximity_entity.exposure_path_id
                 combined_entity.dictionary_id = proximity_entity.dictionary_id
                 combined_entity.doc_header_id = proximity_entity.doc_header_id
-                combined_entity.internalization_id = combined_entity.internalization_id
+                combined_entity.internalization_id = proximity_entity.internalization_id
 
                 combined_entity.key_word_bunch.append(temp_item)
 
@@ -544,42 +570,53 @@ class keyWordSearchManager:
         retry_for_new_dicitonary_items = False
         document_count = 0
         for document in self.document_list:
-            self.document_id = document.document_id
-            self.document_name = document.document_name
-            self.company_id = document.company_id
-            self.reporting_year = document.year
-            document_count = document_count + 1
+            try:
+                self.document_id = document.document_id
+                self.document_name = document.document_name
+                self.company_id = document.company_id
+                self.reporting_year = document.year
+                document_count = document_count + 1
 
-            self._load_content(document.document_name,
-                               document.document_id, document.year)
+                self._load_content(document.document_name,
+                                document.document_id, document.year)
 
-           # Generate keyword location map for Mitigation pathway dictionary terms
-            # print('Generating keyword location map for mitigation dictionary terms')
-            self._get_mitigation_dictionary_term_list()
-            self._create_mitigation_dictionary_proximity_map()
+            # Generate keyword location map for Mitigation pathway dictionary terms
+                # print('Generating keyword location map for mitigation dictionary terms')
+                self._get_mitigation_dictionary_term_list()
+                self._create_mitigation_dictionary_proximity_map()
 
-            if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
-                self._save_dictionary_keyword_search_results(
-                    Lookups().Mitigation_Dictionary_Type)
-                self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
-                    self.document_id)
+                if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
+                    self._save_dictionary_keyword_search_results(
+                        Lookups().Mitigation_Dictionary_Type)
+                    self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
+                        self.document_id)
 
-                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
-                      str(document_count)+' of ' + str(len(self.document_list)))
-            elif (not self.validation_mode):
-                self.dictionary_Mgr.update_Dictionary()
-                print("New Keywords added to Dictionary...Self Healing in effect...")
-                retry_for_new_dicitonary_items = True
-            elif (self.validation_mode):
-                print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
-                      str(document_count)+' of ' + str(len(self.document_list)))
-                # Add logic to update Valdiation Flags
-            else:
-                print(
-                    'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
-
-        # if (self.validation_mode and end_validation):
-        #     self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+                    print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
+                elif (not self.validation_mode):
+                    self.dictionary_Mgr.update_Dictionary()
+                    print("New Keywords added to Dictionary...Self Healing in effect...")
+                    retry_for_new_dicitonary_items = True
+                elif (self.validation_mode):
+                    print('Completed Keyword Search- Batch#:' + str(batch_num) +', Document:' +
+                        str(document_count)+' of ' + str(len(self.document_list)))
+                    # Add logic to update Valdiation Flags
+                else:
+                    print(
+                        'No new words to be added to the validation: Please run Live mode for:'+self.document_name)
+           
+            except DataValidationException as exc:
+                    # Rollback the transaction if any error occurs
+                    print(f"Error: {exc.get_error_description()}")
+                    self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
+                        self.document_id,search_failed=True, validation_failed=True)
+           
+            except Exception as exc:
+                    print(f"Error: {str(exc)}")
+                    self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
+                        self.document_id,search_failed=True)
+          
+        
         if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_mitigation..")
             self.generate_keyword_location_map_for_mitigation()
@@ -804,7 +841,7 @@ class Insight_Generator(keyWordSearchManager):
                         for location in radius_location_partial:
                             distance = abs(int_master_location - location)
                             try:
-                                if (distance == 0 and not IGNORE_ZERO_CALC_WARNING):
+                                if (distance == 0 and IGNORE_ZERO_CALC_WARNING):
                                     self.log_generator.log_details("Distance 0 - Ignoring Weight Calculation: Keyword:" + keyword_location.key_word +
                                                                    ", Child Key word:" + child_node.key_word+", Location:"+str(location))
                                 else:
@@ -1448,3 +1485,23 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                                               )
             self.mitigation_comon_insightList.append(insight)
             # print("Mitigation:"+mitigation_keyword+",Exp Keywords:"+exp_insight_entity.keyword1+' ,'+exp_insight_entity.keyword2, +" , Score"+score)
+
+# document_list = InsightGeneratorDBManager(
+#         "Development").get_unprocessed_document_items_for_insight_gen(dictionary_type=Lookups().Internalization_Dictionary_Type)
+# exp_int_insght_generator = Insight_Generator("Development")
+# insight_generator_db_mgr = InsightGeneratorDBManager("Development")
+# for document in document_list:
+#     document_keyword_list =  insight_generator_db_mgr.get_keyword_hits_for_insight_gen(Lookups().Internalization_Dictionary_Type, document.document_id)
+#     insight_generator_db_mgr.cleanup_insights_for_document(Lookups().Internalization_Dictionary_Type,document.document_id)
+#     exp_int_insght_generator.generate_insights_with_2_factors(
+#                     Lookups().Internalization_Dictionary_Type, document_keyword_list,batch_num=1)
+
+
+
+# internalization_document_list = InsightGeneratorDBManager(
+#         "Development").get_internalization_document_list(False)
+# key_word_search_mgr = file_folder_keyWordSearchManager(
+#         folder_path=PARM_STAGE1_FOLDER, database_context= "Development")
+    
+# key_word_search_mgr.generate_keyword_location_map_for_internalization(
+#        internalization_document_list, 1, False)

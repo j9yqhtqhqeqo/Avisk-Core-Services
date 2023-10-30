@@ -12,32 +12,9 @@ import multiprocessing
 from Utilities.Lookups import Lookups
 from Services.InsightGenerator import Insight_Generator
 from Services.InsightGenerator import triangulation_Insight_Generator
+from Utilities.MultiProcessing import get_process_buffer
 
 
-
-
-##  COMMON SERVICE
-def get_process_buffer(queue_length:int, io_bound = False):
-
-    
-    processor_count = multiprocessing.cpu_count()
-    if(io_bound):
-                process_count = processor_count * 5
-    else:
-                process_count = processor_count
-    buffer =[]
-    if(queue_length >= 10):
-            buffer =[0]*(process_count)
-
-    else:
-        for i in range(queue_length):
-            # buffer[i] = 0
-            buffer.append(0)
-
-    for i in range(queue_length):
-        j = i % process_count
-        buffer[j] = buffer[j] + 1
-    return buffer
 
 
 ## EXPOSURE INSIGHTS
@@ -79,7 +56,7 @@ def batch_process_generate_insights_for_exposure(database_context, validation_mo
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int,io_bound=False)
+    batches = get_process_buffer(queue_size_int,io_bound=True)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))
@@ -94,6 +71,8 @@ def batch_process_generate_insights_for_exposure(database_context, validation_mo
                 args=(batches[i], database_context, queue, i+1,validation_mode,)))
             p.start()
             process_list.append(p)
+            print('Started Batch: ' + str(i+1))
+
         else:
             print('Process Not in Run State - Exiting batch_process_generate_insights_for_exposure')
             break
@@ -107,12 +86,12 @@ def batch_process_generate_insights_for_exposure(database_context, validation_mo
 ## INTERNALIZATION INSIGHTS
 def load_document_cache_for_internalization(database_context, queue: Queue, queue_size=Queue):
     
-    exposure_document_list = InsightGeneratorDBManager(
+    document_list = InsightGeneratorDBManager(
         database_context).get_unprocessed_document_items_for_insight_gen(dictionary_type=Lookups().Internalization_Dictionary_Type)
-    for document in exposure_document_list:
+    for document in document_list:
         queue.put(document)
 
-    queue_size.put(len(exposure_document_list))
+    queue_size.put(len(document_list))
     print('Documents Loaded for Internalization  Insight Generation')
 
 def process_next_unprocessed_internalization_document_list(batch_size, database_context, queue: Queue, batch_num, validation_mode):
@@ -157,6 +136,8 @@ def batch_process_generate_insights_for_internalization(database_context, valida
                 args=(batches[i], database_context, queue, i+1,validation_mode,)))
             p.start()
             process_list.append(p)
+            print('Started Batch: ' + str(i+1))
+
         else:
             print('Process Not in Run State - Exiting batch_process_generate_insights_for_exposure')
             break
@@ -214,6 +195,8 @@ def batch_process_generate_insights_for_exposure_internalization(database_contex
                 args=(batches[i], database_context, queue, i+1,)))
             p.start()
             process_list.append(p)
+            print('Started Batch: ' + str(i+1))
+
         else:
             print('Process Not in Run State - Exiting batch_process_generate_insights_for_exposure_internalization')
             break
@@ -272,6 +255,8 @@ def batch_process_generate_insights_for_exposure_mitigation_insights(database_co
                 args=(batches[i], database_context, queue, i+1,)))
             p.start()
             process_list.append(p)
+            print('Started Batch: ' + str(i+1))
+
         else:
             print('Process Not in Run State - Exiting batch_process_generate_insights_for_exposure_mitigation_insights')
             break
@@ -330,6 +315,8 @@ def batch_process_generate_insights_for_internalization_mitigation_insights(data
                 args=(batches[i], database_context, queue, i+1,)))
             p.start()
             process_list.append(p)
+            print('Started Batch: ' + str(i+1))
+
         else:
             print('Process Not in Run State - Exiting batch_process_generate_insights_for_internalization_mitigation_insights')
             break
@@ -388,6 +375,8 @@ def batch_process_generate_insights_for_exp_int_mitigation_insights(database_con
                 args=(batches[i], database_context, queue, i+1,)))
             p.start()
             process_list.append(p)
+            print('Started Batch: ' + str(i+1))
+
         else:
             print('Process Not in Run State - Exiting batch_process_generate_insights_for_internalization_mitigation_insights')
             break

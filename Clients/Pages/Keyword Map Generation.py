@@ -14,6 +14,7 @@ from Services.SingletonServiceMgr import process_mitigation_document_list, proce
 from DBEntities.LookupsDBManager import LookupsDBManager
 from streamlit_autorefresh import st_autorefresh
 from multiprocessing import Process, Queue, Pool
+from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
 
 
 class StartUpClass:
