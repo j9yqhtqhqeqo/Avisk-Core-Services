@@ -6,6 +6,9 @@ from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 from DBEntities.DataSourceDBManager import DataSourceDBManager
 import pdfkit
 import fitz
+import urllib
+import ssl
+import certifi
 from urllib.request import urlopen
 import urllib.request as request
 import time
@@ -26,7 +29,7 @@ PARM_LOGFILE = (
 
 class DataSourceProcessor:
 
-    def __init__(self, databse_context:None) -> None:
+    def __init__(self, databse_context: None) -> None:
         self.document_list = []
         self.datasourceDBMgr = DataSourceDBManager(databse_context)
         self.logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
@@ -84,7 +87,7 @@ class DataSourceProcessor:
                 else:
                     print(f'  Failed download: URL = {url}')
                     if f_log:
-                        f_log = open(logfile, 'a')
+                        f_log = open(self.logfile, 'a')
                         f_log.write(f'  Failed download: URL = {url}\n')
                         f_log.flush()
                         l_except: Exception('  Failed download: URL = {url}\n')
@@ -92,8 +95,9 @@ class DataSourceProcessor:
 
         except Exception as exc:
             print(f'  Failed download: URL = {url}')
+            print(exc)
             if f_log:
-                f_log = open(logfile, 'a')
+                f_log = open(self.logfile, 'a')
                 f_log.write(f'  Failed download: URL = {url}\n')
                 f_log.flush()
                 raise exc
@@ -118,9 +122,17 @@ class DataSourceProcessor:
             source_url = document.source_url
             processed_ind = document.processed_ind
 
+            # File manually extracted
+            if (source_type == 'file'):
+                source_type_ext = 'pdf'
+            else:
+                source_type_ext = source_type
+
+            print('Processing Url:', source_url)
+
             # Download file to the folder -- Year
             file_name = company_name + ' ' + \
-                str(year)+' '+content_type_desc+'.'+source_type
+                str(year)+' '+content_type_desc+'.'+source_type_ext
             l_file_location = PARM_PDF_IN_FOLDER + \
                 '/' + str(year) + '/'+file_name
             try:
@@ -131,6 +143,8 @@ class DataSourceProcessor:
                 elif (source_type == 'webpage'):
                     self.download_webpage_as_pdf_file(
                         url=source_url, f_name=l_file_location, f_log=self.logfile)
+                elif (source_type == 'file'):
+                    print('Processing Manually dowloaded file')
 
                 # Convert the downloaded file to Text Format
                 ouput_folder = f'{PARM_PDF_OUT_FOLDER}/{year}'
@@ -168,13 +182,19 @@ class DataSourceProcessor:
 
             except Exception as Exc:
                 print('Failed to download file - check source url:' + source_url)
-                print('Processing next Url')
+        print('Document processing complete')
 
     def get_unprocessed_source_document_list(self):
-        return  self.datasourceDBMgr.get_unprocessed_content_list()
+        return self.datasourceDBMgr.get_unprocessed_content_list()
 
-unprocessed_document_list = (DataSourceProcessor("Test")).get_unprocessed_source_document_list()
-print([x.as_dict() for x in unprocessed_document_list])
+
+# unprocessed_document_list = (DataSourceProcessor(
+#     "Development")).get_unprocessed_source_document_list()
+# print([x.as_dict() for x in unprocessed_document_list])
+
+
+# l_datasource_processor = DataSourceProcessor("Test")
+# l_datasource_processor.download_content_from_source_and_process_text()
 
 
 # logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'

@@ -31,7 +31,6 @@ class StartUpClass:
         else:
             self.database_context = "Test"
 
-        st.text
         st.subheader('Exposure Pathway Keyword Search', divider='blue')
         failed_documents, pending_documents = LookupsDBManager(
             self.database_context).get_current_processing_status(processing_type=Processing_Type().KEYWORD_GEN_EXP)
