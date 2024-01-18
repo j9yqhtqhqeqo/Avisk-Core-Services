@@ -63,7 +63,7 @@ class keyWordSearchManager:
         self.document_name: str
         self.company_id: int
         self.reporting_year: int
-
+        self.batch_id: int
         self.current_data: str
 
         self.sic_code: int
@@ -173,6 +173,7 @@ class keyWordSearchManager:
                 self.document_name = document.document_name
                 self.company_id = document.company_id
                 self.reporting_year = document.year
+                self.batch_id = document.batch_id
                 document_count = document_count + 1
 
                 self._load_content(document.document_name,
@@ -349,6 +350,8 @@ class keyWordSearchManager:
                 self.document_name = document.document_name
                 self.company_id = document.company_id
                 self.reporting_year = document.year
+                self.batch_id = document.batch_id
+
                 document_count = document_count + 1
 
                 self._load_content(document.document_name,
@@ -575,6 +578,8 @@ class keyWordSearchManager:
                 self.document_name = document.document_name
                 self.company_id = document.company_id
                 self.reporting_year = document.year
+                self.batch_id = document.batch_id
+
                 document_count = document_count + 1
 
                 self._load_content(document.document_name,
@@ -729,7 +734,7 @@ class keyWordSearchManager:
         # Save Keyword search Results to Database
         if (self.proximity_entity_list):
             self.insightDBMgr.save_key_word_hits(self.proximity_entity_list, self.company_id, self.document_id,
-                                                 self.document_name, self.reporting_year, dictionary_type=dictionary_type)
+                                                 self.document_name, self.reporting_year, dictionary_type=dictionary_type, batch_id=self.batch_id)
 
     def send_Include_Exclude_Dictionary_Files_For_Validation(self):
         self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
@@ -789,7 +794,7 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
 class Insight_Generator(keyWordSearchManager):
 
     # Generate Insights for two keyword combinations
-    def generate_insights_with_2_factors(self, dictionary_type: int, document_keyword_list=[], batch_num=0):
+    def generate_insights_with_2_factors(self, dictionary_type: int, document_keyword_list=[], batch_num=0, year=0):
 
         # print('Generating insights for Dictionary Type:' +
         #       str(dictionary_type))
@@ -804,12 +809,11 @@ class Insight_Generator(keyWordSearchManager):
         for document_item in document_keyword_list:
             self.log_generator.log_details("Processing Batch:"+str(batch_num)+", Document ID:"+str(
                 document_item.document_id)+", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
-            # print("Processing Batch:"+str(document_item.batch_id)+", Document ID:"+str(document_item.document_id) +
-            #       ", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
+
             self._generate_insights_with_2_factors_by_dictionary_id(dictionary_type=document_item.dictionary_type,
-                                                                    dictionary_id=document_item.dictionary_id, document_id=document_item.document_id, document_name=document_item.document_name)
+                                                                    dictionary_id=document_item.dictionary_id, document_id=document_item.document_id, document_name=document_item.document_name, year=year)
              
-    def _generate_insights_with_2_factors_by_dictionary_id(self, dictionary_type=0, dictionary_id=0, document_id=0, document_name=''):
+    def _generate_insights_with_2_factors_by_dictionary_id(self, dictionary_type=0, dictionary_id=0, document_id=0, document_name='', year=0):
         keyword_location_list = self._load_keyword_location_list(
             dictionary_type, dictionary_id, document_id)
         insightList = []
@@ -880,7 +884,7 @@ class Insight_Generator(keyWordSearchManager):
 
         if (insights_genetated > 0):
             self.insightDBMgr.save_insights(
-                insightList=insightList, dictionary_type=dictionary_type)
+                insightList=insightList, dictionary_type=dictionary_type, year=year)
 
             self.insightDBMgr.update_insights_generated_from_keyword_hits_batch(
                 dictionary_type=dictionary_type, dictionary_id=dictionary_id, document_id=document_id)
@@ -1046,7 +1050,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                         ']').strip('[') + ',' + int_insight_entity.locations2.strip(']').strip('[')).split(',')
                     # print("INT INSIGHT LOCATIONS for"+int_insight_entity.keyword1+','+int_insight_entity.keyword2+':'+str(combined_int_insight_location_list))
                     self._create_exp_int_insights_for_document(combined_exp_insight_location_list, combined_int_insight_location_list, document_item.document_id,
-                                                               document_item.document_name, exp_insight_entity, int_insight_entity)
+                                                               document_item.document_name, exp_insight_entity, int_insight_entity, year=document_item.year)
                 # current_count = current_count + 1
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
@@ -1069,7 +1073,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
             ).Exp_Int_Insight_Type, document_id=document_item.document_id)
 
-    def _create_exp_int_insights_for_document(self, exp_insight_keyword_locations: None, int_insight_keyword_locations: None, document_id=0, document_name='', exp_insight_entity=None,   int_insight_entity=None):
+    def _create_exp_int_insights_for_document(self, exp_insight_keyword_locations: None, int_insight_keyword_locations: None, document_id=0, document_name='', exp_insight_entity=None,   int_insight_entity=None, year=0):
 
         integer_exp_insight_keyword_locations = np.asarray(
             exp_insight_keyword_locations, dtype=np.int32)
@@ -1128,7 +1132,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 document_name=document_name,
                 document_id=document_id,
                 exposure_path_id=exp_insight_entity.exposure_path_id,
-                internalization_id=int_insight_entity.internalization_id
+                internalization_id=int_insight_entity.internalization_id,
+                year=year
             )
 
             self.int_exp_insightList.append(exp_int_insight)
@@ -1215,7 +1220,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
                     self._create_mitigation_insights_for_document(mitigation_keyword_locations, doc_location_list, document_item.document_id,
                                                                   document_item.document_name, exp_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id,
-                                                                  exposure_path_id=exp_insight_entity.exposure_path_id
+                                                                  exposure_path_id=exp_insight_entity.exposure_path_id, year=document_item.year
                                                                   )
                 # current_count = current_count + 1
 
@@ -1279,7 +1284,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 # compute score against each mitigation key word
                 for mitigation_keyword_locations in self.mitigation_keyword_location_list:
                     self._create_mitigation_insights_for_document(mitigation_keyword_locations, doc_location_list, document_item.document_id,
-                                                                  document_item.document_name, int_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id, internalization_id=int_insight_entity.internalization_id)
+                                                                  document_item.document_name, int_insight_entity, mitigation_keyword_locations.key_word, mitigation_keyword_locations.key_word_hit_id, internalization_id=int_insight_entity.internalization_id, year=document_item.year)
                 # current_count = current_count + 1
 
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
@@ -1299,7 +1304,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
             ).Mitigation_Int_Insight_Type, document_id=document_item.document_id)
 
-    def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0, exposure_path_id=0, internalization_id=0):
+    def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0, exposure_path_id=0, internalization_id=0, year=0):
 
         mitigation_keyword_locations = mitigation_keyword_locations.locations.strip(
             '[').strip(']').split(',')
@@ -1345,7 +1350,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                               keyword_hit_id1=insight_entity.keyword_hit_id1, keyword1=insight_entity.keyword1,
                               keyword_hit_id2=insight_entity.keyword_hit_id2, keyword2=insight_entity.keyword2, score=score,
                               factor1=factor1_frequency, factor2=factor2_average_distance, document_name=document_name, document_id=document_id,
-                              exposure_path_id=exposure_path_id, internalization_id=internalization_id
+                              exposure_path_id=exposure_path_id, internalization_id=internalization_id, year=year
                               )
             self.mitigation_comon_insightList.append(insight)
             self.log_generator.log_details("Mitigation:"+mitigation_keyword+", Keywords:" +
@@ -1407,7 +1412,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 for mitigation_entity in self.mitigation_keyword_list:
                     self._create_combined_exp_int_mitigation_insights_for_document(mitigation_keyword_locations=mitigation_entity.locations,
                                                                                    doc_location_list=combined_exp_int_insight_location_list, exp_int_insight_entity=exp_int_insight_entity, document_id=document_item.document_id, document_name=document_item.document_name,
-                                                                                   mitigation_keyword_hit_id=mitigation_entity.key_word_hit_id, mitigation_keyword=mitigation_entity.key_word
+                                                                                   mitigation_keyword_hit_id=mitigation_entity.key_word_hit_id, mitigation_keyword=mitigation_entity.key_word, year=document_item.year
                                                                                    )
                 # current_count = current_count + 1
 
@@ -1428,7 +1433,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
             ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
 
-    def _create_combined_exp_int_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, exp_int_insight_entity: MitigationExpIntInsight, document_id=0, document_name='', mitigation_keyword='', mitigation_keyword_hit_id=0):
+    def _create_combined_exp_int_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, exp_int_insight_entity: MitigationExpIntInsight, document_id=0, document_name='', mitigation_keyword='', mitigation_keyword_hit_id=0, year=0):
 
         mitigation_keyword_locations = mitigation_keyword_locations.strip(
             '[').strip(']').split(',')
@@ -1481,7 +1486,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                                               int_key_word2=exp_int_insight_entity.int_key_word2,
                                               factor1=factor1_frequency, factor2=factor2_average_distance, score=score,
                                               document_name=document_name, document_id=document_id,
-                                              exposure_path_id=exp_int_insight_entity.exposure_path_id, internalization_id=exp_int_insight_entity.internalization_id
+                                              exposure_path_id=exp_int_insight_entity.exposure_path_id, internalization_id=exp_int_insight_entity.internalization_id,
+                                              year=year
                                               )
             self.mitigation_comon_insightList.append(insight)
             # print("Mitigation:"+mitigation_keyword+",Exp Keywords:"+exp_insight_entity.keyword1+' ,'+exp_insight_entity.keyword2, +" , Score"+score)

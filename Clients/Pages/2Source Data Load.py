@@ -1,9 +1,11 @@
-import ast
+
 import sys
 from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
+import ast
 import datetime as dt
 import os
-sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 import streamlit as st
 from Services.DataSourceProcessor import DataSourceProcessor

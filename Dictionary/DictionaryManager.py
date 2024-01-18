@@ -48,6 +48,8 @@ class DictionaryManager:
         with open(new_dictionary_item_path, 'r') as file:
             lines = [line.strip() for line in file]
             for line in lines:
+                # print("PRINTNG LINE....")
+                # print(line)
                 key_value = line.split(':')
                 key = key_value[0].upper().strip()
                 value = key_value[1].upper().strip()

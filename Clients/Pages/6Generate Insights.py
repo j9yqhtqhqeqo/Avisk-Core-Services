@@ -20,7 +20,7 @@ from Utilities.Lookups import Lookups
 import streamlit as st
 import threading
 
-class StartUpClass:
+class InsightGenerationClient:
 
     def generate_Insights(self, DebugMode=False):
         exp_int_insght_generator = Insight_Generator(self.database_context)
@@ -51,7 +51,7 @@ class StartUpClass:
 
     def run_online_Mode(self):
 
-        database_context = st.radio("Database Context",["Development","Test"], index=0)
+        database_context = st.radio("Database Context",["Development","Test"], index=1)
         if(database_context == 'Development'):
             self.database_context='Development'
         else:
@@ -80,7 +80,8 @@ class StartUpClass:
     def run_debug_mode(self):
         self.generate_Insights(DebugMode=True)
 
-startup = StartUpClass()
+
+startup = InsightGenerationClient()
 startup.run_online_Mode()
 
 

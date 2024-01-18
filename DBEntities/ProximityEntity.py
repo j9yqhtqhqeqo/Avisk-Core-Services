@@ -1,5 +1,5 @@
 class KeyWordLocationsEntity:
-    def __init__(self, key_word=None, locations=None, frequency=0, dictionary_type=0, dictionary_id=0, document_id=0, document_name='', exposure_path_id=0, intenalization_id=0) -> None:
+    def __init__(self, key_word=None, locations=None, frequency=0, dictionary_type=0, dictionary_id=0, document_id=0, document_name='', exposure_path_id=0, intenalization_id=0, year=0) -> None:
         self.key_word = key_word
         self.key_word_hit_id: int
         self.locations = locations
@@ -11,17 +11,19 @@ class KeyWordLocationsEntity:
         self.batch_id = 0
         self.exposure_path_id = exposure_path_id
         self.intenalization_id = intenalization_id
+        self.year = year
 
         self.temp_place_holder = ''
 
 
 class DocumentEntity:
-    def __init__(self, document_id=0, document_name=0, company_name='', year=0, insights_generated=0) -> None:
+    def __init__(self, document_id=0, document_name=0, company_name='', year=0, insights_generated=0, batch_id=0) -> None:
         self.document_id = document_id
         self.document_name = document_name
         self.company_name = company_name
         self.company_id = 0
         self.year = year
+        self.batch_id = batch_id
         self.insights_generated = insights_generated
 
 
@@ -52,7 +54,7 @@ class FD_Factor:
 
 
 class Insight:
-    def __init__(self, keyword_hit_id1=0, keyword1='', keyword_hit_id2=0, keyword2='', score=0.00, factor1=0, factor2=0, document_name='', document_id=0, mitigation_keyword_hit_id=0, mitigation_keyword='', locations1='', locations2='', exposure_path_id=0, internalization_id=0) -> None:
+    def __init__(self, keyword_hit_id1=0, keyword1='', keyword_hit_id2=0, keyword2='', score=0.00, factor1=0, factor2=0, document_name='', document_id=0, mitigation_keyword_hit_id=0, mitigation_keyword='', locations1='', locations2='', exposure_path_id=0, internalization_id=0, year=0) -> None:
         self.mitigation_keyword_hit_id = mitigation_keyword_hit_id
         self.mitigation_keyword = mitigation_keyword
         self.keyword_hit_id1 = keyword_hit_id1
@@ -68,10 +70,11 @@ class Insight:
         self.locations2 = locations2
         self.internalization_id = internalization_id
         self.exposure_path_id = exposure_path_id
+        self.year = year
 
 
 class ExpIntInsight:
-    def __init__(self, exp_keyword_hit_id1=0, exp_keyword1='', exp_keyword_hit_id2=0, exp_keyword2='', int_key_word_hit_id1=0, int_key_word1='', int_key_word_hit_id2=0, int_key_word2='', factor1=0, factor2=0, score=0.00, document_name='', document_id=0, internalization_id=0, exposure_path_id=0) -> None:
+    def __init__(self, exp_keyword_hit_id1=0, exp_keyword1='', exp_keyword_hit_id2=0, exp_keyword2='', int_key_word_hit_id1=0, int_key_word1='', int_key_word_hit_id2=0, int_key_word2='', factor1=0, factor2=0, score=0.00, document_name='', document_id=0, internalization_id=0, exposure_path_id=0, year=0) -> None:
         self.exp_keyword_hit_id1 = exp_keyword_hit_id1
         self.exp_keyword1 = exp_keyword1
         self.exp_keyword_hit_id2 = exp_keyword_hit_id2
@@ -87,13 +90,14 @@ class ExpIntInsight:
         self.document_id = document_id
         self.internalization_id = internalization_id
         self.exposure_path_id = exposure_path_id
+        self.year = year
 
 
 class MitigationExpIntInsight(ExpIntInsight):
 
-    def __init__(self, exp_keyword_hit_id1=0, exp_keyword1='', exp_keyword_hit_id2=0, exp_keyword2='', int_key_word_hit_id1=0, int_key_word1='', int_key_word_hit_id2=0, int_key_word2='', factor1=0, factor2=0, score=0, document_name='', document_id=0, internalization_id=0, exposure_path_id=0, mitigation_keyword_hit_id=0, mitigation_keyword='', exp1_locations='',exp2_locations='',int1_locations='',int2_locations='') -> None:
+    def __init__(self, exp_keyword_hit_id1=0, exp_keyword1='', exp_keyword_hit_id2=0, exp_keyword2='', int_key_word_hit_id1=0, int_key_word1='', int_key_word_hit_id2=0, int_key_word2='', factor1=0, factor2=0, score=0, document_name='', document_id=0, internalization_id=0, exposure_path_id=0, mitigation_keyword_hit_id=0, mitigation_keyword='', exp1_locations='',exp2_locations='',int1_locations='',int2_locations='', year=0) -> None:
         super().__init__(exp_keyword_hit_id1, exp_keyword1, exp_keyword_hit_id2, exp_keyword2, int_key_word_hit_id1, int_key_word1,
-                         int_key_word_hit_id2, int_key_word2, factor1, factor2, score, document_name, document_id, internalization_id, exposure_path_id)
+                         int_key_word_hit_id2, int_key_word2, factor1, factor2, score, document_name, document_id, internalization_id, exposure_path_id,year)
         self.mitigation_keyword_hit_id = mitigation_keyword_hit_id
         self.mitigation_keyword = mitigation_keyword
         self.exp1_locations = exp1_locations

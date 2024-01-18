@@ -20,7 +20,6 @@ from Utilities.MultiProcessing import get_process_buffer
 ## EXPOSURE INSIGHTS
 def load_document_cache_for_exposure_pathway(database_context, queue: Queue, queue_size=Queue):
     
-
     exposure_document_list = InsightGeneratorDBManager(
         database_context).get_unprocessed_document_items_for_insight_gen(dictionary_type=Lookups().Exposure_Pathway_Dictionary_Type)
     for document in exposure_document_list:
@@ -43,7 +42,7 @@ def process_next_unprocessed_exposure_document_list(batch_size, database_context
         document_keyword_list =  insight_generator_db_mgr.get_keyword_hits_for_insight_gen(Lookups().Exposure_Pathway_Dictionary_Type, document.document_id)
         insight_generator_db_mgr.cleanup_insights_for_document(Lookups().Exposure_Pathway_Dictionary_Type,document.document_id)
         exp_int_insght_generator.generate_insights_with_2_factors(
-                Lookups().Exposure_Pathway_Dictionary_Type, document_keyword_list,batch_num=batch_num)
+                Lookups().Exposure_Pathway_Dictionary_Type, document_keyword_list,batch_num=batch_num, year=document.year)
         print('Completed Insight Generation - Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(batch_size))
                       
@@ -108,7 +107,7 @@ def process_next_unprocessed_internalization_document_list(batch_size, database_
         document_keyword_list =  insight_generator_db_mgr.get_keyword_hits_for_insight_gen(Lookups().Internalization_Dictionary_Type, document.document_id)
         insight_generator_db_mgr.cleanup_insights_for_document(Lookups().Internalization_Dictionary_Type,document.document_id)
         exp_int_insght_generator.generate_insights_with_2_factors(
-                Lookups().Internalization_Dictionary_Type, document_keyword_list,batch_num=batch_num)
+            Lookups().Internalization_Dictionary_Type, document_keyword_list, batch_num=batch_num, year=document.year)
         print('Completed Insight Generation - Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(batch_size))
                       

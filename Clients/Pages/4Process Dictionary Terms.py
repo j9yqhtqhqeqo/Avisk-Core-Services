@@ -22,7 +22,7 @@ class StartUpClass:
 
 
     def run_online_Mode(self):
-        database_context = st.radio("Database Context",["Development","Test"], index=0)
+        database_context = st.radio("Database Context",["Development","Test"], index=1)
         if(database_context == 'Development'):
             self.database_context='Development'
         else:

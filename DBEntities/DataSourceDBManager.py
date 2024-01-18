@@ -1,9 +1,8 @@
+import pyodbc
+from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
-from DBEntities.DataSourceDBEntity import DataSourceDBEntity
-import pyodbc
 
 
 DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
@@ -39,11 +38,15 @@ class DataSourceDBManager():
         document_list = []
         try:
             cursor = self.dbConnection.cursor()
-            cursor.execute(" select d.unique_id ,d.company_name ,d.year ,d.content_type,l.data_lookups_description, d.source_type , d.source_url ,d.processed_ind \
+            cursor.execute(" select d.unique_id ,d.company_name ,d.year ,d.content_type,l.data_lookups_description, d.source_type , d.source_url ,d.processed_ind\
                             from t_data_source d INNER join  t_data_lookups l on d.content_type = l.data_lookups_id\
                             where d.processed_ind = 0 order by d.unique_id")
             rows = cursor.fetchall()
             for row in rows:
+
+                file_name = row.company_name + ' ' + \
+                    str(row.year)+' '+row.data_lookups_description + \
+                    '.txt'
                 document_entity = DataSourceDBEntity(
                     unique_id=row.unique_id,
                     company_name=row.company_name,
@@ -52,7 +55,8 @@ class DataSourceDBManager():
                     content_type_desc=row.data_lookups_description,
                     source_type=row.source_type,
                     source_url=row.source_url,
-                    processed_ind=row.processed_ind
+                    processed_ind=row.processed_ind,
+                    document_name=file_name
                 )
                 document_list.append(document_entity)
             cursor.close()
@@ -65,6 +69,12 @@ class DataSourceDBManager():
     def add_stage1_processed_files_to_t_document(self, data_source_db_entity: DataSourceDBEntity, flagged_for_review: bool):
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
+
+        # Delete the t_document entry if it already exists
+        sql = 'delete t_document where document_id = ?'
+        cursor.execute(sql, data_source_db_entity.unique_id)
+        self.dbConnection.commit()
+
         # Construct the INSERT INTO statement
 
         insert_sql = f"INSERT INTO dbo.t_document\
@@ -100,3 +110,14 @@ class DataSourceDBManager():
 
     def update_data_source_processed_indicator(self, document_list=None):
         pass
+
+    def datafix_load_t_document_bulk(self):
+
+        document_list = self.get_unprocessed_content_list()
+
+        for document in document_list:
+            self.add_stage1_processed_files_to_t_document(document, False)
+
+
+data_src_mgr = DataSourceDBManager("Test")
+data_src_mgr.datafix_load_t_document_bulk()
