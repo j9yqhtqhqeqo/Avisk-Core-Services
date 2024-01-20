@@ -5,7 +5,7 @@ sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import pyodbc
-
+import pandas as pd
 
 
 DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
@@ -153,19 +153,16 @@ class DashboardDBManager():
 
         return self.dashboard_data_list
 
-    def get_sector_exposure_insight(self, company_name: str, year: int):
+    def get_sector_exposure_insight(self, sector: str, year: int):
 
-        sector_id: int
-
+        sql = "SELECT insights.esg_category_name ESG_Category, insights.exposure_path_name Exposure_Pathway, insights.cluster_count Clusters, insights.score_normalized  Score\
+                    from t_sector_exp_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and  lookups.data_lookups_description =?\
+                    where insights.[year] =?\
+                  "
+        cursor = self.dbConnection.cursor()
         try:
-            cursor = self.dbConnection.cursor()
-            sector_sql = "select sector_id from t_sec_company_sector_map where company_name = ?"
-            cursor.execute(sector_sql, company_name)
 
-            sector_id = cursor.fetchone()[0]
-
-            sql = "SELECT esg_category_name ESG_Category, exposure_path_name Exposure_Pathway, cluster_count Clusters, score_normalized  Score from t_sector_exp_insights where sector_id = ? and year = ?"
-            cursor.execute(sql, sector_id, year)
+            cursor.execute(sql, sector, year)
 
             rows = cursor.fetchall()
             for row in rows:
@@ -231,3 +228,26 @@ class DashboardDBManager():
 
 
 # print('Success')
+    
+
+# exposure_list = DashboardDBManager("Test").get_exposure_insights()
+# df = pd.DataFrame([vars(exposure) for exposure in exposure_list])
+
+# # startup = StartUpClass()
+# dataset_original = df.round(2)
+
+
+# dataset_sector_sl = dataset_original["Sector"].drop_duplicates(
+# ).dropna()
+
+# data_filter = dataset_original["Sector"] == 'Mining and Metals(ICMM)'
+# dataset_sector_comp_sl = dataset_original[["Sector", "Company"]].where(data_filter).dropna()
+# dataset_comp_sl = dataset_sector_comp_sl[["Company"]].drop_duplicates().dropna()
+
+
+
+
+# # dataset_comp = self.dataset_original.where(data_filter).dropna()
+
+
+# print(dataset_comp_sl)

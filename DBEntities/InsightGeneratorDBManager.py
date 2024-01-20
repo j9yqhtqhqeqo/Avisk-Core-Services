@@ -1480,3 +1480,110 @@ class InsightGeneratorDBManager:
 
         # print("Total Insights added to the Database:" +
         #       str(total_records_added_to_db))
+
+
+    # SECTOR 
+
+    def get_sector_list(self):
+
+        sector_list = []
+
+        sql = 'select l.data_lookups_description  sector from t_data_lookups l where data_lookups_group_id = 5 order by l.data_lookups_description'
+
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                sector_list.append(row.sector)
+        
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return sector_list
+    
+
+    def get_year_list(self):
+        year_list = []
+
+        sql = 'select distinct year from t_document order by year desc'
+
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                year_list.append(row.year)
+        
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return year_list
+
+
+    def update_sector_stats(self, sector, year):
+        self.update_sector_exposure_stats(sector,year)
+        
+
+    def update_sector_exposure_stats(self, sector, year):
+        print('Updating STATS for Sector:'+sector+', Year:'+str(year))
+
+        sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sector_id_sql, sector)
+        sector_id = cursor.fetchone()[0]
+        
+
+
+        # Exposure Pathway Sector STATS
+        sql_update = 'update t_exposure_pathway_insights\
+                      set score_normalized_sector = (score * 100)/(select max(score) from t_exposure_pathway_insights where sector_id = ? and year =?)\
+                      where sector_id = ? and year = ?'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_update, sector_id, year,sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+        sql_delete = 'delete from t_sector_exp_insights where sector_id =? and year = ?'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_delete, sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+
+        sql_insert = 'INSERT into t_sector_exp_insights SELECT \
+                insights.sector_id,insights.year,  esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+                count(*) Pathways, AVG(insights.score_normalized_sector) Score,  NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                FROM t_exposure_pathway_insights insights \
+                        inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id \
+                        inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                        inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                WHERE insights.sector_id = ? and insights.year = ?\
+                GROUP BY insights.sector_id,insights.year,  esg.esg_category_name ,  exp.exposure_path_name'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_insert, 'MOHAN HANUMANTHA','MOHAN HANUMANTHA', sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+
+        sql_update_cluster = 'update t_sector_exp_insights set cluster_count = cluster_count/(select count(*) from t_document where sector_id = ? and year = ?)\
+                        where  sector_id = ? and year = ?'
+
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_update_cluster, sector_id, year, sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+
+        sql_update_normalize_score = 'update t_sector_exp_insights\
+                                   set score_normalized = (score * 100)/(select max(score) from t_sector_exp_insights where sector_id = ? and year =?)\
+                                   where sector_id = ? and year = ?'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_update_normalize_score,
+                       sector_id, year, sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()

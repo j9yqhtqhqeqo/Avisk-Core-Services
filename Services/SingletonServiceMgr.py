@@ -207,3 +207,25 @@ def process_mitigation_document_list(database_context, validation_mode = False):
 def update_validation_completed_status(database_context):
     InsightGeneratorDBManager(
         database_context).update_validation_completed_status()
+
+
+def update_sector_stats(database_context, sector,year:int):
+    InsightGeneratorDBManager(
+        database_context).update_sector_stats(sector, year)
+
+
+def get_sector_list(database_context):
+    return InsightGeneratorDBManager(
+        database_context).get_sector_list()
+
+
+def get_year_list(database_context):
+    return InsightGeneratorDBManager(
+        database_context).get_year_list()
+    
+
+# sector_list = get_sector_list('Test')
+# print(sector_list)
+
+# InsightGeneratorDBManager("Test").update_sector_stats(
+#     'Mining and Metals(ICMM)', 2022)
