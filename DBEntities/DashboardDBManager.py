@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity
+from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import pyodbc
 import pandas as pd
@@ -50,7 +50,7 @@ class DashboardDBManager():
             rows = cursor.fetchall()
             for row in rows:
                 dashboard_entity = ExposurePathwayDBEntity(
-                    Sector='Test',
+                    Sector='',
                     Company=row.Company,
                     Year=row.Year,
                     Document_Type=row.Document_Type,
@@ -109,39 +109,114 @@ class DashboardDBManager():
 
         return self.dashboard_data_list
 
-    def get_internalization_insights(self):
-
-        # count = len(self.dashboard_data_list)
-        # if count > 0:
-        #     print('Loading data from Cache')
-        #     return self.dashboard_data_list
-
-        # print('Loading data from Database')
+    def get_internalization_insights(self,company_name: str, year: int, content_type: int):
 
         try:
             cursor = self.dbConnection.cursor()
-            cursor.execute("\
-                           SELECT doc.company_name 'Company',doc.year 'Year',lookups.data_lookups_description 'Document_Type',esg.esg_category_name 'ESG_Category', exp.exposure_path_name 'Exposure_Pathway', \
-                                int.internalization_name 'Internalization', count(*) Clusters, AVG(insights.score_normalized) Score\
-                            FROM t_internalization_insights insights\
-                                INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id \
-                                INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = int.exposure_path_id\
+            if(year == 0):
+                sql = "SELECT  \
+                            doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+                            exp.exposure_path_name Exposure_Pathway, int.internalization_name Internalization,\
+                            count(*) Clusters, AVG(insights.score_normalized) Score\
+                            FROM t_exp_int_insights insights\
+                                INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+                                INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
                                 inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
                                 inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
-                                inner join t_document doc on doc.document_id = insights.document_id\
+                                inner join t_document doc on doc.document_id = insights.document_id and doc.company_name = ? and content_type = ?\
                                 inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
-                            GROUP by\
-                                doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,exp.exposure_path_name , int.internalization_name\
-                            ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name ,int.internalization_name")
+                            GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name\
+                                    ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name,int.internalization_name"
+                cursor.execute(sql, company_name, content_type)
+
+            else:
+                sql = "SELECT  \
+                            doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+                            exp.exposure_path_name Exposure_Pathway, int.internalization_name Internalization,\
+                            count(*) Clusters, AVG(insights.score_normalized) Score\
+                            FROM t_exp_int_insights insights\
+                                INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+                                INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
+                                inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                                inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                                inner join t_document doc on doc.document_id = insights.document_id and doc.company_name = ? and doc.year = ? and content_type = ?\
+                                inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
+                            GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name\
+                                    ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name,int.internalization_name\
+                "                            
+                cursor.execute(sql, company_name, year, content_type)
+                
             rows = cursor.fetchall()
             for row in rows:
                 dashboard_entity = InternalizationDBEntity(
+                    Sector='',
                     Company=row.Company,
                     Year=row.Year,
                     Document_Type=row.Document_Type,
                     ESG_Category=row.ESG_Category,
                     Exposure_Pathway=row.Exposure_Pathway,
                     Internalization=row.Internalization,
+                    Clusters=row.Clusters,
+                    Score=row.Score
+                )
+                self.dashboard_data_list.append(dashboard_entity)
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return self.dashboard_data_list
+
+    def get_mitigation_insights(self, company_name: str, year: int, content_type: int):
+
+        try:
+            cursor = self.dbConnection.cursor()
+            if (year == 0):
+                sql = "SELECT doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+                                int.internalization_name Internalization, mit.class_name,mit.sub_class_name, count(*) Clusters, AVG(insights.score_normalized) Score\
+                       FROM t_mitigation_exp_int_insights insights\
+                                INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+                                INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
+                                inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                                inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                                INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
+                                INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
+                                INNER JOIN t_document doc on doc.document_id = insights.document_id and doc.company_name =? and content_type = ?\
+                                INNER JOIN t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
+                        GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name, mit.class_name,mit.sub_class_name\
+                        ORDER BY   Score desc\
+                    "
+                cursor.execute(sql, company_name, content_type)
+
+            else:
+                sql = "SELECT doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+                                int.internalization_name Internalization, mit.class_name Mitigation_Class,mit.sub_class_name Mitigation_Sub_Class, count(*) Clusters, AVG(insights.score_normalized) Score\
+                       FROM t_mitigation_exp_int_insights insights\
+                                INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+                                INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
+                                inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                                inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                                INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
+                                INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
+                                INNER JOIN t_document doc on doc.document_id = insights.document_id and doc.company_name = ? and doc.year = ? and content_type = ?\
+                                INNER JOIN t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
+                        GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name, mit.class_name,mit.sub_class_name\
+                        ORDER BY   Score desc\
+                    "
+                cursor.execute(sql, company_name, year, content_type)
+
+            rows = cursor.fetchall()
+            for row in rows:
+                dashboard_entity = MitigationDBEntity(
+                    Sector='',
+                    Company=row.Company,
+                    Year=row.Year,
+                    Document_Type=row.Document_Type,
+                    ESG_Category=row.ESG_Category,
+                    Exposure_Pathway=row.Exposure_Pathway,
+                    Internalization=row.Internalization,
+                    Mitigation_Class=row.Mitigation_Class,
+                    Mitigation_Sub_Class=row.Mitigation_Sub_Class,
                     Clusters=row.Clusters,
                     Score=row.Score
                 )
@@ -167,7 +242,7 @@ class DashboardDBManager():
             rows = cursor.fetchall()
             for row in rows:
                 dashboard_entity = ExposurePathwayDBEntity(
-                    Sector='Test',
+                    Sector='',
                     Company='',
                     Year=0,
                     Document_Type='Sector',
@@ -182,6 +257,38 @@ class DashboardDBManager():
             print(f"Error: {str(exc)}")
             raise exc
 
+
+        return self.dashboard_data_list
+
+    def get_sector_internalization_insight(self, sector: str, year: int):
+
+        sql = "SELECT insights.esg_category_name ESG_Category, insights.exposure_path_name Exposure_Pathway, insights.internalization_name Internalization, insights.cluster_count Clusters, insights.score_normalized  Score\
+                    from t_sector_exp_int_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and  lookups.data_lookups_description =?\
+                    where insights.[year] =?\
+                  "
+        cursor = self.dbConnection.cursor()
+        try:
+
+            cursor.execute(sql, sector, year)
+
+            rows = cursor.fetchall()
+            for row in rows:
+                dashboard_entity = InternalizationDBEntity(
+                    Sector='',
+                    Company='',
+                    Year=0,
+                    Document_Type='Sector',
+                    ESG_Category=row.ESG_Category,
+                    Exposure_Pathway=row.Exposure_Pathway,
+                    Internalization=row.Internalization,
+                    Clusters=row.Clusters,
+                    Score=row.Score
+                )
+                self.dashboard_data_list.append(dashboard_entity)
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
 
         return self.dashboard_data_list
 
@@ -220,34 +327,133 @@ class DashboardDBManager():
 
         return self.dashboard_data_list
 
+    def get_sector_mitigation_insight(self, sector: str, year: int):
 
-# dashboard_data_list = DashboardDBManager(
-#     "Test").get_exposure_insights()
-# dashboard_data_list = DashboardDBManager(
-#     "Test").get_sector_exposure_insight('Anglo American', 2010,1)
+        sql = "SELECT insights.esg_category_name ESG_Category, insights.exposure_path_name Exposure_Pathway, insights.internalization_name Internalization,insights.mitigation_class Mitigation_Class, insights.mitigation_sub_class Mitigation_Sub_Class, insights.cluster_count Clusters, insights.score_normalized  Score\
+                    from t_sector_exp_int_mitigation_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and  lookups.data_lookups_description =?\
+                    where insights.[year] =?\
+              "
+        cursor = self.dbConnection.cursor()
+        try:
+
+            cursor.execute(sql, sector, year)
+
+            rows = cursor.fetchall()
+            for row in rows:
+                dashboard_entity = MitigationDBEntity(
+                    Sector='',
+                    Company='',
+                    Year=0,
+                    Document_Type='Sector',
+                    ESG_Category=row.ESG_Category,
+                    Exposure_Pathway=row.Exposure_Pathway,
+                    Internalization=row.Internalization,
+                    Mitigation_Class = row.Mitigation_Class,
+                    Mitigation_Sub_Class = row.Mitigation_Sub_Class,
+                    Clusters=row.Clusters,
+                    Score=row.Score
+                )
+                self.dashboard_data_list.append(dashboard_entity)
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return self.dashboard_data_list
 
 
-# print('Success')
-    
-
-# exposure_list = DashboardDBManager("Test").get_exposure_insights()
-# df = pd.DataFrame([vars(exposure) for exposure in exposure_list])
-
-# # startup = StartUpClass()
-# dataset_original = df.round(2)
 
 
-# dataset_sector_sl = dataset_original["Sector"].drop_duplicates(
-# ).dropna()
+    # SECTOR
 
-# data_filter = dataset_original["Sector"] == 'Mining and Metals(ICMM)'
-# dataset_sector_comp_sl = dataset_original[["Sector", "Company"]].where(data_filter).dropna()
-# dataset_comp_sl = dataset_sector_comp_sl[["Company"]].drop_duplicates().dropna()
+    def get_sector_list(self):
+
+        sector_list = []
+
+        sql = 'select l.data_lookups_description  sector from t_data_lookups l where data_lookups_group_id = 5 order by l.data_lookups_description'
+
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                sector_list.append(row.sector)
+
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return sector_list
+
+    def get_year_list(self):
+        year_list = []
+
+        sql = 'select distinct year from t_document order by year desc'
+
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                year_list.append(row.year)
+
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return year_list
+
+    def get_company_list(self):
+        company_list = []
+
+        sql = 'select map.company_name company_name, lookups.data_lookups_description  sector from t_sec_company_sector_map map inner join t_data_lookups lookups on map.sector_id = lookups.data_lookups_id order by lookups.data_lookups_description, map.company_name'
+
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                db_entity = InternalizationDBEntity(    
+                    Company=row.company_name,
+                    Sector=row.sector           
+                    )
+                company_list.append(db_entity)
+
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return company_list
+
+    def get_doc_type_list(self):
+        doc_type_list = []
+
+        sql = 'select data_lookups_description doc_type from t_data_lookups where data_lookups_group_id = 1'
+
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                doc_type_list.append(row.doc_type)
+
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return doc_type_list
+
+    def get_sector_company_year_doctype_list(self):
+
+        l_sector = self.get_sector_list()
+        l_sector_company = self.get_company_list()
+        l_year = self.get_year_list()
+        l_doc_type = self.get_doc_type_list()
+
+        return l_sector, l_sector_company, l_year, l_doc_type
 
 
-
-
-# # dataset_comp = self.dataset_original.where(data_filter).dropna()
-
-
-# print(dataset_comp_sl)

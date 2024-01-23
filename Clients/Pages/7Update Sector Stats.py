@@ -16,7 +16,10 @@ class StartUpClass:
 
     def process_update_stats(self, DebugMode=False):
         update_sector_stats(
-            database_context=self.database_context, sector=self.sl_sector, year=self.sl_year)
+            database_context=self.database_context, sector=self.sl_sector, year=self.sl_year, 
+            generate_exp_sector_insights=self.generate_exp_sector_insights,
+            generate_int_sector_insights=self.generate_int_sector_insights,
+            generate_mit_sector_insights=self.generate_mit_sector_insights, update_all = self.update_all)
 
     def run_online_Mode(self):
         database_context = st.radio(
@@ -33,6 +36,20 @@ class StartUpClass:
         self.dataset_year_sl = get_year_list(database_context=self.database_context)
         self.sl_year = st.selectbox(
             'Year:', (self.dataset_year_sl), index=0)
+        
+        self.generate_exp_sector_insights = st.checkbox("Exposure", value=False)
+        
+        self.generate_int_sector_insights = st.checkbox("Exposure ->Internalization", value=False)
+        
+        self.generate_mit_sector_insights = st.checkbox(
+            "Exposure->Internalization->Mitigation", value=False)
+
+        update_all_setors_years = st.radio(
+            "Update All Sectors & Years", ["Yes", "No"], index=1)
+        if (update_all_setors_years == 'Yes'):
+            self.update_all = True
+        else:
+            self.update_all = False
 
         st.button('Update Sector Stats',
                   on_click=self.process_update_stats)

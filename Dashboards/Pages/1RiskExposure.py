@@ -14,7 +14,8 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from st_aggrid import AgGrid
+from st_aggrid import GridOptionsBuilder, AgGrid, ColumnsAutoSizeMode, GridUpdateMode
+
 from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
 
 
@@ -55,12 +56,12 @@ class StartUpClass:
             self.dataset_company_year_sl = self.dataset_original[[
                 "Company", "Year"]].where(data_filter).dropna()
             
-            print(self.dataset_company_year_sl)
+            #print(self.dataset_company_year_sl)
             self.dataset_year_sl = (self.dataset_company_year_sl[[
                 "Year"]].drop_duplicates().dropna().astype(int))
 
 
-            print(self.dataset_year_sl)
+            #print(self.dataset_year_sl)
 
             self.sl_year_start = st.selectbox(
                 'Year:', (self.dataset_year_sl.sort_values(by='Year',ascending=False)), index=0)
@@ -119,13 +120,29 @@ class StartUpClass:
             str(self.sl_year_start) + ', Document:'+self.sl_doctype
 
     def draw_exposure_chart(self):
-        tab_titles = ['Company', 'Sector', 'Sector Vs. Company', 'Company Vs. Competitor',
-                      'By ESG Category', 'Year Over Year']
-        company_tab,  sector_analysyis_tab, company_sector_tab, company_vs_company_tab, details_tab, yoy_tab = st.tabs(
+        tab_titles = ['Company', 'Sector', 'Sector Vs. Company', 'Company Vs. Competitor']
+        # ,
+        #               'By ESG Category', 'Year Over Year']
+        company_tab,  sector_analysyis_tab, company_sector_tab, company_vs_company_tab= st.tabs(
             tab_titles)
 
+
+        sub_tab_titles = ['Summary','Top Exposure by Year', "Exposure Trend"]
+        # ,
+        #               'By ESG Category', 'Year Over Year']
+        summary_tab, company_by_year_tab,  trend_tab = st.tabs(
+            sub_tab_titles)
+    
         with company_tab:
-            self.draw_summary_chart()
+            with summary_tab:
+                self.draw_summary_chart()
+
+            with company_by_year_tab:
+                self.draw_yoy_chart()
+
+            with trend_tab:
+                st.text('Place Holder')
+            
         with sector_analysyis_tab:
             self.create_sector_analysis()
 
@@ -135,11 +152,21 @@ class StartUpClass:
         with company_vs_company_tab:
             self.create_competitor_analysis()
 
-        with details_tab:
-            self.draw_details()
+        css = '''
+        <style>
+            .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+            font-size:15px;
+            font-weight: bold;
+            }
+        </style>
+        '''
+        st.markdown(css, unsafe_allow_html=True)
 
-        with yoy_tab:
-            self.draw_yoy_chart()
+                # with details_tab:
+        #     self.draw_details()
+
+        # with yoy_tab:
+        #     self.draw_yoy_chart()
 
     def draw_details(self):
         self.load_data_by_company()
@@ -231,7 +258,9 @@ class StartUpClass:
                                     "Exposure_Pathway", "Score"]].round(2)
             source = source1.sort_values(by='Score', ascending=False)
 
-            AgGrid(source)
+            
+
+            self.draw_AG_Grid(source,key='exp_summary1')
         else:
             st.text('No Data Found for the Company & Year Combination')
 
@@ -273,7 +302,7 @@ class StartUpClass:
                                     "Exposure_Pathway", "Score"]].round(2)
             source = source1.sort_values(by='Score', ascending=False)
 
-            AgGrid(source)
+            self.draw_AG_Grid(source, key='exp_sector_analysis')
         else:
             st.text('No Data Found for the Company & Year Combination')
 
@@ -285,7 +314,7 @@ class StartUpClass:
 
         if (self.sl_doctype == 'Sustainability Report'):
             content_type = 1
-        elif (self.sl_doctype == '10K'):
+        elif (self.sl_doctype == 'Financial Report'):
             content_type = 2
 
         company_exposure_list = DashboardDBManager("Test").get_exposure_insights_by_company(
@@ -301,8 +330,8 @@ class StartUpClass:
         
 
         self.competitor_dataset = df.round(2)
-        print('Competitor')
-        print(self.competitor_dataset)
+        #print('Competitor')
+        #print(self.competitor_dataset)
         self.competitor_chart_header = self.sl_competitor + \
             ' Year:' + str(self.sl_year_start)
         
@@ -313,7 +342,7 @@ class StartUpClass:
                                           y=alt.Y('Score', scale=alt.Scale(domain=[0, 100]),   axis=alt.Axis(
                                               title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
                                           color=alt.Color('ESG_Category'),
-                                          size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=250, height=250,
+                                          size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=300, height=300,
                                                                                                                            title=alt.Title(self.company_chart_header, fontSize=12, anchor='middle'))
         if (not self.competitor_dataset.empty):
             competitor_chart_data = (alt.Chart(self.competitor_dataset)
@@ -322,7 +351,7 @@ class StartUpClass:
                                          y=alt.Y('Score', scale=alt.Scale(domain=[0, 100]),   axis=alt.Axis(
                                              title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
                                          color=alt.Color('ESG_Category'),
-                                         size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=250, height=250, title=alt.Title(self.competitor_chart_header, fontSize=12, anchor='middle'))
+                                         size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=300, height=300, title=alt.Title(self.competitor_chart_header, fontSize=12, anchor='middle'))
        
         no_company_data = no_competitor_data = False
         if (self.company_dataset.empty):
@@ -343,12 +372,33 @@ class StartUpClass:
                 cornerRadius=2,
                 labelFontSize=10, titleFontSize=12).properties(title='Recognized Pathways Vs. Risk Exposure').configure_title(font='Courier', fontSize=20, anchor='middle'))
 
+            copmany_table_header = 'Company Ranking: ' + self.sl_company
+            st.subheader(copmany_table_header)
+            ds2 = self.company_dataset[["ESG_Category", "Exposure_Pathway", "Score"]].sort_values(
+                'Score', ascending=False).head(10)
+            ds2["Rank"] = ds2["Score"].rank(ascending=False, method='first')
+            self.draw_AG_Grid(
+                ds2[["Rank", "ESG_Category", "Exposure_Pathway", "Score"]], key='exp_competetor1')
+
+
+
+            competitor_table_header = 'Competitor Ranking: ' + self.sl_competitor
+            st.subheader(competitor_table_header)
+
+            ds = self.competitor_dataset[["ESG_Category", "Exposure_Pathway", "Score"]].sort_values(
+                'Score', ascending=False).head(10)
+            ds["Rank"] = ds["Score"].rank(ascending=False, method='first')
+            self.draw_AG_Grid(
+                ds[["Rank", "ESG_Category", "Exposure_Pathway", "Score"]], key='exp_competetor2')
+
+            # print('Competitor Dataset')
+            # print(self.competitor_dataset)
 
     def create_company_sector_analysis(self):
 
         if (self.sl_doctype == 'Sustainability Report'):
             content_type = 1
-        elif (self.sl_doctype == '10K'):
+        elif (self.sl_doctype == 'Financial Report'):
             content_type = 2
 
         company_exposure_list = DashboardDBManager("Test").get_exposure_insights_by_company(
@@ -378,7 +428,7 @@ class StartUpClass:
                                           y=alt.Y('Score',    axis=alt.Axis(
                                               title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
                                           color=alt.Color('ESG_Category'),
-                                          size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=250, height=250,
+                                          size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=300, height=300,
                                                                                                                            title=alt.Title(self.company_chart_header, fontSize=12, anchor='middle'))
 
         if (not self.sector_dataset.empty):
@@ -388,7 +438,7 @@ class StartUpClass:
                                          y=alt.Y('Score',    axis=alt.Axis(
                                              title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
                                          color=alt.Color('ESG_Category'),
-                                         size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=250, height=250, title=alt.Title(self.sector_chart_header, fontSize=12, anchor='middle'))
+                                         size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Score"])).properties(width=300, height=300, title=alt.Title(self.sector_chart_header, fontSize=12, anchor='middle'))
 
         if (not self.company_dataset.empty):
             st.altair_chart((sector_chart_data |
@@ -399,8 +449,42 @@ class StartUpClass:
                 cornerRadius=2,
                 labelFontSize=10, titleFontSize=12).properties(title='Recognized Pathways Vs. Risk Exposure').configure_title(font='Courier', fontSize=20, anchor='middle'))
 
+            sector_table_header = 'Sector Ranking: ' + self.sl_sector
+            st.subheader(sector_table_header)
+            ds = self.sector_dataset[["ESG_Category", "Exposure_Pathway","Score"]].sort_values(
+                'Score', ascending=False).head(10)
+            ds["Rank"] = ds["Score"].rank(ascending=False, method='first')
+            self.draw_AG_Grid(
+                    ds[["Rank", "ESG_Category", "Exposure_Pathway"]], key='exp_sector1')
+
+              
+            copmany_table_header = 'Company Ranking: ' + self.sl_company
+            st.subheader(copmany_table_header)
+            ds2 = self.company_dataset[["ESG_Category", "Exposure_Pathway", "Score"]].sort_values(
+                'Score', ascending=False).head(10)
+            ds2["Rank"] = ds2["Score"].rank(ascending=False, method='first') 
+            self.draw_AG_Grid(
+                    ds2[["Rank", "ESG_Category", "Exposure_Pathway"]], key='exp_sector2')
         else:
             st.text('No Data Found for the Company & Year Combination')
 
+    def draw_AG_Grid(self, data_source, key):
+        gb = GridOptionsBuilder.from_dataframe(data_source)
+        gb.configure_column(field='ESG_Category', header_name='ESG Catagory',)
+        gb.configure_column(field='Exposure_Pathway',
+                                header_name='Risk Exposure')
+        gb.configure_default_column(
+            flex=1,
+            minWidth=20,
+            maxWidth=1000,
+            resizable=True,
+        )
+        gridOptions = gb.build()
+
+        AgGrid(
+            data_source,
+            gridOptions=gridOptions,reload_data=True,
+            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW, key=key
+        )
 
 startup = StartUpClass()
