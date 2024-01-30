@@ -36,42 +36,31 @@ class StartUpClass:
 
         with st.sidebar:
 
-            self.dataset_sector_sl = self.dataset_original["Sector"].drop_duplicates(
-            ).dropna()
+            self.dataset_sector_sl, self.dataset_sector_comp_sl, self.dataset_year_sl, self.dataset_doctype_sl = DashboardDBManager(
+                "Test").get_sector_company_year_doctype_list()
+            
             self.sl_sector = st.selectbox(
                 'Sector:', (self.dataset_sector_sl))
+            
+            self.dataset_sector_comp_df = pd.DataFrame(
+                [vars(comp_sector) for comp_sector in self.dataset_sector_comp_sl])
 
-
-            data_filter = self.dataset_original["Sector"] == self.sl_sector
-            self.dataset_sector_comp_sl = self.dataset_original[[
+            data_filter = self.dataset_sector_comp_df["Sector"] == self.sl_sector
+            self.dataset_comp_sector_selected_df = self.dataset_sector_comp_df[[
                 "Sector", "Company"]].where(data_filter).dropna()
-            self.dataset_comp_sl = self.dataset_sector_comp_sl[[
+            
+            self.dataset_comp_sl = self.dataset_comp_sector_selected_df[[
                 "Company"]].drop_duplicates().dropna()
 
             self.sl_company = st.selectbox(
                 'Company:', (self.dataset_comp_sl), index=0)
-
-
-            data_filter = self.dataset_original["Company"] == self.sl_company
-            self.dataset_company_year_sl = self.dataset_original[[
-                "Company", "Year"]].where(data_filter).dropna()
             
-            #print(self.dataset_company_year_sl)
-            self.dataset_year_sl = (self.dataset_company_year_sl[[
-                "Year"]].drop_duplicates().dropna().astype(int))
-
-
-            #print(self.dataset_year_sl)
-
             self.sl_year_start = st.selectbox(
-                'Year:', (self.dataset_year_sl.sort_values(by='Year',ascending=False)), index=0)
-
-            self.dataset_doctype = self.dataset_original["Document_Type"].drop_duplicates(
-            ).dropna()
-
+                'Year:', (self.dataset_year_sl), index=0)
+            
             self.sl_doctype = st.selectbox(
-                'Document Type:', (self.dataset_doctype), index=0)
-
+                'Document Type:', (self.dataset_doctype_sl), index=0)
+            
         self.draw_exposure_chart()
 
     def load_data_by_company(self):
@@ -93,16 +82,28 @@ class StartUpClass:
             str(self.sl_year_start) + ', Document:'+self.sl_doctype
 
     def load_data_by_year(self):
-        # 'Chesapeake Energy'
         data_filter = self.dataset_original["Company"] == self.sl_company
         dataset_comp = self.dataset_original.where(data_filter).dropna()
 
-        # 'Sustainability Report'
         data_filter = dataset_comp["Document_Type"] == self.sl_doctype
         self.dataset = dataset_comp.where(data_filter).dropna()
 
         self.chart_header = 'Company:' + self.sl_company + ', Year:' + \
             str(self.sl_year_start) + ', Document:'+self.sl_doctype
+        
+        # df = self.dataset.copy(deep=True)
+
+        # print(df)
+        # df['rank'] = df.groupby('Year')['Score'].rank('first')
+
+        self.dataset["Rank"] = self.dataset.groupby('Year')["Score"].rank(
+            ascending=False, method='first')
+        
+        data_filter = self.dataset["Rank"] <= 5
+        self.dataset_ranked = self.dataset.where(data_filter).dropna().sort_values(by=['Exposure_Pathway','Score'])
+
+        print('Data Ranked')
+        print(self.dataset_ranked)
 
     def load_chart_data_start_end_year(self):
         # 'Chesapeake Energy'
@@ -120,28 +121,12 @@ class StartUpClass:
             str(self.sl_year_start) + ', Document:'+self.sl_doctype
 
     def draw_exposure_chart(self):
-        tab_titles = ['Company', 'Sector', 'Sector Vs. Company', 'Company Vs. Competitor']
-        # ,
-        #               'By ESG Category', 'Year Over Year']
-        company_tab,  sector_analysyis_tab, company_sector_tab, company_vs_company_tab= st.tabs(
+        tab_titles = ['Company', 'Sector', 'Sector Vs. Company', 'Company Vs. Competitor',"Top Exposure by Year", "Exposure Trend","Financial Analysis"]
+        company_tab,  sector_analysyis_tab, company_sector_tab, company_vs_company_tab, company_by_year_tab,  trend_tab, finance_tab = st.tabs(
             tab_titles)
-
-
-        sub_tab_titles = ['Summary','Top Exposure by Year', "Exposure Trend"]
-        # ,
-        #               'By ESG Category', 'Year Over Year']
-        summary_tab, company_by_year_tab,  trend_tab = st.tabs(
-            sub_tab_titles)
     
         with company_tab:
-            with summary_tab:
-                self.draw_summary_chart()
-
-            with company_by_year_tab:
-                self.draw_yoy_chart()
-
-            with trend_tab:
-                st.text('Place Holder')
+            self.draw_summary_chart()
             
         with sector_analysyis_tab:
             self.create_sector_analysis()
@@ -151,18 +136,27 @@ class StartUpClass:
 
         with company_vs_company_tab:
             self.create_competitor_analysis()
+        
+        with company_by_year_tab:
+            self.draw_yoy_chart()
+
+        with trend_tab:
+            self.draw_trend_chart()
+
+        with finance_tab:
+            self.draw_financial_charts()
 
         css = '''
         <style>
             .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
-            font-size:15px;
+            font-size:12px;
             font-weight: bold;
             }
         </style>
         '''
         st.markdown(css, unsafe_allow_html=True)
 
-                # with details_tab:
+        # with details_tab:
         #     self.draw_details()
 
         # with yoy_tab:
@@ -192,25 +186,70 @@ class StartUpClass:
 
     def draw_yoy_chart(self):
         self.load_data_by_year()
-        if (not self.dataset.empty):
-            chart_data = (alt.Chart(self.dataset)
-                          .mark_circle()
+
+        if (not self.dataset_ranked.empty):
+            chart_data = (alt.Chart(self.dataset_ranked)
+                          .mark_bar(size=30, cornerRadiusTopLeft=3,
+                                    cornerRadiusTopRight=3)
                           .encode(
-                x=alt.X('Clusters', axis=alt.Axis(
-                    title='Pathways', titleFontSize=12, titleFontWeight='bold')),
-                y=alt.Y('Score',    axis=alt.Axis(
-                    title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
-                color='ESG_Category',
-                size="Score",
-                tooltip=["ESG_Category", "Exposure_Pathway", "Clusters", "Score"])
-                .properties(height=500,)
-                .properties(
-                width=250,
-                height=250)
-                .facet(
-                facet='Year',
-                columns=3))
+                                    x=alt.X('Year:N', axis=alt.Axis(
+                                        title='Pathways', titleFontSize=12, titleFontWeight='bold')),
+                                    y=alt.Y('Score:Q',    axis=alt.Axis(
+                                        title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
+                                    color='ESG_Category',
+                                    order=alt.Order(
+                                        'Rank',
+                                        sort='ascending'
+                                        ),
+                                    tooltip=["ESG_Category", "Exposure_Pathway", "Clusters", "Score"])
+                            # .properties(height=500,)
+                            .properties(width=250, height=250))
             st.altair_chart(chart_data, use_container_width=True)
+        else:
+            st.text('No Data Found for the Company & Year Combination')
+
+    def draw_trend_chart(self):
+        if(self.dataset_ranked.empty):
+            self.load_data_by_year()
+
+        if (not self.dataset_ranked.empty):
+            click = alt.selection_single(encodings=['color'])
+
+            exp_dataset = self.dataset_ranked[[
+                "Exposure_Pathway"]].drop_duplicates()
+            print('exp_dataset')
+            print(exp_dataset)
+            exp_dataset["Rank"] = exp_dataset.rank()["Exposure_Pathway"]
+            exp_chart = (alt.Chart(data=exp_dataset)
+                         .mark_square(size=200)
+                         .encode( x=alt.X("Rank", axis=alt.Axis(title=None)), y=alt.Y("count(Exposure_Pathway)", title=None), color=alt.Color('Exposure_Pathway', legend=None), tooltip="Exposure_Pathway")
+                         .properties(height=20, width=500,title=alt.Title(text="Exposure Pathway", font='Courier', fontSize=20, subtitle=self.chart_header, subtitleFont='Courier', subtitleFontSize=12, anchor='middle'))
+                         .add_selection(click)
+                         )
+            
+            exp_trend_dataset = exp_dataset = self.dataset_ranked[[
+                'Year','Exposure_Pathway','Score']]
+            print('exp_trend_dataset')
+            print(exp_trend_dataset)
+            line_chart = (alt.Chart(exp_trend_dataset)
+                          .mark_square(size=200)
+                          .encode(x=alt.X('Year:N', axis=alt.Axis(title='Year', titleFontSize=12, titleFontWeight='bold', labelAngle=270)),
+                                  y=alt.Y('Score:Q', axis=alt.Axis(
+                                      title='Risk Exposure', titleFontSize=12, titleFontWeight='bold'),scale=alt.Scale(domain=[0, 100])),
+                                  color='Exposure_Pathway' , tooltip=["Score"])
+                          .properties(height=250, width=500, title=alt.Title(text= 'Exposure Pathway Trend by Year', font='Courier', fontSize=20, subtitle=self.chart_header, subtitleFont='Courier', subtitleFontSize=12, anchor='middle'))
+                .transform_filter(click)
+            )
+
+            chart =  exp_chart & line_chart
+            chart.resolve = {
+                "legend": {
+                    "color": "independent",
+                    "size": "independent"
+                }
+            }
+
+            st.altair_chart((chart))
         else:
             st.text('No Data Found for the Company & Year Combination')
 
@@ -225,12 +264,7 @@ class StartUpClass:
 
             chart_data = ((
                 alt.Chart(self.dataset)
-                .mark_circle()
-                # .encode(alt.X("Clusters").scale(domain=(0, 100)), alt.Y("Score").scale(domain=(0, 100)), size="Score", color='ESG_Category', tooltip=["ESG_Category", "Exposure_Pathway", "Clusters", "Score"])
-
-                # .properties(height=500,
-                #             title=alt.Title('Exposure Pathway Clusters vs. Score', subtitle=self.chart_header)).configure_title(fontSize=20, font='Courier', anchor='middle', subtitleFontSize=10, subtitleFont='Courier')
-      
+                .mark_circle() 
                 .encode(
                     x=alt.X('Clusters', axis=alt.Axis(
                         title='Pathways', titleFontSize=12, titleFontWeight='bold')),
@@ -239,18 +273,17 @@ class StartUpClass:
                             color=alt.Color('ESG_Category'),
                             size="Score", 
                             tooltip=["ESG_Category", "Exposure_Pathway", "Clusters", "Score"])
-            ).properties(width=500, height=500, title=alt.Title(text=self.chart_title, font='Courier', fontSize=20, subtitle=self.chart_header, subtitleFont='Courier', subtitleFontSize=12, anchor='middle'))
+                         )
+                .properties(width=500, height=500, title=alt.Title(text=self.chart_title, font='Courier', fontSize=20, subtitle=self.chart_header, subtitleFont='Courier', subtitleFontSize=12, anchor='middle'))
                 .configure_legend(
                                 strokeColor='gray',
                                 fillColor='#EEEEEE',
                                 padding=5,
                                 cornerRadius=2,
                                 labelFontSize=10, titleFontSize=12)
-                            .configure_header()
-                            .configure_axis(grid=True)
-                            .interactive()
-                # .configure_range(
-                #     category={'scheme': 'dark2'})
+                .configure_header()
+                .configure_axis(grid=True)
+                .interactive()
             )
             st.altair_chart(chart_data, use_container_width=True)
 
@@ -274,7 +307,7 @@ class StartUpClass:
         self.dataset = df.round(2)
         self.chart_title = 'Recognized Pathways Vs. Risk Exposure'
 
-        self.chart_header = 'Sector:' + "Upstream OIl & Gas Producer" + ', Year:' + \
+        self.chart_header = 'Sector:' + self.sl_sector + ', Year:' + \
             str(self.sl_year_start)
 
         if (not self.dataset.empty):
@@ -467,6 +500,9 @@ class StartUpClass:
                     ds2[["Rank", "ESG_Category", "Exposure_Pathway"]], key='exp_sector2')
         else:
             st.text('No Data Found for the Company & Year Combination')
+
+    def draw_financial_charts(self):
+        pass
 
     def draw_AG_Grid(self, data_source, key):
         gb = GridOptionsBuilder.from_dataframe(data_source)

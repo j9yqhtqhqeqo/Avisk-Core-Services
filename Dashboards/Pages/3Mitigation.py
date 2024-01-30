@@ -218,7 +218,7 @@ class StartUpClass:
         self.dataset = df.round(2)
         self.chart_title = 'Recognized Pathways Vs. Risk Mitigation'
 
-        self.chart_header = 'Sector:' + "Upstream OIl & Gas Producer" + ', Year:' + \
+        self.chart_header = 'Sector:' + self.sl_sector + ', Year:' + \
             str(self.sl_year_start)
 
         if (not self.dataset.empty):

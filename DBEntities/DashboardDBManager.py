@@ -3,6 +3,7 @@ import sys
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity
+from DBEntities.FinancialMetricsDBEntities import FinancialMetricsDBEntity
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import pyodbc
 import pandas as pd
@@ -361,9 +362,6 @@ class DashboardDBManager():
 
         return self.dashboard_data_list
 
-
-
-
     # SECTOR
 
     def get_sector_list(self):
@@ -457,3 +455,34 @@ class DashboardDBManager():
         return l_sector, l_sector_company, l_year, l_doc_type
 
 
+# Financial Metrics
+    def get_financial_metrics(self, company_name:str, year:int):
+        metrics_list = []
+
+        sql =   'SELECT  company_name,reporting_year,assets,liabilities,equity,revenue\
+                        ,operating_expenses,operating_income_ebitda,net_income,eps\
+                        ,cash_flow_operations,cash_flow_investing,free_cash_flow,cash_flow_financing\
+                        ,stock_price_calender_year_end,pe_ratio,return_on_asset,exchange_ref,beta_calender_year_end\
+                        ,sharpe_ratio\
+                FROM t_financial_metrics where company_name = ? and reporting_year =?'
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql, company_name, year)
+            rows = cursor.fetchall()
+            for row in rows:
+                metric = FinancialMetricsDBEntity(
+                         company_Name=row.company_name,reporting_year=row.reporting_year,
+                         assets=row.assets,liabilities=row.liabilities,equity=row.equity,
+                         revenue=row.revenue,operating_expense=row.operating_expenses,ebitda= row.operating_income_ebitda,net_income=row.net_income,
+                         eps=row.eps,cf_operations=row.cash_flow_operations,cf_investing=row.cash_flow_investing,free_cash_flow= row.free_cash_flow,cf_financing=row.cash_flow_financing, 
+                         stock_price=row.stock_price_calender_year_end,pe_ratio=row.pe_ratio,roa=row.return_on_asset,
+                         exchange_ref=row.exchange_ref,beta_calender_year_end=row.beta_calender_year_end, sharpe_ratio= row.sharpe_ratio
+                        )
+                metrics_list.append(metric)
+
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return metrics_list
