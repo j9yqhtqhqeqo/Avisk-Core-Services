@@ -1,4 +1,4 @@
-from Services.SingletonServiceMgr import update_sector_stats, get_sector_list, get_year_list
+from Services.SingletonServiceMgr import update_reporting_tables, get_sector_list, get_year_list
 from Dictionary.DictionaryManager import DictionaryManager
 import streamlit as st
 import ast
@@ -15,11 +15,11 @@ class StartUpClass:
          pass
 
     def process_update_stats(self, DebugMode=False):
-        update_sector_stats(
+        update_reporting_tables(
             database_context=self.database_context, sector=self.sl_sector, year=self.sl_year, 
             generate_exp_sector_insights=self.generate_exp_sector_insights,
-            generate_int_sector_insights=self.generate_int_sector_insights,generate_exp_mit_sector_insights=self.generate_exp_mit_sector_insights,
-            generate_exp_int_mit_sector_insights=self.generate_exp_int_mit_sector_insights, update_all = self.update_all)
+            generate_int_sector_insights=self.generate_int_sector_insights,
+            generate_mit_sector_insights=self.generate_mit_sector_insights, update_all = self.update_all, keywords_only=self.update_keywords_only)
 
     def run_online_Mode(self):
         database_context = st.radio(
@@ -41,19 +41,21 @@ class StartUpClass:
         
         self.generate_int_sector_insights = st.checkbox("Exposure ->Internalization", value=False)
         
-        self.generate_exp_mit_sector_insights = st.checkbox("Exposure ->Mitigation", value=False)
-        
-        self.generate_exp_int_mit_sector_insights = st.checkbox(
+        self.generate_mit_sector_insights = st.checkbox(
             "Exposure->Internalization->Mitigation", value=False)
 
         update_all_setors_years = st.radio(
             "Update All Sectors & Years", ["Yes", "No"], index=1)
+        
+        self.update_keywords_only = st.checkbox("Update Keywords Only", value=True)
+
+
         if (update_all_setors_years == 'Yes'):
             self.update_all = True
         else:
             self.update_all = False
 
-        st.button('Update Sector Stats',
+        st.button('Update Reporting Tables',
                   on_click=self.process_update_stats)
 
 

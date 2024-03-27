@@ -1,23 +1,23 @@
-import pyodbc
-import datetime as dt
-from DBEntities.DocumentHeaderEntity import DocHeaderEntity
-from DBEntities.DictionaryEntity import DictionaryEntity
-from DBEntities.ProximityEntity import ProximityEntity
-from DBEntities.ProximityEntity import KeyWordLocationsEntity
-from DBEntities.ProximityEntity import Insight
-from DBEntities.ProximityEntity import MitigationExpIntInsight
-from DBEntities.ProximityEntity import ExpIntInsight
-from DBEntities.ProximityEntity import DocumentEntity
-from Utilities.Lookups import Lookups
+from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
 from Utilities.LoggingServices import logGenerator
-from DBEntities.DashboardDBEntitties import SectorYearDBEntity
+from Utilities.Lookups import Lookups
+from DBEntities.ProximityEntity import DocumentEntity
+from DBEntities.ProximityEntity import ExpIntInsight
+from DBEntities.ProximityEntity import MitigationExpIntInsight
+from DBEntities.ProximityEntity import Insight
+from DBEntities.ProximityEntity import KeyWordLocationsEntity
+from DBEntities.ProximityEntity import ProximityEntity
+from DBEntities.DictionaryEntity import DictionaryEntity
+from DBEntities.DocumentHeaderEntity import DocHeaderEntity
+import datetime as dt
+import pyodbc
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 
-INSIGHT_SCORE_THRESHOLD = 50
-EXP_INT_MITIGATION_THRESHOLD = 50
+INSIGHT_SCORE_THRESHOLD = 10
+EXP_INT_MITIGATION_THRESHOLD = 10
 
 
 PARM_LOGFILE = (
@@ -1367,7 +1367,7 @@ class InsightGeneratorDBManager:
                       INNER JOIN t_key_word_hits exp2_hits on exp2_hits.key_word_hit_id = expint.exp_keyword_hit_id2\
                       INNER JOIN  t_key_word_hits int1_hits on int1_hits.key_word_hit_id = expint.int_key_word_hit_id1\
                       INNER JOIN  t_key_word_hits int2_hits on int2_hits.key_word_hit_id = expint.int_key_word_hit_id2\
-                where expint.document_id = ?"
+                where expint.document_id = ? and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD}"
 
         # where expint.document_id = ? and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD}"
         # and expint.unique_key = 2441"
@@ -1482,13 +1482,13 @@ class InsightGeneratorDBManager:
         # print("Total Insights added to the Database:" +
         #       str(total_records_added_to_db))
 
-    # SECTOR
+    # Build SECTOR aggregate tables
 
     def get_sector_list(self):
 
         sector_list = []
 
-        sql = 'select l.data_lookups_description  sector from t_data_lookups l where data_lookups_group_id = 5 order by l.data_lookups_description'
+        sql = 'select l.data_lookups_id sector_id, l.data_lookups_description  sector from t_data_lookups l where data_lookups_group_id = 5 order by l.data_lookups_description'
 
         try:
             # Execute the SQL query
@@ -1523,14 +1523,32 @@ class InsightGeneratorDBManager:
 
         return year_list
 
-    def get_sector_year_list(self):  
-        sector_year_list =[]
-        sector_list = self.get_sector_list()
+    def get_sector_id_year_list(self):
+        sector_year_list = []
+
+        sector_list = []
+
+        sql = 'select l.data_lookups_id sector_id from t_data_lookups l where data_lookups_group_id = 5 order by l.data_lookups_description'
+
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                sector_list.append(row.sector_id)
+            cursor.close()
+
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
         year_list = self.get_year_list()
 
-        for sector in sector_list:
+        for sector_id in sector_list:
             for year in year_list:
-                sector_year_list.append(SectorYearDBEntity(sector,year))
+                sector_year_list.append(SectorYearDBEntity(
+                    SectorId=sector_id, Year=year))
         return sector_year_list
 
     def get_company_list(self):
@@ -1571,31 +1589,46 @@ class InsightGeneratorDBManager:
 
         return doc_type_list
 
-    def update_sector_stats(self, sector, year, generate_exp_sector_insights: bool, generate_int_sector_insights: bool, generate_mit_sector_insights: bool, update_all:bool):
-        sector_year_list =[]
-        if(update_all):
-           sector_year_list = self.get_sector_year_list()
+    def update_sector_stats(self, sector, year, generate_exp_sector_insights: bool, generate_int_sector_insights: bool, generate_exp_mit_sector_insights: bool, generate_exp_int_mit_sector_insights: bool, update_all: bool):
+        sector_year_list = []
+        if (update_all):
+            sector_year_list = self.get_sector_id_year_list()
         else:
-            sector_year_list.append(SectorYearDBEntity(sector, year))
 
+            # print('Sector Selected: '+sector)
+            sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sector_id_sql, sector)
+            sector_id = cursor.fetchone()[0]
+            sector_year_list.append(SectorYearDBEntity(
+                SectorId=sector_id, Year=year))
+
+        # print('Sector ID: '+str(sector_id))
+        # print('Year:'+str(year))
+
+        sector_year: SectorYearDBEntity
         for sector_year in sector_year_list:
-            if(generate_exp_sector_insights):
+            if (generate_exp_sector_insights):
                 self.update_sector_exposure_stats(
-                    sector_year.Sector, sector_year.Year)
-            if(generate_int_sector_insights):
+                    sector_year.SectorId, sector_year.Year)
+            if (generate_int_sector_insights):
                 self.update_sector_exposure_internalization_stats(
-                    sector_year.Sector, sector_year.Year)
-            if(generate_mit_sector_insights):
-                self.update_sector_exposure_mitigation_stats(
-                    sector_year.Sector, sector_year.Year)
+                    sector_year.SectorId, sector_year.Year)
+            if (generate_exp_int_mit_sector_insights):
+                self.update_sector_exposure_int_mitigation_stats(
+                    sector_year.SectorId, sector_year.Year)
+            if (generate_exp_mit_sector_insights):
+                self.update_sector_exposure__mitigation_stats(
+                    sector_year.SectorId, sector_year.Year)
 
-    def update_sector_exposure_stats(self, sector, year):
-        print('Updating Exposure STATS for Sector:'+sector+', Year:'+str(year))
+    def update_sector_exposure_stats(self, sector_id, year):
+        print('Updating Exposure STATS for Sector:' +
+              str(sector_id)+', Year:'+str(year))
 
-        sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
-        cursor = self.dbConnection.cursor()
-        cursor.execute(sector_id_sql, sector)
-        sector_id = cursor.fetchone()[0]
+        # sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
+        # cursor = self.dbConnection.cursor()
+        # cursor.execute(sector_id_sql, sector)
+        # sector_id = cursor.fetchone()[0]
 
         # Exposure Pathway Sector STATS
         sql_update = 'update t_exposure_pathway_insights\
@@ -1645,14 +1678,14 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
-    def update_sector_exposure_internalization_stats(self, sector, year):
+    def update_sector_exposure_internalization_stats(self, sector_id, year):
         print('Updating Internalization STATS for Sector:' +
-              sector+', Year:'+str(year))
+              str(sector_id)+', Year:'+str(year))
 
-        sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
-        cursor = self.dbConnection.cursor()
-        cursor.execute(sector_id_sql, sector)
-        sector_id = cursor.fetchone()[0]
+        # sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
+        # cursor = self.dbConnection.cursor()
+        # cursor.execute(sector_id_sql, sector)
+        # sector_id = cursor.fetchone()[0]
 
         # Exposure Internalization Pathway Sector STATS
         sql_update = 'update t_exp_int_insights\
@@ -1706,14 +1739,9 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
-    def update_sector_exposure_mitigation_stats(self, sector, year):
-        print('Updating Mitigation STATS for Sector:' +
-              sector+', Year:'+str(year))
-
-        sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
-        cursor = self.dbConnection.cursor()
-        cursor.execute(sector_id_sql, sector)
-        sector_id = cursor.fetchone()[0]
+    def update_sector_exposure_int_mitigation_stats(self, sector_id, year):
+        print('Updating Exposure->Internalization->Mitigation STATS for Sector:' +
+              str(sector_id)+', Year:'+str(year))
 
         # Exposure Internalization Pathway Sector STATS
         sql_update = 'update t_mitigation_exp_int_insights\
@@ -1768,3 +1796,202 @@ class InsightGeneratorDBManager:
                        sector_id, year, sector_id, year)
         self.dbConnection.commit()
         cursor.close()
+
+    def update_sector_exposure__mitigation_stats(self, sector_id, year):
+        print('Updating Exposure Mitigation STATS for Sector:' +
+              str(sector_id)+', Year:'+str(year))
+
+        # Exposure Internalization Pathway Sector STATS
+        sql_update = 'update t_mitigation_exp_insights\
+                      set score_normalized_sector = (score * 100)/(select max(score) from t_mitigation_exp_insights where sector_id = ? and year =?)\
+                      where sector_id = ? and year = ?'
+
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_update, sector_id, year, sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+        sql_delete = 'delete from t_sector_exp_mitigation_insights where sector_id =? and year = ?'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_delete, sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+        sql_insert = 'INSERT into t_sector_exp_mitigation_insights(sector_id,year,esg_category_name,exposure_path_name,\
+                             mitigation_class,mitigation_sub_class,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
+                    SELECT   insights.sector_id,insights.year Year,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+                             mit.class_name,mit.sub_class_name, count(*) Pathways, AVG(insights.score_normalized_sector) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                    FROM t_mitigation_exp_insights insights\
+                        INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+                        inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                        inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                        INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
+                        INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
+                WHERE insights.sector_id = ? and insights.year = ?\
+                GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, exp.exposure_path_name, mit.class_name,mit.sub_class_name'
+
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_insert, 'MOHAN HANUMANTHA',
+                       'MOHAN HANUMANTHA', sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+        # Update Cluster Count
+        # print('updating cluster count')
+        sql_update_cluster = 'update t_sector_exp_mitigation_insights set cluster_count = cluster_count_all/(select count(document_id) from t_document doc inner join t_sec_company_sector_map map on doc.company_name = map.company_name where map.sector_id = ? and  doc.year = ?)\
+                        where  sector_id = ? and year = ?'
+
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_update_cluster, sector_id, year, sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+        # Normalize Score
+        sql_update_normalize_score = 'update t_sector_exp_mitigation_insights\
+                                   set score_normalized = (score * 100)/(select max(score) from t_sector_exp_mitigation_insights where sector_id = ? and year =?)\
+                                   where sector_id = ? and year = ?'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sql_update_normalize_score,
+                       sector_id, year, sector_id, year)
+        self.dbConnection.commit()
+        cursor.close()
+
+# Build Reporting Tables
+
+    def update_reporting_tables(self, sector, year, generate_exp_rpt_insights: bool, generate_int_rpt_insights: bool, generate_mit_rpt_insights: bool, update_all: bool, keywords_only=True):
+
+        sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = ?'
+        cursor = self.dbConnection.cursor()
+        cursor.execute(sector_id_sql, sector)
+        sector_id = cursor.fetchone()[0]
+
+        if (generate_exp_rpt_insights):
+            self.update_exposure_reporting(
+                sector_id=sector_id, year=year, update_all=update_all, keywords_only=keywords_only)
+
+    def update_exposure_reporting(self, sector_id, year, update_all, keywords_only):
+        if (update_all):
+            if (not keywords_only):
+                print('Update Exposure Report for All Sectors and years')
+
+                sql_delete = 'truncate table t_rpt_exposure_pathway_insights'
+                cursor = self.dbConnection.cursor()
+                cursor.execute(sql_delete)
+                self.dbConnection.commit()
+                cursor.close()
+
+                sql_insert = 'INSERT INTO t_rpt_exposure_pathway_insights( sector_id,company_name,year,document_id, content_type ,document_type,exposure_path_id, esg_category_name,exposure_path_name, cluster_count,score_normalized,\
+                            unique_key_words,chat_gpt_text,added_dt,added_by,modify_dt,modify_by)\
+                            \
+                            SELECT comp.sector_id, doc.company_name,doc.year,doc.document_id, doc.content_type,lookups.data_lookups_description Document_Type,exp.exposure_path_id,esg.esg_category_name,exp.exposure_path_name,\
+                                    count(*), AVG(insights.score_normalized) , NULL,NULL,CURRENT_TIMESTAMP,?, CURRENT_TIMESTAMP,?\
+                            FROM t_exposure_pathway_insights insights\
+                                    inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+                                    inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                                    inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                                    inner join t_document doc on doc.document_id = insights.document_id\
+                                    inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type and lookups.data_lookups_group_id = 1\
+                                    inner join t_sec_company_sector_map comp on doc.company_name = comp.company_name\
+                            GROUP by comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
+                            ORDER BY comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
+                            '
+                cursor = self.dbConnection.cursor()
+                cursor.execute(sql_insert, 'Mohan Hanumantha',
+                               'Mohan Hanumantha')
+                self.dbConnection.commit()
+                cursor.close()
+
+            # Update Unique Keywords for each exposure pathway insight
+
+            sector_year_list = []
+
+            sector_year_list = self.get_sector_id_year_list()
+            sector_year: SectorYearDBEntity
+            for sector_year in sector_year_list:
+                self.update_exposure_rpt_unique_keywordlist(
+                    sector_year.SectorId, sector_year.Year)
+
+        else:
+            if (not keywords_only):
+
+                print('Updating Exposure Report for Sector:' +
+                      str(sector_id)+', Year:'+str(year))
+
+                sql_delete = 'delete from t_rpt_exposure_pathway_insights where sector_id =? and year = ?'
+                cursor = self.dbConnection.cursor()
+                cursor.execute(sql_delete, sector_id, year)
+                self.dbConnection.commit()
+                cursor.close()
+                sql_insert = 'INSERT INTO t_rpt_exposure_pathway_insights( sector_id,company_name,year,document_id, content_type ,document_type,exposure_path_id, esg_category_name,exposure_path_name, cluster_count,score_normalized,\
+                            unique_key_words,chat_gpt_text,added_dt,added_by,modify_dt,modify_by)\
+                            \
+                            SELECT comp.sector_id, doc.company_name,doc.year,doc.document_id, doc.content_type,lookups.data_lookups_description Document_Type,exp.exposure_path_id,esg.esg_category_name,exp.exposure_path_name,\
+                                    count(*), AVG(insights.score_normalized) , NULL,NULL,CURRENT_TIMESTAMP,?, CURRENT_TIMESTAMP,?\
+                            FROM t_exposure_pathway_insights insights\
+                                    inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+                                    inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                                    inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                                    inner join t_document doc on doc.document_id = insights.document_id and doc.year = ?\
+                                    inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type and lookups.data_lookups_group_id = 1\
+                                    inner join t_sec_company_sector_map comp on doc.company_name = comp.company_name and  comp.sector_id = ?\
+                            GROUP by comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
+                            ORDER BY comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
+                            '
+                cursor = self.dbConnection.cursor()
+                cursor.execute(sql_insert, 'Mohan Hanumantha',
+                               'Mohan Hanumantha', year, sector_id)
+                self.dbConnection.commit()
+                cursor.close()
+
+            self.update_exposure_rpt_unique_keywordlist(sector_id, year)
+
+    def update_exposure_rpt_unique_keywordlist(self, sector_id, year):
+        print('Updating Unique Keywords for sector id:' +
+              str(sector_id)+'  Year:'+str(year))
+        # Update Unique Keywords in the list
+
+        rpt_exp_list = []
+
+        exp_rpt_sql = 'select unique_key, document_id, exposure_path_id from t_rpt_exposure_pathway_insights where sector_id = ? and year = ?'
+
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute(exp_rpt_sql, sector_id, year)
+            rows = cursor.fetchall()
+            for row in rows:
+                rpt_exp_list.append(
+                    Reporting_DB_Entity(
+                        unique_key=row.unique_key,
+                        DocumentId=row.document_id,
+                        ExposurePathId=row.exposure_path_id)
+                )
+
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        for exp_rpt_line_item in rpt_exp_list:
+
+            cursor = self.dbConnection.cursor()
+            unique_keyword_list = ''
+            keyword_sql = 'select distinct key_word1 keyword from t_exposure_pathway_insights where exposure_path_id = ? and document_id = ?\
+                            UNION\
+                            select distinct key_word2 keyword from t_exposure_pathway_insights where exposure_path_id = ? and document_id = ?\
+                            '
+            cursor.execute(
+                keyword_sql, exp_rpt_line_item.ExposurePathId, exp_rpt_line_item.DocumentId, exp_rpt_line_item.ExposurePathId, exp_rpt_line_item.DocumentId)
+
+            rows = cursor.fetchall()
+            for row in rows:
+                unique_keyword_list = unique_keyword_list + row.keyword + ','
+
+            unique_keyword_list = unique_keyword_list.rstrip(',')
+            sql_update = 'update t_rpt_exposure_pathway_insights set unique_key_words = ? where unique_key =?'
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql_update, unique_keyword_list,
+                           exp_rpt_line_item.unique_key)
+            cursor.close()
+        self.dbConnection.commit()
+
+
+# InsightGeneratorDBManager("Test").update_exposure_rpt_unique_keywordlist(1002,2023)

@@ -209,10 +209,14 @@ def update_validation_completed_status(database_context):
         database_context).update_validation_completed_status()
 
 
-def update_sector_stats(database_context, sector, year: int, generate_exp_sector_insights: bool, generate_int_sector_insights: bool, generate_mit_sector_insights: bool, update_all:bool):
+def update_sector_stats(database_context, sector, year: int, generate_exp_sector_insights: bool, generate_int_sector_insights: bool, generate_exp_mit_sector_insights: bool, generate_exp_int_mit_sector_insights: bool, update_all: bool):
     InsightGeneratorDBManager(
-        database_context).update_sector_stats(sector, year, generate_exp_sector_insights, generate_int_sector_insights, generate_mit_sector_insights, update_all)
+        database_context).update_sector_stats(sector, year, generate_exp_sector_insights, generate_int_sector_insights,generate_exp_mit_sector_insights, generate_exp_int_mit_sector_insights, update_all)
 
+
+def update_reporting_tables(database_context, sector, year: int, generate_exp_sector_insights: bool, generate_int_sector_insights: bool, generate_mit_sector_insights: bool, update_all: bool, keywords_only:bool):
+    InsightGeneratorDBManager(
+        database_context).update_reporting_tables(sector, year, generate_exp_sector_insights, generate_int_sector_insights, generate_mit_sector_insights, update_all, keywords_only)
 
 def get_sector_list(database_context):
     return InsightGeneratorDBManager(

@@ -39,6 +39,18 @@ class MitigationDBEntity:
         self.Internalization = Internalization
 
 class SectorYearDBEntity:
-    def __init__(self, Sector,Year) -> None:
+    def __init__(self, Sector='',SectorId=0, Year=0) -> None:
         self.Sector = Sector
         self.Year = Year
+        self.SectorId = SectorId
+
+
+
+class Reporting_DB_Entity:
+        def __init__(self, unique_key=0,DocumentId=0,Sector='',SectorId=0,Year=0, ExposurePathId=0) -> None:
+            self.unique_key = unique_key
+            self.DocumentId = DocumentId
+            self.sector_id=SectorId
+            self.Sector = Sector
+            self.Year = Year
+            self.ExposurePathId = ExposurePathId

@@ -30,31 +30,65 @@ class DashboardDBManager():
 
         self.dashboard_data_list = []
 
+    # def get_exposure_insights_by_company(self, company_name: str, year: int, content_type: int):
+
+    #     try:
+    #         cursor = self.dbConnection.cursor()
+
+    #         sql = "SELECT doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+    #                         count(*) Clusters, AVG(insights.score_normalized) Score\
+    #                         FROM t_exposure_pathway_insights insights \
+    #                             inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
+    #                             inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+    #                             inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+    #                             inner join t_document doc on doc.document_id = insights.document_id and doc.company_name =? and doc.year = ? and content_type = ?\
+    #                             inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
+    #                         GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name\
+    #                         ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name\
+    #                         "
+    #         cursor.execute(sql, company_name, year, content_type)
+
+    #         rows = cursor.fetchall()
+    #         for row in rows:
+    #             dashboard_entity = ExposurePathwayDBEntity(
+    #                 Sector='',
+    #                 Company=row.Company,
+    #                 Year=row.Year,
+    #                 Document_Type=row.Document_Type,
+    #                 ESG_Category=row.ESG_Category,
+    #                 Exposure_Pathway=row.Exposure_Pathway,
+    #                 Clusters=row.Clusters,
+    #                 Score=row.Score
+    #             )
+    #             self.dashboard_data_list.append(dashboard_entity)
+    #         cursor.close()
+    #     except Exception as exc:
+    #         print(f"Error: {str(exc)}")
+    #         raise exc
+
+    #     # print(self.dashboard_data_list)
+    #     return self.dashboard_data_list
+
     def get_exposure_insights_by_company(self, company_name: str, year: int, content_type: int):
 
         try:
             cursor = self.dbConnection.cursor()
 
-            sql = "SELECT doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
-                            count(*) Clusters, AVG(insights.score_normalized) Score\
-                            FROM t_exposure_pathway_insights insights \
-                                inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
-                                inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
-                                inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
-                                inner join t_document doc on doc.document_id = insights.document_id and doc.company_name =? and doc.year = ? and content_type = ?\
-                                inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
-                            GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name\
-                            ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name\
-                            "
+            sql = "SELECT insights.esg_category_name ESG_Category,  insights.exposure_path_name Exposure_Pathway,\
+                            insights.cluster_count Clusters, insights.score_normalized Score\
+                    FROM t_rpt_exposure_pathway_insights insights \
+                    WHERE insights.company_name =? and insights.year = ? and insights.content_type = ?\
+                    ORDER BY  insights.score_normalized desc\
+                  "
             cursor.execute(sql, company_name, year, content_type)
 
             rows = cursor.fetchall()
             for row in rows:
                 dashboard_entity = ExposurePathwayDBEntity(
                     Sector='',
-                    Company=row.Company,
-                    Year=row.Year,
-                    Document_Type=row.Document_Type,
+                    Company=company_name,
+                    Year=year,
+                    Document_Type='',
                     ESG_Category=row.ESG_Category,
                     Exposure_Pathway=row.Exposure_Pathway,
                     Clusters=row.Clusters,
@@ -68,6 +102,7 @@ class DashboardDBManager():
 
         # print(self.dashboard_data_list)
         return self.dashboard_data_list
+
 
     def get_exposure_insights(self):
 

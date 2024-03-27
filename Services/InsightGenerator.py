@@ -1419,13 +1419,16 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.log_generator.log_details("Dcoument:"+document_item.document_name +
                                            ", Total Exp Int -> Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
             document_count = document_count + 1
-            print('Completed EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
+            print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(len(document_list)))
  
             self.insightDBMgr.cleanup_insights_for_document(Lookups().Mitigation_Exp_INT_Insight_Type,document_item.document_id)
 
             self.insightDBMgr.save_Mitigation_Exp_Int_Insights(
                 insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Exp_INT_Insight_Type)
+            
+            print('Completed EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
+                      str(document_count)+' of ' + str(len(document_list)))
 
             self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
             ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
