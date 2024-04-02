@@ -1388,7 +1388,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             # print("Exp Int Insight locations:"+str(len(self.exp_int_insight_list)) +
             #       ", Mitigation Keyword locations:"+str(len(self.mitigation_keyword_list)))
 
-            mitigation_exp_int_insight_entity: MitigationExpIntInsight()
+            mitigation_exp_int_insight_entity: MitigationExpIntInsight
             self.mitigation_comon_insightList = []
 
             # record_count = len(self.exp_int_insight_list)
