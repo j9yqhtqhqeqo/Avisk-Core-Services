@@ -276,6 +276,25 @@ class InsightGeneratorDBManager:
 
         return document_keyword_list
 
+    def get_sector_id(self, document_id):
+
+
+        sql = 'select map.sector_id\
+            from t_sec_company_sector_map map \
+            inner join t_document doc  on map.company_name = doc.company_name and doc.document_id = 1'
+        
+        cursor = self.dbConnection.cursor()
+
+        cursor.execute(sql)
+
+        sector_id = cursor.fetchone()[0]
+        if (sector_id):
+            return sector_id
+        else:
+            print(
+                'Sector Not Mapped for the Company: Please check t_sec_company_sector_map')
+            raise Exception('Sector Not Mapped for the Company: Please check t_sec_company_sector_map')
+        cursor.close()
     def insert_key_word_hits_to_db(self, company_id: int, document_id: str, document_name: str, reporting_year: int, dictionary_id: int, key_word: str, locations: str, frequency: int, dictionary_type: int, exposure_path_id: int, internalization_id: int, impact_category_id: int, esg_category_id: int, batch_id: int):
 
         # Create a cursor object to execute SQL queries
@@ -312,10 +331,11 @@ class InsightGeneratorDBManager:
 
         pass
 
-    def save_insights(self, insightList, dictionary_type, year=0):
+    def save_insights(self, insightList, dictionary_type,document_id, year=0):
         insight: Insight
         self.d_next_seed = 0
         total_records_added_to_db = 0
+        sector_id = self.get_sector_id(document_id)
         for insight in insightList:
             key_word_hit_id1 = insight.keyword_hit_id1
             key_word_hit_id2 = insight.keyword_hit_id2
@@ -335,20 +355,20 @@ class InsightGeneratorDBManager:
 
             if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
                 sql = f"INSERT INTO dbo.t_exposure_pathway_insights( \
-                     document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                     document_id, sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
                     factor1, factor2,exposure_path_id, added_dt,added_by ,modify_dt,modify_by, year\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
                         {factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
 
             elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
                 sql = f"INSERT INTO dbo.t_internalization_insights( \
-                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    document_id,sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
                     factor1, factor2,internalization_id, added_dt,added_by ,modify_dt,modify_by, year\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
                         {factor1}, {factor2},{internalization_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
 
             elif (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
@@ -358,11 +378,11 @@ class InsightGeneratorDBManager:
                 #     Lookups().Mitigation_Exp_Insight_Type)
 
                 sql = f"INSERT INTO dbo.t_mitigation_exp_insights( \
-                    document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
+                    document_id, sector_id,document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
                     score,factor1, factor2, exposure_path_id,added_dt,added_by ,modify_dt,modify_by,year\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
+                        ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
                         {score},{factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
 
             elif (dictionary_type == Lookups().Mitigation_Int_Insight_Type):
@@ -372,11 +392,11 @@ class InsightGeneratorDBManager:
                 #     Lookups().Mitigation_Int_Insight_Type)
 
                 sql = f"INSERT INTO dbo.t_mitigation_int_insights( \
-                     document_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
+                     document_id,sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
                     score,factor1, factor2, internalization_id, added_dt,added_by ,modify_dt,modify_by, year\
                     )\
                         VALUES\
-                        ({document_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
+                        ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
                         {score},{factor1}, {factor2},{internalization_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
 
             try:
@@ -1226,10 +1246,10 @@ class InsightGeneratorDBManager:
 
         return exp_insight_location_list, int_insight_location_list
 
-    def save_Exp_Int_Insights(self, insightList, dictionary_type):
+    def save_Exp_Int_Insights(self, insightList, dictionary_type, document_id):
         exp_int_insight_entity: ExpIntInsight
         self.d_next_seed = 0
-
+        sector_id = self.get_sector_id(document_id)
         total_records_added_to_db = 0
         for exp_int_insight_entity in insightList:
             exp_keyword_hit_id1 = exp_int_insight_entity.exp_keyword_hit_id1
@@ -1254,12 +1274,12 @@ class InsightGeneratorDBManager:
             # Construct the INSERT INTO statement
 
             sql = f"INSERT INTO dbo.t_exp_int_insights( \
-                        document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+                        document_id ,sector_id, document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
                         ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
                         ,added_dt,added_by ,modify_dt,modify_by,year\
                 )\
                     VALUES\
-                    ({document_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
+                    ({document_id},{sector_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
                     ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
                     , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
                     ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
@@ -1406,9 +1426,10 @@ class InsightGeneratorDBManager:
 
         return exp_int_insight_location_list, mitigation_keyword_list
 
-    def save_Mitigation_Exp_Int_Insights(self, insightList, dictionary_type):
+    def save_Mitigation_Exp_Int_Insights(self, insightList, dictionary_type, document_id):
         mitigation_exp_int_insight_entity: MitigationExpIntInsight
         self.d_next_seed = 0
+        sector_id = self.get_sector_id(document_id)
 
         total_records_added_to_db = 0
         for mitigation_exp_int_insight_entity in insightList:
@@ -1438,13 +1459,13 @@ class InsightGeneratorDBManager:
             # int_unique_key = self.get_next_surrogate_key(
             #     Lookups().Mitigation_Exp_INT_Insight_Type)
             sql = f"INSERT INTO dbo.t_mitigation_exp_int_insights( \
-                        document_id , document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+                        document_id , sector_id,document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
                         ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
                         ,mitigation_keyword_hit_id,mitigation_keyword\
                         ,added_dt,added_by ,modify_dt,modify_by,year\
                 )\
                     VALUES\
-                    ({document_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
+                    ({document_id},{sector_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
                     ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
                     , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
                     ,{mitigation_keyword_hit_id},N'{mitigation_keyword}'\
@@ -1648,7 +1669,7 @@ class InsightGeneratorDBManager:
         sql_insert = 'INSERT into t_sector_exp_insights(sector_id,year,esg_category_name,exposure_path_name,cluster_count_all,cluster_count,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
                 SELECT \
                     insights.sector_id,insights.year,  esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
-                    count(*) Pathways, NULL, AVG(insights.score_normalized_sector) Score,  NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                    count(*) Pathways, NULL, AVG(insights.score) Score,  NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                 FROM t_exposure_pathway_insights insights \
                         inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id \
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
@@ -1702,17 +1723,17 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
-        sql_insert = 'INSERT into t_sector_exp_int_insights(sector_id,year,esg_category_name,exposure_path_name,internalization_name,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
+        sql_insert = 'INSERT into t_sector_exp_int_insights(sector_id,year,esg_category_name,exposure_path_name,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
                     SELECT\
-                            insights.sector_id,insights.year,  esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,int.internalization_name,\
-                            count(*) Pathways, AVG(insights.score_normalized_sector) Score , NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                            insights.sector_id,insights.year,  esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
+                            count(*) Pathways, AVG(insights.score) Score , NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                 FROM t_exp_int_insights insights \
                         inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                         inner join t_internalization int on int.internalization_id = insights.internalization_id\
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
                         inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
                 WHERE insights.sector_id = ? and insights.year = ?\
-                GROUP BY insights.sector_id,insights.year,  esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name'
+                GROUP BY insights.sector_id,insights.year,  esg.esg_category_name ,  exp.exposure_path_name'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_insert, 'MOHAN HANUMANTHA',
                        'MOHAN HANUMANTHA', sector_id, year)
@@ -1759,9 +1780,9 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
-        sql_insert = 'INSERT into t_sector_exp_int_mitigation_insights(sector_id,year,esg_category_name,exposure_path_name,internalization_name,mitigation_class,mitigation_sub_class,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
+        sql_insert = 'INSERT into t_sector_exp_int_mitigation_insights(sector_id,year,esg_category_name,exposure_path_name,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
                       SELECT   insights.sector_id,insights.year Year,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
-                            int.internalization_name Internalization, mit.class_name,mit.sub_class_name, count(*) Pathways, AVG(insights.score_normalized_sector) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                            count(*) Pathways, AVG(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                     FROM t_mitigation_exp_int_insights insights\
                         INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                         INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
@@ -1770,7 +1791,7 @@ class InsightGeneratorDBManager:
                         INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
                         INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
                 WHERE insights.sector_id = ? and insights.year = ?\
-                GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, exp.exposure_path_name,int.internalization_name, mit.class_name,mit.sub_class_name'
+                GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, exp.exposure_path_name'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_insert, 'MOHAN HANUMANTHA',
                        'MOHAN HANUMANTHA', sector_id, year)
@@ -1818,9 +1839,9 @@ class InsightGeneratorDBManager:
         cursor.close()
 
         sql_insert = 'INSERT into t_sector_exp_mitigation_insights(sector_id,year,esg_category_name,exposure_path_name,\
-                             mitigation_class,mitigation_sub_class,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
+                             cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
                     SELECT   insights.sector_id,insights.year Year,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
-                             mit.class_name,mit.sub_class_name, count(*) Pathways, AVG(insights.score_normalized_sector) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                             count(*) Pathways, AVG(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                     FROM t_mitigation_exp_insights insights\
                         INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
@@ -1828,7 +1849,8 @@ class InsightGeneratorDBManager:
                         INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
                         INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
                 WHERE insights.sector_id = ? and insights.year = ?\
-                GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, exp.exposure_path_name, mit.class_name,mit.sub_class_name'
+                GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, exp.exposure_path_name'
+        #, mit.class_name,mit.sub_class_name'
 
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_insert, 'MOHAN HANUMANTHA',
