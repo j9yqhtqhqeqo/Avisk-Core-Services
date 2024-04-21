@@ -39,11 +39,11 @@ class MitigationDBEntity:
         self.Internalization = Internalization
 
 class SectorYearDBEntity:
-    def __init__(self, Sector='',SectorId=0, Year=0) -> None:
+    def __init__(self, Sector='',SectorId=0, Year=0, Company_Name='') -> None:
         self.Sector = Sector
         self.Year = Year
         self.SectorId = SectorId
-
+        self.Company_Name = Company_Name
 
 
 class Reporting_DB_Entity:
@@ -54,3 +54,12 @@ class Reporting_DB_Entity:
             self.Sector = Sector
             self.Year = Year
             self.ExposurePathId = ExposurePathId
+
+class Top10_Chart_DB_Entity:
+    def __init__(self, top10_company_exposure='', degree_of_control_sector_normalized=0, degree_of_control_company_normalized=0, top10_sector_exposure='') -> None:
+        self.top10_company_exposure = top10_company_exposure
+        self.degree_of_control_sector_normalized = degree_of_control_sector_normalized
+        self.degree_of_control_company_normalized = degree_of_control_company_normalized
+        self.top10_sector_exposure = top10_sector_exposure
+
+

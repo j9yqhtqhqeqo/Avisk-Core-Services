@@ -1,8 +1,9 @@
+
 from pathlib import Path
 import sys
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity
+from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity
 from DBEntities.FinancialMetricsDBEntities import FinancialMetricsDBEntity
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import pyodbc
@@ -29,45 +30,6 @@ class DashboardDBManager():
         self.dbConnection = pyodbc.connect(connection_string)
 
         self.dashboard_data_list = []
-
-    # def get_exposure_insights_by_company(self, company_name: str, year: int, content_type: int):
-
-    #     try:
-    #         cursor = self.dbConnection.cursor()
-
-    #         sql = "SELECT doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
-    #                         count(*) Clusters, AVG(insights.score_normalized) Score\
-    #                         FROM t_exposure_pathway_insights insights \
-    #                             inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
-    #                             inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
-    #                             inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
-    #                             inner join t_document doc on doc.document_id = insights.document_id and doc.company_name =? and doc.year = ? and content_type = ?\
-    #                             inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
-    #                         GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name\
-    #                         ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name\
-    #                         "
-    #         cursor.execute(sql, company_name, year, content_type)
-
-    #         rows = cursor.fetchall()
-    #         for row in rows:
-    #             dashboard_entity = ExposurePathwayDBEntity(
-    #                 Sector='',
-    #                 Company=row.Company,
-    #                 Year=row.Year,
-    #                 Document_Type=row.Document_Type,
-    #                 ESG_Category=row.ESG_Category,
-    #                 Exposure_Pathway=row.Exposure_Pathway,
-    #                 Clusters=row.Clusters,
-    #                 Score=row.Score
-    #             )
-    #             self.dashboard_data_list.append(dashboard_entity)
-    #         cursor.close()
-    #     except Exception as exc:
-    #         print(f"Error: {str(exc)}")
-    #         raise exc
-
-    #     # print(self.dashboard_data_list)
-    #     return self.dashboard_data_list
 
     def get_exposure_insights_by_company(self, company_name: str, year: int, content_type: int):
 
@@ -521,3 +483,35 @@ class DashboardDBManager():
             raise exc
 
         return metrics_list
+
+# Charts
+
+
+    def get_top10_exposure_control_measures(self, year: int, company_name:str):
+        sql = "select top10_sector_exposure, degree_of_control_sector_normalized, degree_of_control_company_normalized, top10_company_exposure\
+              from t_chart_top10_exposures top10\
+              where top10.company_name = ? and top10.[year] = ?\
+              order by degree_of_control_sector desc"
+        cursor = self.dbConnection.cursor()
+        try:
+            # cursor.execute(sql)
+            cursor.execute(sql, company_name, year)
+            rows = cursor.fetchall()
+
+            for row in rows:
+                dashboard_entity = Top10_Chart_DB_Entity(
+                    top10_sector_exposure=row.top10_sector_exposure,
+                    degree_of_control_sector_normalized=row.degree_of_control_sector_normalized,
+                    degree_of_control_company_normalized=row.degree_of_control_company_normalized,
+                    top10_company_exposure=row.top10_company_exposure
+
+                )
+                self.dashboard_data_list.append(dashboard_entity)
+
+            print(dashboard_entity)
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return self.dashboard_data_list

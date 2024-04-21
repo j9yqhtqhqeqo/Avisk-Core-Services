@@ -2,11 +2,12 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
+from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
+
 from Services.InsightGenerator import file_folder_keyWordSearchManager, PARM_STAGE1_FOLDER
 from DBEntities.ProximityEntity import DocumentEntity
 from multiprocessing import Process, Queue, Pool
 import time
-from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
 from DBEntities.LookupsDBManager import LookupsDBManager
 import multiprocessing
 from Utilities.Lookups import Lookups
@@ -217,6 +218,13 @@ def update_sector_stats(database_context, sector, year: int, generate_exp_sector
 def update_reporting_tables(database_context, sector, year: int, generate_exp_sector_insights: bool, generate_int_sector_insights: bool, generate_mit_sector_insights: bool, update_all: bool, keywords_only:bool):
     InsightGeneratorDBManager(
         database_context).update_reporting_tables(sector, year, generate_exp_sector_insights, generate_int_sector_insights, generate_mit_sector_insights, update_all, keywords_only)
+
+
+def update_chart_tables(database_context, sector, year: int, generate_top10_exposure_chart_data: bool):
+    InsightGeneratorDBManager(
+        database_context).update_chart_tables(sector, year, generate_top10_exposure_chart_data)
+
+
 
 def get_sector_list(database_context):
     return InsightGeneratorDBManager(
