@@ -63,3 +63,30 @@ class Top10_Chart_DB_Entity:
         self.top10_sector_exposure = top10_sector_exposure
 
 
+class Triangle_Chart_DB_Entity:
+    def __init__(self, sector_exposure_path_name='',  Sector_EI=0,   Compnay_EI=0, Sector_EM=0, Company_EM=0, Sector_IM=0, Company_IM=0) -> None:
+            self.sector_exposure_path_name = sector_exposure_path_name
+            self.Sector_EI = Sector_EI
+            self.Compnay_EI = Compnay_EI
+            self.Sector_EM = Sector_EM
+            self.Company_EM = Company_EM
+            self.Sector_IM= Sector_IM
+            self.Company_IM= Company_IM
+
+
+class YOY_DB_Entity:
+    def __init__(self, year=0, company_name='', sector_exposure_path_name='', exposure_score=0, exposure_score_normalized=0 ) -> None:
+        self.company_name = company_name
+        self.sector_exposure_path_name = sector_exposure_path_name
+        self.exposure_score = exposure_score
+        self.exposure_score_normalized = exposure_score_normalized
+        self.year = year
+
+
+class Exposure_Control_Chart_DB_Entity:
+    def __init__(self, year=0, company_name='', sector_exposure_path_name='', exposure_score=0, exposure_control_score=0) -> None:
+        self.company_name = company_name
+        self.sector_exposure_path_name = sector_exposure_path_name
+        self.exposure_score = exposure_score
+        self.exposure_control_score = exposure_control_score
+        self.year = year

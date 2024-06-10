@@ -220,9 +220,9 @@ def update_reporting_tables(database_context, sector, year: int, generate_exp_se
         database_context).update_reporting_tables(sector, year, generate_exp_sector_insights, generate_int_sector_insights, generate_mit_sector_insights, update_all, keywords_only)
 
 
-def update_chart_tables(database_context, sector, year: int, generate_top10_exposure_chart_data: bool):
+def update_chart_tables(database_context, generate_top10_exposure_chart_data: bool, generate_triangulation_data: bool, generate_yoy_chart_data:bool):
     InsightGeneratorDBManager(
-        database_context).update_chart_tables(sector, year, generate_top10_exposure_chart_data)
+        database_context).update_chart_tables(generate_top10_exposure_chart_data, generate_triangulation_data, generate_yoy_chart_data)
 
 
 

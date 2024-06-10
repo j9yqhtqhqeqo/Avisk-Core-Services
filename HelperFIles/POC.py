@@ -1,62 +1,235 @@
-import numpy as np
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
+import pandas as pd
+import plotly.express as px
 import matplotlib.pyplot as plt
+import numpy as np
+
+from matplotlib.patches import Circle, RegularPolygon
+from matplotlib.path import Path
+from matplotlib.projections import register_projection
+from matplotlib.projections.polar import PolarAxes
+from matplotlib.spines import Spine
+from matplotlib.transforms import Affine2D
+
+from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity, Triangle_Chart_DB_Entity, YOY_DB_Entity, Exposure_Control_Chart_DB_Entity
+
+# def radar_factory(num_vars, frame='circle'):
+#     """
+#     Create a radar chart with `num_vars` axes.
+
+#     This function creates a RadarAxes projection and registers it.
+
+#     Parameters
+#     ----------
+#     num_vars : int
+#         Number of variables for radar chart.
+#     frame : {'circle', 'polygon'}
+#         Shape of frame surrounding axes.
+
+#     """
+#     # calculate evenly-spaced axis angles
+#     theta = np.linspace(0, 2*np.pi, num_vars, endpoint=False)
+
+#     class RadarTransform(PolarAxes.PolarTransform):
+
+#         def transform_path_non_affine(self, path):
+#             # Paths with non-unit interpolation steps correspond to gridlines,
+#             # in which case we force interpolation (to defeat PolarTransform's
+#             # autoconversion to circular arcs).
+#             if path._interpolation_steps > 1:
+#                 path = path.interpolated(num_vars)
+#             return Path(self.transform(path.vertices), path.codes)
+
+#     class RadarAxes(PolarAxes):
+
+#         name = 'radar'
+#         PolarTransform = RadarTransform
+
+#         def __init__(self, *args, **kwargs):
+#             super().__init__(*args, **kwargs)
+#             # rotate plot such that the first axis is at the top
+#             self.set_theta_zero_location('N')
+
+#         def fill(self, *args, closed=True, **kwargs):
+#             """Override fill so that line is closed by default"""
+#             return super().fill(closed=closed, *args, **kwargs)
+
+#         def plot(self, *args, **kwargs):
+#             """Override plot so that line is closed by default"""
+#             lines = super().plot(*args, **kwargs)
+#             for line in lines:
+#                 self._close_line(line)
+
+#         def _close_line(self, line):
+#             x, y = line.get_data()
+#             # FIXME: markers at x[0], y[0] get doubled-up
+#             if x[0] != x[-1]:
+#                 x = np.append(x, x[0])
+#                 y = np.append(y, y[0])
+#                 line.set_data(x, y)
+
+#         def set_varlabels(self, labels):
+#             self.set_thetagrids(np.degrees(theta), labels)
+
+#         def _gen_axes_patch(self):
+#             # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
+#             # in axes coordinates.
+#             if frame == 'circle':
+#                 return Circle((0.5, 0.5), 0.5)
+#             elif frame == 'polygon':
+#                 return RegularPolygon((0.5, 0.5), num_vars,
+#                                       radius=.5, edgecolor="k")
+#             else:
+#                 raise ValueError("Unknown value for 'frame': %s" % frame)
+
+#         def _gen_axes_spines(self):
+#             if frame == 'circle':
+#                 return super()._gen_axes_spines()
+#             elif frame == 'polygon':
+#                 # spine_type must be 'left'/'right'/'top'/'bottom'/'circle'.
+#                 spine = Spine(axes=self,
+#                               spine_type='circle',
+#                               path=Path.unit_regular_polygon(num_vars))
+#                 # unit_regular_polygon gives a polygon of radius 1 centered at
+#                 # (0, 0) but we want a polygon of radius 0.5 centered at (0.5,
+#                 # 0.5) in axes coordinates.
+#                 spine.set_transform(Affine2D().scale(.5).translate(.5, .5)
+#                                     + self.transAxes)
+#                 return {'polar': spine}
+#             else:
+#                 raise ValueError("Unknown value for 'frame': %s" % frame)
+
+#     register_projection(RadarAxes)
+#     return theta
 
 
-# def calc_angles(a, b, c):
-#     alpha = np.arccos((b**2 + c**2 - a**2) / (2.*b*c))
-#     beta = np.arccos((-b**2 + c**2 + a**2) / (2.*a*c))
-#     gamma = np.pi-alpha-beta
-#     return alpha, beta, gamma
+# def example_data():
+#     # The following data is from the Denver Aerosol Sources and Health study.
+#     # See doi:10.1016/j.atmosenv.2008.12.017
+#     #
+#     # The data are pollution source profile estimates for five modeled
+#     # pollution sources (e.g., cars, wood-burning, etc) that emit 7-9 chemical
+#     # species. The radar charts are experimented with here to see if we can
+#     # nicely visualize how the modeled source profiles change across four
+#     # scenarios:
+#     #  1) No gas-phase species present, just seven particulate counts on
+#     #     Sulfate
+#     #     Nitrate
+#     #     Elemental Carbon (EC)
+#     #     Organic Carbon fraction 1 (OC)
+#     #     Organic Carbon fraction 2 (OC2)
+#     #     Organic Carbon fraction 3 (OC3)
+#     #     Pyrolyzed Organic Carbon (OP)
+#     #  2)Inclusion of gas-phase specie carbon monoxide (CO)
+#     #  3)Inclusion of gas-phase specie ozone (O3).
+#     #  4)Inclusion of both gas-phase species is present...
+#     data = [
+#         ['Sulfate', 'Nitrate', 'EC'],
+#         ('Basecase', [
+#             [0.88, 0.01, 0.03 ],
+#             [0.07, 0.95, 0.04 ],
+#             [0.01, 0.02, 0.85 ],
+#             [0.02, 0.01, 0.07 ],
+#             [0.01, 0.01, 0.02 ]]),
+#         ('With CO', [
+#             [0.88, 0.02, 0.02],
+#             [0.08, 0.94, 0.04],
+#             [0.01, 0.01, 0.79],
+#             [0.00, 0.02, 0.03],
+#             [0.02, 0.02, 0.11]]),
+#         ('With O3', [
+#             [0.89, 0.01, 0.07],
+#             [0.07, 0.95, 0.05],
+#             [0.01, 0.02, 0.86],
+#             [0.01, 0.03, 0.00],
+#             [0.02, 0.00, 0.03]]),
+#         ('CO & O3', [
+#             [0.87, 0.01, 0.08],
+#             [0.09, 0.95, 0.02],
+#             [0.01, 0.02, 0.71],
+#             [0.01, 0.03, 0.00],
+#             [0.02, 0.00, 0.18]])
+#     ]
+#     return data
 
 
-# def calc_point(alpha, beta, c):
-#     x = (c*np.tan(beta))/(np.tan(alpha)+np.tan(beta))
-#     y = x * np.tan(alpha)
-#     return (x, y)
+# if __name__ == '__main__':
+#     N = 3
+#     theta = radar_factory(N, frame='polygon')
+
+#     data = example_data()
+#     spoke_labels = data.pop(0)
+
+#     fig, axs = plt.subplots(figsize=(3, 3), nrows=2, ncols=2,
+#                             subplot_kw=dict(projection='radar'))
+#     fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
+
+#     colors = ['b', 'r', 'g', 'm', 'y']
+#     # Plot the four cases from the example data on separate axes
+#     for ax, (title, case_data) in zip(axs.flat, data):
+#         ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
+#         ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
+#                      horizontalalignment='center', verticalalignment='center')
+#         for d, color in zip(case_data, colors):
+#             ax.plot(theta, d, color=color)
+#             ax.fill(theta, d, facecolor=color, alpha=0.25, label='_nolegend_')
+#         ax.set_varlabels(spoke_labels)
+
+#     # add legend relative to top-left plot
+#     labels = ('Factor 1', 'Factor 2', 'Factor 3', 'Factor 4', 'Factor 5')
+#     legend = axs[0, 0].legend(labels, loc=(0.9, .95),
+#                               labelspacing=0.1, fontsize='small')
+
+#     fig.text(0.5, 0.965, '5-Factor Solution Profiles Across Four Scenarios',
+#              horizontalalignment='center', color='black', weight='bold',
+#              size='large')
+
+#     plt.show()
 
 
-# def get_triangle(a, b, c):
-#     z = np.array([a, b, c])
-#     while z[-1] != z.max():
-#         z = z[[2, 0, 1]]  # make sure last entry is largest
-#     alpha, beta, _ = calc_angles(*z)
-#     x, y = calc_point(alpha, beta, z[-1])
-#     return [(0, 0), (z[-1], 0), (x, y)]
+# df = pd.DataFrame(dict(
+#     r=[1, 5, 2, 2, 3],
+#     theta=['processing cost', 'mechanical properties', 'chemical stability',
+#            'thermal stability', 'device integration']))
+# fig = px.line_polar(df, r='r', theta='theta', line_close=True)
+# fig.show()
 
+class startup_class:
+    def get_data_from_file(self):
+        df = pd.read_excel(
+            "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/Dashboards/Pages/Data.xlsx")
+        self.dataset_all = df[["year", "company_name", "top10_sector_exposure", "degree_of_control_sector_normalized", "degree_of_control_company_normalized",
+                            "top10_company_exposure"]].round(2)
 
-# a = 4
-# b = 3
-# c = 2
+        data_filter = self.dataset_all["year"] == 2012
+        self.dataset_year = self.dataset_all.where(data_filter).dropna()
 
-# fig, ax = plt.subplots()
-# ax.set_aspect("equal")
+        data_filter = self.dataset_year["company_name"] == 'Chesapeake Energy'
+        self.dataset = self.dataset_year.where(data_filter).dropna()
+        print(self.dataset)
 
-# dreieck = plt.Polygon(get_triangle(a, b, c))
-# ax.add_patch(dreieck)
-# ax.relim()
-# ax.autoscale_view()
-# plt.show()
+        self.exposure_list =[]
+        for index, row in self.dataset.iterrows():
+           print(row['top10_sector_exposure'])
+           print(row['degree_of_control_sector_normalized'])
+           print(row['degree_of_control_company_normalized'])
+           print(row['top10_company_exposure'])
+            # dashboard_entity = Top10_Chart_DB_Entity(
+            #     top10_sector_exposure=row['top10_sector_exposure'],
+            #     degree_of_control_sector_normalized=row['degree_of_control_sector_normalized'],
+            #     degree_of_control_company_normalized=row['degree_of_control_company_normalized'],
+            #     top10_company_exposure=row['top10_company_exposure']
+            # )
+            # self.exposure_list.append(dashboard_entity)
 
-# plt.plot(6, -7, marker = 'o', color = 'yellow')
-plt.plot(11, -7, marker='o', color='black')
-plt.plot(3.5, -1, marker='o', color='green')
+            # print('File Data.....')
 
-plt.plot(
-    [6, 11, 3.5, 6],
-    [-7, -7, -1, -7]
-)
-plt.fill(
-    [6, 11, 3.5, 6],
-    [-7, -7, -1, -7],
-    color='#fa2942'
-)
-angles = linspace(0, 2/4 * pi, 25)
-x = cos(angles)
-y = sin(angles)
-plt.plot(x + 5.5, y - 7, color='black')
+            # for expos in self.exposure_list:
+            #     print(expos.top10_sector_exposure, '   ',
+            #           expos.degree_of_control_sector_normalized, '    ', expos.degree_of_control_company_normalized, '   ', expos.top10_company_exposure)
 
-
-plt.title("Types of Triangles", color='#e33f4b', fontsize=20)
-plt.xlim(-10, 12)
-plt.ylim(-10, 12)
-plt.show()
+l_start = startup_class()
+l_start.get_data_from_file()

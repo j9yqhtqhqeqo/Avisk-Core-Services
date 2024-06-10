@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
 from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
 from st_aggrid import GridOptionsBuilder, AgGrid, ColumnsAutoSizeMode, GridUpdateMode
 import matplotlib.pyplot as plt
@@ -12,9 +16,7 @@ import streamlit.components.v1 as components
 import altair as alt
 import math as Math
 from DBEntities.DashboardDBManager import DashboardDBManager
-import sys
-from pathlib import Path
-sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
 
 
 exposure_list = DashboardDBManager("Test").get_exposure_insights()
@@ -100,8 +102,8 @@ class StartUpClass:
         self.dataset_ranked = self.dataset.where(data_filter).dropna().sort_values(by=[
             'Exposure_Pathway', 'Score'])
 
-        print('Data Ranked')
-        print(self.dataset_ranked)
+        # print('Data Ranked')
+        # print(self.dataset_ranked)
 
     def load_chart_data_start_end_year(self):
         # 'Chesapeake Energy'
@@ -197,12 +199,12 @@ class StartUpClass:
                     title='Pathways', titleFontSize=12, titleFontWeight='bold')),
                 y=alt.Y('Score:Q',    axis=alt.Axis(
                     title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
-                color='ESG_Category',
+                color='Exposure_Pathway',
                 order=alt.Order(
                     'Rank',
                     sort='ascending'
                 ),
-                tooltip=["ESG_Category", "Exposure_Pathway", "Clusters", "Score"])
+                tooltip=["Exposure_Pathway", "Clusters", "Score"])
                 # .properties(height=500,)
                 .properties(width=250, height=250))
             st.altair_chart(chart_data, use_container_width=True)
@@ -218,8 +220,8 @@ class StartUpClass:
 
             exp_dataset = self.dataset_ranked[[
                 "Exposure_Pathway"]].drop_duplicates()
-            print('exp_dataset')
-            print(exp_dataset)
+            # print('exp_dataset')
+            # print(exp_dataset)
             exp_dataset["Rank"] = exp_dataset.rank()["Exposure_Pathway"]
             exp_chart = (alt.Chart(data=exp_dataset)
                          .mark_square(size=200)
@@ -230,8 +232,8 @@ class StartUpClass:
 
             exp_trend_dataset = exp_dataset = self.dataset_ranked[[
                 'Year', 'Exposure_Pathway', 'Score']]
-            print('exp_trend_dataset')
-            print(exp_trend_dataset)
+            # print('exp_trend_dataset')
+            # print(exp_trend_dataset)
             line_chart = (alt.Chart(exp_trend_dataset)
                           .mark_square(size=200)
                           .encode(x=alt.X('Year:N', axis=alt.Axis(title='Year', titleFontSize=12, titleFontWeight='bold', labelAngle=270)),

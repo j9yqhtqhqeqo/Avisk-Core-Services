@@ -18,8 +18,9 @@ class StartUpClass:
 
     def process_update_stats(self, DebugMode=False):
         update_chart_tables(
-            database_context=self.database_context, sector=self.sl_sector, year=self.sl_year, 
-            generate_top10_exposure_chart_data=self.generate_top10_exposure_chart_data)
+            database_context=self.database_context,
+            generate_top10_exposure_chart_data=self.generate_top10_exposure_chart_data, 
+            generate_triangulation_data=self.generate_triangulation_chart_data, generate_yoy_chart_data=self.generate_yoy_chart_data)
 
     def run_online_Mode(self):
         database_context = st.radio(
@@ -40,8 +41,14 @@ class StartUpClass:
             'Year:', (self.dataset_year_sl), index=0)
         
         self.generate_top10_exposure_chart_data = st.checkbox(
-            "Top 10 Exposure Chart", value=False)
+            "Top 10 Exposure Data", value=False)
 
+        self.generate_triangulation_chart_data = st.checkbox(
+            "Triangulation Data", value=False)
+        
+        self.generate_yoy_chart_data = st.checkbox(
+            "Year Over Year Data", value=False)
+        
         # self.generate_exp_sector_insights = st.checkbox(
         #     "Exposure", value=False)
 

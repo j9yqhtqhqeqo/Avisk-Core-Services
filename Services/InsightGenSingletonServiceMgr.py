@@ -359,7 +359,8 @@ def batch_process_generate_insights_for_exp_int_mitigation_insights(database_con
     cache_loader.start()
 
     queue_size_int = queue_size.get()
-    batches = get_process_buffer(queue_size_int,io_bound=True)
+    batches = get_process_buffer(
+        queue_size_int, io_bound=True)
     num_batches = len(batches)
     print("Number of Documents to Process:" + str(queue_size_int))
     print("Total Number of Batches:" + str(num_batches))

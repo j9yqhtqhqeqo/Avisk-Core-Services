@@ -1,0 +1,202 @@
+
+    def save_Mitigation_Exp_Int_Insights(self, insightList, dictionary_type, document_id):
+        mitigation_exp_int_insight_entity: MitigationExpIntInsight
+        self.d_next_seed = 0
+        sector_id = self.get_sector_id(document_id)
+
+        total_records_added_to_db = 0
+        for mitigation_exp_int_insight_entity in insightList:
+            exp_keyword_hit_id1 = mitigation_exp_int_insight_entity.exp_keyword_hit_id1
+            exp_keyword1 = mitigation_exp_int_insight_entity.exp_keyword1
+            exp_keyword_hit_id2 = mitigation_exp_int_insight_entity.exp_keyword_hit_id2
+            exp_keyword2 = mitigation_exp_int_insight_entity.exp_keyword2
+            int_key_word_hit_id1 = mitigation_exp_int_insight_entity.int_key_word_hit_id1
+            int_key_word1 = mitigation_exp_int_insight_entity.int_key_word1
+            int_key_word_hit_id2 = mitigation_exp_int_insight_entity.int_key_word_hit_id2
+            int_key_word2 = mitigation_exp_int_insight_entity.int_key_word2
+            factor1 = mitigation_exp_int_insight_entity.factor1
+            factor2 = mitigation_exp_int_insight_entity.factor2
+            score = mitigation_exp_int_insight_entity.score
+            document_name = mitigation_exp_int_insight_entity.document_name
+            document_id = mitigation_exp_int_insight_entity.document_id
+            exposure_path_id = mitigation_exp_int_insight_entity.exposure_path_id
+            internalization_id = mitigation_exp_int_insight_entity.internalization_id
+            mitigation_keyword_hit_id = mitigation_exp_int_insight_entity.mitigation_keyword_hit_id
+            mitigation_keyword = mitigation_exp_int_insight_entity.mitigation_keyword
+            year = mitigation_exp_int_insight_entity.year
+
+            # Create a cursor object to execute SQL queries
+            cursor = self.dbConnection.cursor()
+            cursor.fast_executemany = True
+
+            # Construct the INSERT INTO statement
+            sql = "BEGIN TRANSACTION \r\n"
+
+
+            sql = sql+  f"INSERT INTO dbo.t_mitigation_exp_int_insights( \
+                        document_id , sector_id,document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+                        ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
+                        ,mitigation_keyword_hit_id,mitigation_keyword\
+                        ,added_dt,added_by ,modify_dt,modify_by,year\
+                )\
+                    VALUES\
+                    ({document_id},{sector_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
+                    ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
+                    , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
+                    ,{mitigation_keyword_hit_id},N'{mitigation_keyword}'\
+                    ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha', {year})"
+
+            try:
+                # Execute the SQL query
+                total_records_added_to_db = total_records_added_to_db + 1
+                if (total_records_added_to_db % 10 == 0):
+                    sql = sql+ "COMMIT TRANSACTION"
+                    cursor.execute(sql)
+                    self.dbConnection.commit()
+                    sql = "BEGIN TRANSACTION \r\n"
+
+
+            except Exception as exc:
+                # Rollback the transaction if any error occurs
+                self.dbConnection.rollback()
+                print(f"Error: {str(exc)}")
+                raise exc
+
+            # if (total_records_added_to_db % 250 == 0):
+            #     print("Insights added to the Database So far...:" +
+            #           str(total_records_added_to_db))
+
+        # Close the cursor and connection
+        if (total_records_added_to_db > 0):
+            sql += "COMMIT TRANSACTION"
+            cursor.execute(sql)
+            self.dbConnection.commit()
+            cursor.close()
+
+        # self.dbConnection.commit()
+        if (DB_LOGGING_ENABLED):
+            self.log_generator.log_details(
+                "Total Insights added to the Database:" + str(total_records_added_to_db))
+            self.log_generator.log_details(
+                '################################################################################################')
+
+        # print("Total Insights added to the Database:" +
+        #       str(total_records_added_to_db))
+
+
+-----------------------------------------------------------------------
+
+def save_Mitigation_Exp_Int_Insights(self, insightList, dictionary_type, document_id):
+        mitigation_exp_int_insight_entity: MitigationExpIntInsight
+        self.d_next_seed = 0
+        sector_id = self.get_sector_id(document_id)
+
+        print('Start Time' + str(dt.datetime.now()))
+        total_records_added_to_db = 0
+        tuple_list = []
+        sql = f"INSERT INTO dbo.t_mitigation_exp_int_insights( \
+                        document_id , sector_id,document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+                        ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
+                        ,mitigation_keyword_hit_id,mitigation_keyword,year\
+                        ,added_dt,added_by ,modify_dt,modify_by\
+                )\
+                    VALUES\
+                    (?,?,?,?,?,?,?,?,?,?,? ,?, ?,?,?,? ,?,?,?,?, ?,?"
+
+        name = 'Mohan Hanumantha'
+        currenttime = str(dt.datetime.now())
+        for mitigation_exp_int_insight_entity in insightList:
+            exp_keyword_hit_id1 = mitigation_exp_int_insight_entity.exp_keyword_hit_id1
+            exp_keyword1 = mitigation_exp_int_insight_entity.exp_keyword1
+            exp_keyword_hit_id2 = mitigation_exp_int_insight_entity.exp_keyword_hit_id2
+            exp_keyword2 = mitigation_exp_int_insight_entity.exp_keyword2
+            int_key_word_hit_id1 = mitigation_exp_int_insight_entity.int_key_word_hit_id1
+            int_key_word1 = mitigation_exp_int_insight_entity.int_key_word1
+            int_key_word_hit_id2 = mitigation_exp_int_insight_entity.int_key_word_hit_id2
+            int_key_word2 = mitigation_exp_int_insight_entity.int_key_word2
+            factor1 = mitigation_exp_int_insight_entity.factor1
+            factor2 = mitigation_exp_int_insight_entity.factor2
+            score = mitigation_exp_int_insight_entity.score
+            document_name = mitigation_exp_int_insight_entity.document_name
+            document_id = mitigation_exp_int_insight_entity.document_id
+            exposure_path_id = mitigation_exp_int_insight_entity.exposure_path_id
+            internalization_id = mitigation_exp_int_insight_entity.internalization_id
+            mitigation_keyword_hit_id = mitigation_exp_int_insight_entity.mitigation_keyword_hit_id
+            mitigation_keyword = mitigation_exp_int_insight_entity.mitigation_keyword
+            year = mitigation_exp_int_insight_entity.year
+
+            tuple = (document_id, sector_id, document_name, exp_keyword_hit_id1, exp_keyword1, exp_keyword_hit_id2, exp_keyword2,
+                     int_key_word_hit_id1, int_key_word1, int_key_word_hit_id2, int_key_word2, factor1, factor2, score, exposure_path_id, internalization_id, 
+                     mitigation_keyword_hit_id,  mitigation_keyword, year,currenttime, name,currenttime, name)
+            
+            tuple_list.append(tuple)
+
+            total_records_added_to_db = total_records_added_to_db + 1
+
+            if(total_records_added_to_db == 2):
+                break
+            
+            print(tuple_list)
+
+        self.dbConnection.execute('SET IDENITITY OFF')
+    # Create a cursor object to execute SQL queries
+        cursor = self.dbConnection.cursor()
+        cursor.fast_executemany = True
+        cursor.executemany(sql,tuple_list)
+        self.dbConnection.commit()
+
+
+        #     # Create a cursor object to execute SQL queries
+        #     cursor = self.dbConnection.cursor()
+        #     cursor.fast_executemany = True
+
+        #     # Construct the INSERT INTO statement
+
+        #     # int_unique_key = self.get_next_surrogate_key(
+        #     #     Lookups().Mitigation_Exp_INT_Insight_Type)
+        #     sql = f"INSERT INTO dbo.t_mitigation_exp_int_insights( \
+        #                 document_id , sector_id,document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
+        #                 ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
+        #                 ,mitigation_keyword_hit_id,mitigation_keyword\
+        #                 ,added_dt,added_by ,modify_dt,modify_by,year\
+        #         )\
+        #             VALUES\
+        #             ({document_id},{sector_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
+        #             ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
+        #             , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
+        #             ,{mitigation_keyword_hit_id},N'{mitigation_keyword}'\
+        #             ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha', {year})"
+
+        #     try:
+        #         # Execute the SQL query
+        #         cursor.executemany(sql,)
+        #         total_records_added_to_db = total_records_added_to_db + 1
+        #         if (total_records_added_to_db % 100 == 0):
+        #             self.dbConnection.commit()
+
+        #     except Exception as exc:
+        #         # Rollback the transaction if any error occurs
+        #         self.dbConnection.rollback()
+        #         print(f"Error: {str(exc)}")
+        #         raise exc
+
+        #     # if (total_records_added_to_db % 250 == 0):
+        #     #     print("Insights added to the Database So far...:" +
+        #     #           str(total_records_added_to_db))
+
+        # # Close the cursor and connection
+        # if (total_records_added_to_db > 0):
+        #     self.dbConnection.commit()
+        #     cursor.close()
+
+        # # self.dbConnection.commit()
+        # if (DB_LOGGING_ENABLED):
+        #     self.log_generator.log_details(
+        #         "Total Insights added to the Database:" + str(total_records_added_to_db))
+        #     self.log_generator.log_details(
+        #         '################################################################################################')
+        
+        # print('End Time' + str(dt.datetime.now()))
+
+        # print("Total Insights added to the Database:" +
+        #       str(total_records_added_to_db))

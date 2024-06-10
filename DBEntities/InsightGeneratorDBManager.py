@@ -19,14 +19,14 @@ from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Ent
 
 
 INSIGHT_SCORE_THRESHOLD = 0
-EXP_INT_MITIGATION_THRESHOLD = 0
+EXP_INT_MITIGATION_THRESHOLD = 10
 
 
 PARM_LOGFILE = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
 DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
 TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
-DB_LOGGING_ENABLED = False
+DB_LOGGING_ENABLED = True
 
 
 class InsightGeneratorDBManager:
@@ -1406,14 +1406,14 @@ class InsightGeneratorDBManager:
         # sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where dictionary_type = 1000 and document_id = ?'
 
         sql = f"SELECT expint.unique_key,expint.document_id, expint.document_name, expint.exp_keyword_hit_id1,expint.exp_keyword1,expint.exp_keyword_hit_id2,expint.exp_keyword2,\
-                expint.int_key_word_hit_id1,expint.int_key_word1, int_key_word_hit_id2,expint.int_key_word2,expint.factor1,expint.factor2,expint.score,expint.exposure_path_id,expint.internalization_id,\
+                expint.int_key_word_hit_id1,expint.int_key_word1, int_key_word_hit_id2,expint.int_key_word2,expint.factor1,expint.factor2,expint.score,expint.score_normalized, expint.exposure_path_id,expint.internalization_id,\
                 exp1_hits.locations 'exp1_locations', exp2_hits.locations 'exp2_locations', int1_hits.locations 'int1_locations', int2_hits.locations 'int2_locations'\
                from t_exp_int_insights expint \
                       INNER JOIN t_key_word_hits exp1_hits on exp1_hits.key_word_hit_id = expint.exp_keyword_hit_id1\
                       INNER JOIN t_key_word_hits exp2_hits on exp2_hits.key_word_hit_id = expint.exp_keyword_hit_id2\
                       INNER JOIN  t_key_word_hits int1_hits on int1_hits.key_word_hit_id = expint.int_key_word_hit_id1\
                       INNER JOIN  t_key_word_hits int2_hits on int2_hits.key_word_hit_id = expint.int_key_word_hit_id2\
-                where expint.[year] = ? and expint.document_id = ? and expint.exposure_path_id in (\
+                where expint.[year] = ? and expint.document_id = ? and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD} and expint.exposure_path_id in (\
                                 select  top 10 exposure_path_id\
                                 from t_sector_exp_insights where year= ? and sector_id=? order by score_normalized DESC)"
 
@@ -1569,7 +1569,7 @@ class InsightGeneratorDBManager:
 
         return year_list
 
-    def get_sector_id_year_list(self, sector_data_update=False, top10_chart_refeshed_ind=False):
+    def get_sector_id_year_list(self, sector_data_update=False, top10_chart_refeshed_ind=False, triangulation_data_refreshed_ind= False, yoy_chart_ind=False):
         sector_year_list = []
 
         sector_list = []
@@ -1580,6 +1580,14 @@ class InsightGeneratorDBManager:
             sql = 'select  secyr.sector_id,  secyr.year, map.company_name from t_sector_year_processing secyr\
                     inner join t_sec_company_sector_map map on map.sector_id = secyr.sector_id\
                     where secyr.top10_chart_refeshed_ind = 0'
+        elif (triangulation_data_refreshed_ind):
+            sql = 'select  secyr.sector_id,  secyr.year, map.company_name from t_sector_year_processing secyr\
+                    inner join t_sec_company_sector_map map on map.sector_id = secyr.sector_id\
+                    where secyr.triangulation_chart_refeshed_ind = 0'
+        elif (yoy_chart_ind):
+            sql = 'select  secyr.sector_id,  secyr.year, map.company_name from t_sector_year_processing secyr\
+                    inner join t_sec_company_sector_map map on map.sector_id = secyr.sector_id\
+                    where secyr.yoy_chart_refreshed_ind = 0'
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
@@ -1589,6 +1597,15 @@ class InsightGeneratorDBManager:
                 if(top10_chart_refeshed_ind):
                     sector_year_list.append(SectorYearDBEntity(
                         SectorId=row.sector_id, Year=row.year, Company_Name=row.company_name))
+                    
+                elif (triangulation_data_refreshed_ind):
+                    sector_year_list.append(SectorYearDBEntity(
+                        SectorId=row.sector_id, Year=row.year, Company_Name=row.company_name))
+                    
+                elif (yoy_chart_ind):
+                    sector_year_list.append(SectorYearDBEntity(
+                        SectorId=row.sector_id, Year=row.year, Company_Name=row.company_name))
+                    
                 elif (sector_data_update):
                         sector_year_list.append(SectorYearDBEntity(
                         SectorId=row.sector_id, Year=row.year, Company_Name='N/A'))
@@ -1707,7 +1724,7 @@ class InsightGeneratorDBManager:
         sql_insert = 'INSERT into t_sector_exp_insights(sector_id,year,esg_category_name,exposure_path_id,exposure_path_name,cluster_count_all,cluster_count,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
                 SELECT \
                     insights.sector_id,insights.year,  esg.esg_category_name ESG_Category,insights.exposure_path_id exposure_path_id,   exp.exposure_path_name Exposure_Pathway,\
-                    count(*) Pathways, NULL, AVG(insights.score) Score,  NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                    count(*) Pathways, NULL, avg(insights.score) Score,  NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                 FROM t_exposure_pathway_insights insights \
                         inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id \
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
@@ -1749,32 +1766,34 @@ class InsightGeneratorDBManager:
         # sector_id = cursor.fetchone()[0]
 
         # Exposure Internalization Pathway Sector STATS
-        sql_update = 'update t_exp_int_insights\
-                      set score_normalized_sector = (score * 100)/(select max(score) from t_exp_int_insights where sector_id = ? and year =?)\
-                          ,modify_dt = CURRENT_TIMESTAMP\
-                      where sector_id = ? and year = ?'
-        cursor = self.dbConnection.cursor()
-        cursor.execute(sql_update, sector_id, year, sector_id, year)
-        self.dbConnection.commit()
-        cursor.close()
+        # sql_update = 'update t_exp_int_insights\
+        #               set score_normalized_sector = (score * 100)/(select max(score) from t_exp_int_insights where sector_id = ? and year =?)\
+        #                   ,modify_dt = CURRENT_TIMESTAMP\
+        #               where sector_id = ? and year = ?'
+        # cursor = self.dbConnection.cursor()
+        # cursor.execute(sql_update, sector_id, year, sector_id, year)
+        # self.dbConnection.commit()
+        # cursor.close()
 
+        # print('Purging old data')
         sql_delete = 'delete from t_sector_exp_int_insights where sector_id =? and year = ?'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_delete, sector_id, year)
         self.dbConnection.commit()
         cursor.close()
 
-        sql_insert = 'INSERT into t_sector_exp_int_insights(sector_id,year,esg_category_name,exposure_path_id,exposure_path_name,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
+        # print('Inserting Aggregate Data')
+        sql_insert = 'INSERT into t_sector_exp_int_insights(sector_id,year,esg_category_name,exposure_path_id,exposure_path_name,internalization_name,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
                     SELECT\
-                            insights.sector_id,insights.year,  esg.esg_category_name ESG_Category, insights.exposure_path_id exposure_path_id,  exp.exposure_path_name Exposure_Pathway,\
-                            count(*) Pathways, AVG(insights.score) Score , NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                            insights.sector_id,insights.year,  esg.esg_category_name ESG_Category, insights.exposure_path_id exposure_path_id,  exp.exposure_path_name Exposure_Pathway,int.internalization_name,\
+                            count(*) Pathways, avg(insights.score) Score , NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                 FROM t_exp_int_insights insights \
                         inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                         inner join t_internalization int on int.internalization_id = insights.internalization_id\
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
                         inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
                 WHERE insights.year = ? and insights.sector_id = ?\
-                GROUP BY insights.sector_id,insights.year,  esg.esg_category_name , insights.exposure_path_id, exp.exposure_path_name'
+                GROUP BY insights.sector_id,insights.year,  esg.esg_category_name , insights.exposure_path_id, exp.exposure_path_name, int.internalization_name'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_insert, 'MOHAN HANUMANTHA',
                        'MOHAN HANUMANTHA', year, sector_id)
@@ -1782,7 +1801,7 @@ class InsightGeneratorDBManager:
         cursor.close()
 
         # Update Cluster Count
-        # print('updating cluster count')
+        print('updating cluster count')
         sql_update_cluster = 'update t_sector_exp_int_insights set cluster_count = cluster_count_all/(select count(document_id) from t_document doc inner join t_sec_company_sector_map map on doc.company_name = map.company_name where map.sector_id = ? and  doc.year = ?)\
                                    ,modify_dt = CURRENT_TIMESTAMP\
                               where  sector_id = ? and year = ?'
@@ -1793,6 +1812,7 @@ class InsightGeneratorDBManager:
         cursor.close()
 
         # Normalize Score
+        # print('Normalizing Score')
         sql_update_normalize_score = 'update t_sector_exp_int_insights\
                                    set score_normalized = (score * 100)/(select max(score) from t_sector_exp_int_insights where sector_id = ? and year =?)\
                                       ,modify_dt = CURRENT_TIMESTAMP\
@@ -1807,16 +1827,16 @@ class InsightGeneratorDBManager:
         print('Updating Exposure->Internalization->Mitigation STATS for Sector:' +
               str(sector_id)+', Year:'+str(year))
 
-        # Exposure Internalization Pathway Sector STATS
-        sql_update = 'update t_mitigation_exp_int_insights\
-                      set score_normalized_sector = (score * 100)/(select max(score) from t_mitigation_exp_int_insights where sector_id = ? and year =?)\
-                               ,modify_dt = CURRENT_TIMESTAMP\
-                            where sector_id = ? and year = ?'
+        # # Exposure Internalization Pathway Sector STATS
+        # sql_update = 'update t_mitigation_exp_int_insights\
+        #               set score_normalized_sector = (score * 100)/(select max(score) from t_mitigation_exp_int_insights where sector_id = ? and year =?)\
+        #                        ,modify_dt = CURRENT_TIMESTAMP\
+        #                     where sector_id = ? and year = ?'
 
-        cursor = self.dbConnection.cursor()
-        cursor.execute(sql_update, sector_id, year, sector_id, year)
-        self.dbConnection.commit()
-        cursor.close()
+        # cursor = self.dbConnection.cursor()
+        # cursor.execute(sql_update, sector_id, year, sector_id, year)
+        # self.dbConnection.commit()
+        # cursor.close()
 
         sql_delete = 'delete from t_sector_exp_int_mitigation_insights where sector_id =? and year = ?'
         cursor = self.dbConnection.cursor()
@@ -1824,19 +1844,22 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
-        print('Inserting Aggregate Data')
-        sql_insert = 'INSERT into t_sector_exp_int_mitigation_insights(sector_id,year,esg_category_name,exposure_path_id,exposure_path_name,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
-                      SELECT   insights.sector_id,insights.year Year,esg.esg_category_name ESG_Category,insights.exposure_path_id exposure_path_id,   exp.exposure_path_name Exposure_Pathway,\
-                            count(*) Pathways, AVG(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+        # print('Inserting Aggregate Data')
+        sql_insert = 'INSERT into t_sector_exp_int_mitigation_insights(sector_id,year,esg_category_name,exposure_path_id,internalization_id,exposure_path_name,internalization_name,cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
+                      SELECT   insights.sector_id,insights.year Year,esg.esg_category_name ESG_Category,insights.exposure_path_id exposure_path_id, insights.internalization_id, exp.exposure_path_name,int.internalization_name,\
+                            count(*) Pathways, avg(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                     FROM t_mitigation_exp_int_insights insights\
                         INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                         INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
                         inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
-                        INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
-                        INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
                 WHERE insights.year = ? and insights.sector_id = ?\
-                GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, insights.exposure_path_id,exp.exposure_path_name'
+                GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, insights.exposure_path_id, insights.internalization_id, exp.exposure_path_name,int.internalization_name'
+
+        # Removed from FROM Clause. Add back to break down at Mitigation Level
+        # INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
+        # INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
+
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_insert, 'MOHAN HANUMANTHA',
                        'MOHAN HANUMANTHA', year, sector_id)
@@ -1844,7 +1867,7 @@ class InsightGeneratorDBManager:
         cursor.close()
 
         # Update Cluster Count
-        print('updating cluster count')
+        # print('updating cluster count')
 
         sql_update_cluster = 'update t_sector_exp_int_mitigation_insights \
                               set cluster_count = cluster_count_all/(select count(document_id) from t_document doc inner join t_sec_company_sector_map map on doc.company_name = map.company_name where map.sector_id = ? and  doc.year = ?)\
@@ -1857,7 +1880,7 @@ class InsightGeneratorDBManager:
         cursor.close()
 
         # Normalize Score
-        print('Normalizing Score')
+        # print('Normalizing Score')
 
         sql_update_normalize_score = 'update t_sector_exp_int_mitigation_insights\
                                         set score_normalized = (score * 100)/(select max(score) from t_sector_exp_int_mitigation_insights where sector_id = ? and year =?)\
@@ -1893,7 +1916,7 @@ class InsightGeneratorDBManager:
         sql_insert = 'INSERT into t_sector_exp_mitigation_insights(sector_id,year,esg_category_name,exposure_path_id,exposure_path_name,\
                              cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
                     SELECT   insights.sector_id,insights.year Year,esg.esg_category_name ESG_Category,insights.exposure_path_id exposure_path_id,  exp.exposure_path_name Exposure_Pathway,\
-                             count(*) Pathways, AVG(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                             count(*) Pathways, avg(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
                     FROM t_mitigation_exp_insights insights\
                         INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
@@ -1998,11 +2021,11 @@ class InsightGeneratorDBManager:
                 cursor.execute(sql_delete, sector_id, year)
                 self.dbConnection.commit()
                 cursor.close()
-                sql_insert = 'INSERT INTO t_rpt_exposure_pathway_insights( sector_id,company_name,year,document_id, content_type ,document_type,exposure_path_id, esg_category_name,exposure_path_name, cluster_count,score_normalized,\
+                sql_insert = 'INSERT INTO t_rpt_exposure_pathway_insights( sector_id,company_name,year,document_id, content_type ,document_type,exposure_path_id, esg_category_name,exposure_path_name, cluster_count,score,score_normalized,\
                             unique_key_words,chat_gpt_text,added_dt,added_by,modify_dt,modify_by)\
                             \
                             SELECT comp.sector_id, doc.company_name,doc.year,doc.document_id, doc.content_type,lookups.data_lookups_description Document_Type,exp.exposure_path_id,esg.esg_category_name,exp.exposure_path_name,\
-                                    count(*), AVG(insights.score_normalized) , NULL,NULL,CURRENT_TIMESTAMP,?, CURRENT_TIMESTAMP,?\
+                                    count(*), AVG(insights.score),NULL , NULL,NULL,CURRENT_TIMESTAMP,?, CURRENT_TIMESTAMP,?\
                             FROM t_exposure_pathway_insights insights\
                                     inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                                     inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
@@ -2018,8 +2041,28 @@ class InsightGeneratorDBManager:
                                'Mohan Hanumantha', year, sector_id)
                 self.dbConnection.commit()
                 cursor.close()
+        
+        # Normalize data
+        print('Normalize Rpt Exposure Path Scores')
+        sql = 'select distinct document_id from t_rpt_exposure_pathway_insights where score_normalized is null'
+        try:
+            # Execute the SQL query
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                print(row.document_id)
+                sql_update = 'update t_rpt_exposure_pathway_insights set score_normalized = (score * 100)/(select max(score) from t_rpt_exposure_pathway_insights where document_id = ?) where document_id = ?'
+                cursor.execute(sql_update, row.document_id, row.document_id)
+                self.dbConnection.commit()
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+        print('Completed Normalizing Rpt Exposure Path Scores')
 
-            self.update_exposure_rpt_unique_keywordlist(sector_id, year)
+        #Chat GPT Support
+            # self.update_exposure_rpt_unique_keywordlist(sector_id, year)
 
     def update_exposure_rpt_unique_keywordlist(self, sector_id, year):
         print('Updating Unique Keywords for sector id:' +
@@ -2071,8 +2114,16 @@ class InsightGeneratorDBManager:
 
 # Build Chart Tables
 
+    def update_chart_tables(self, generate_top10_exposure_chart_data=False, generate_triangulation_data = False, generate_yoy_chart_data = False):
+        if (generate_top10_exposure_chart_data):
+            self.update_top10_chart_data()
+        if(generate_triangulation_data):
+            self.update_triangulation_chart_data()
+        if(generate_yoy_chart_data):
+            self.update_yoy_chart_data()
 
-    def update_chart_tables(self, sector, year: int, generate_top10_exposure_chart_data: bool):
+
+    def update_top10_chart_data(self):
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
             top10_chart_refeshed_ind=True)
         print('Started Processing Top10 Exposure Chart Data')
@@ -2085,15 +2136,112 @@ class InsightGeneratorDBManager:
                 cursor.execute("sp_load_top10_exposure_data ?,?,?", sector_year.Company_Name,
                                             sector_year.SectorId, sector_year.Year)
                 self.dbConnection.commit()
-                cursor.execute("update t_sector_year_processing set top10_chart_refeshed_ind = 1,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = ? and year = ?",
-                            sector_year.SectorId, sector_year.Year)
+            except Exception as exc:
+                print(f"Error: {str(exc)}")
+                raise exc
+        cursor.close()
+
+        for sector_year in sector_year_list:
+            try:
+               cursor.execute("update t_sector_year_processing set top10_chart_refeshed_ind = 1,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = ? and year = ?",
+                               sector_year.SectorId, sector_year.Year)
+               self.dbConnection.commit()
+            except Exception as exc:
+                print(f"Error: {str(exc)}")
+                raise exc
+        cursor.close()
+        print('Completed Processing Top10 Exposure Chart Data')
+
+
+    def update_triangulation_chart_data(self):
+
+        sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
+            triangulation_data_refreshed_ind=True)
+        print('Started Processing Triangulation Chart Data')
+        cursor = self.dbConnection.cursor()
+
+        for sector_year in sector_year_list:
+            print('Company:'+sector_year.Company_Name + '  Sector ID:' +
+                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year))
+            try:
+                cursor.execute("sp_load_triangulation_chart_data ?,?,?", sector_year.Company_Name,
+                               sector_year.SectorId, sector_year.Year)
+                self.dbConnection.commit()
+            except Exception as exc:
+                print(f"Error: {str(exc)}")
+                raise exc
+        cursor.close()
+
+        cursor = self.dbConnection.cursor()
+        for sector_year in sector_year_list:
+            try:
+                cursor.execute("update t_sector_year_processing set triangulation_chart_refeshed_ind = 1,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = ? and year = ?",
+                               sector_year.SectorId, sector_year.Year)
                 self.dbConnection.commit()
 
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
         cursor.close()
-        print('Completed Processing Top10 Exposure Chart Data')
+        print('Completed Processing Triangulation Chart Data')
+
+    def update_yoy_chart_data(self):
+
+        sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
+            yoy_chart_ind=True)
+        print('Started Processing YOY Chart Data')
+        cursor = self.dbConnection.cursor()
+
+        for sector_year in sector_year_list:
+            print('Company:'+sector_year.Company_Name + '  Sector ID:' +
+                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year))
+            
+          
+            try:
+
+                sql = 'delete  t_chart_yoy where sector_id = ? and year = ? and company_name = ?'
+                cursor.execute(sql, sector_year.SectorId,
+                           sector_year.Year, sector_year.Company_Name)
+
+                sql = 'INSERT INTO t_chart_yoy(company_name, sector_id, year, exposure_path_name,exposure_score, exposure_score_normalized, added_dt, added_by,modify_dt, modify_by)\
+                    SELECT  doc.company_name Company, insights.sector_id,insights.year, exp.exposure_path_name Exposure_Pathway,avg(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
+                    FROM t_exposure_pathway_insights insights\
+                        inner join t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id \
+                        inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
+                        inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
+                        inner join t_document doc on doc.document_id = insights.document_id and doc.company_name =? and doc.year = ?\
+                GROUP BY  doc.company_name ,insights.sector_id,insights.year,  esg.esg_category_name , insights.exposure_path_id, exp.exposure_path_name\
+                ORDER BY doc.company_name ,insights.sector_id,insights.year, Score desc'
+
+                cursor.execute(sql, 'Mohan Hanumantha', 'Mohan Hanumantha',sector_year.Company_Name, sector_year.Year)
+
+                sql = 'update t_chart_yoy \
+                      set exposure_score_normalized = (exposure_score * 100)/(select max(exposure_score) from t_chart_yoy where sector_id = ? and year =? and company_name = ?)\
+                      ,modify_dt = CURRENT_TIMESTAMP\
+                       where sector_id = ? and year =? and company_name = ?'
+                
+                cursor.execute(sql, sector_year.SectorId,
+                               sector_year.Year, sector_year.Company_Name, sector_year.SectorId,
+                               sector_year.Year, sector_year.Company_Name)
+
+                self.dbConnection.commit()
+            except Exception as exc:
+                print(f"Error: {str(exc)}")
+                raise exc
+        cursor.close()
+
+        cursor = self.dbConnection.cursor()
+        for sector_year in sector_year_list:
+            try:
+                cursor.execute("update t_sector_year_processing set yoy_chart_refreshed_ind = 1,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = ? and year = ?",
+                               sector_year.SectorId, sector_year.Year)
+                self.dbConnection.commit()
+
+            except Exception as exc:
+                print(f"Error: {str(exc)}")
+                raise exc
+        cursor.close()
+        print('Completed Processing Triangulation Chart Data')
 
 #
 #     def test_in_class(self):

@@ -1403,72 +1403,80 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         document_count = 0
 
         for document_item in document_list:
-            print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
-                      str(document_count)+' of ' + str(len(document_list)))
-            self.log_generator.log_details(
-                "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
-            # print("Document ID:"+str(document_item.document_id) +
-            #       ", Document Name:"+str(document_item.document_name))
+            try:
+                print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
+                        str(document_count+1)+' of ' + str(len(document_list)))
+                self.log_generator.log_details(
+                    "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
+                # print("Document ID:"+str(document_item.document_id) +
+                #       ", Document Name:"+str(document_item.document_name))
 
-            self.exp_int_insight_list, self.mitigation_keyword_list = self.insightDBMgr.get_mitigation_exp_int_lists(
-                document_item.document_id, document_item.year)
-            # print("Exp Int Insight locations:"+str(len(self.exp_int_insight_list)) +
-            #       ", Mitigation Keyword locations:"+str(len(self.mitigation_keyword_list)))
+                self.exp_int_insight_list, self.mitigation_keyword_list = self.insightDBMgr.get_mitigation_exp_int_lists(
+                    document_item.document_id, document_item.year)
+                # print("Exp Int Insight locations:"+str(len(self.exp_int_insight_list)) +
+                #       ", Mitigation Keyword locations:"+str(len(self.mitigation_keyword_list)))
 
-            mitigation_exp_int_insight_entity: MitigationExpIntInsight
-            self.mitigation_comon_insightList = []
+                mitigation_exp_int_insight_entity: MitigationExpIntInsight
+                self.mitigation_comon_insightList = []
 
-            # record_count = len(self.exp_int_insight_list)
-            # current_count = 1
-            for exp_int_insight_entity in self.exp_int_insight_list:
-                # print('Processing '+str(current_count) +
-                #       ' of ' + str(record_count)+'  Insights')
+                # record_count = len(self.exp_int_insight_list)
+                # current_count = 1
+                for exp_int_insight_entity in self.exp_int_insight_list:
+                    # print('Processing '+str(current_count) +
+                    #       ' of ' + str(record_count)+'  Insights')
 
-                combined_exp_int_insight_location_list = (exp_int_insight_entity.exp1_locations.strip(']').strip('[')
-                                                          + ',' +
-                                                          exp_int_insight_entity.exp2_locations.strip(
-                                                              ']').strip('[')
-                                                          + ',' +
-                                                          exp_int_insight_entity.int1_locations.strip(
-                                                              ']').strip('[')
+                    combined_exp_int_insight_location_list = (exp_int_insight_entity.exp1_locations.strip(']').strip('[')
                                                             + ',' +
-                                                          exp_int_insight_entity.int2_locations.strip(
-                                                              ']').strip('[')
-                                                          ).split(',')
-                # combined_exp_int_insight_location_list = (exp_int_insight_entity.int2_locations.strip(']').strip('[')
-                #                                           ).split(',')
+                                                            exp_int_insight_entity.exp2_locations.strip(
+                                                                ']').strip('[')
+                                                            + ',' +
+                                                            exp_int_insight_entity.int1_locations.strip(
+                                                                ']').strip('[')
+                                                                + ',' +
+                                                            exp_int_insight_entity.int2_locations.strip(
+                                                                ']').strip('[')
+                                                            ).split(',')
+                    # combined_exp_int_insight_location_list = (exp_int_insight_entity.int2_locations.strip(']').strip('[')
+                    #                                           ).split(',')
 
-                # print("EXP INSIGHT LOCATIONS for "+exp_insight_entity.keyword1+','+exp_insight_entity.keyword2+':'+str(combined_exp_insight_location_list))
-                mitigation_entity: MitigationExpIntInsight
-                for mitigation_entity in self.mitigation_keyword_list:
-                    self._create_combined_exp_int_mitigation_insights_for_document(mitigation_keyword_locations=mitigation_entity.locations,
-                                                                                   doc_location_list=combined_exp_int_insight_location_list, exp_int_insight_entity=exp_int_insight_entity, document_id=document_item.document_id, document_name=document_item.document_name,
-                                                                                   mitigation_keyword_hit_id=mitigation_entity.key_word_hit_id, mitigation_keyword=mitigation_entity.key_word, year=document_item.year
-                                                                                   )
-                # current_count = current_count + 1
+                    # print("EXP INSIGHT LOCATIONS for "+exp_insight_entity.keyword1+','+exp_insight_entity.keyword2+':'+str(combined_exp_insight_location_list))
+                    mitigation_entity: MitigationExpIntInsight
+                    for mitigation_entity in self.mitigation_keyword_list:
+                        self._create_combined_exp_int_mitigation_insights_for_document(mitigation_keyword_locations=mitigation_entity.locations,
+                                                                                    doc_location_list=combined_exp_int_insight_location_list, exp_int_insight_entity=exp_int_insight_entity, document_id=document_item.document_id, document_name=document_item.document_name,
+                                                                                    mitigation_keyword_hit_id=mitigation_entity.key_word_hit_id, mitigation_keyword=mitigation_entity.key_word, year=document_item.year
+                                                                                    )
+                    # current_count = current_count + 1
 
-            self.log_generator.log_details("Dcoument:"+document_item.document_name +
-                                           ", Total Exp Int -> Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
-            document_count = document_count + 1
-            # print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
-            #           str(document_count)+' of ' + str(len(document_list)))
+                self.log_generator.log_details("Dcoument:"+document_item.document_name +
+                                            ", Total Exp Int -> Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
+                document_count = document_count + 1
+                # print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
+                #           str(document_count)+' of ' + str(len(document_list)))
 
-            # self.insightDBMgr.cleanup_insights_for_document(
-            #     Lookups().Mitigation_Exp_INT_Insight_Type, document_item.document_id)
-            print('Insights Generted to Save ib DB -  EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
-                  str(document_count)+' of ' + str(len(document_list)))
+                # self.insightDBMgr.cleanup_insights_for_document(
+                #     Lookups().Mitigation_Exp_INT_Insight_Type, document_item.document_id)
+                print('Insights Generated to Save in DB -  EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
+                    str(document_count)+' of ' + str(len(document_list)))
 
-            self.insightDBMgr.save_Mitigation_Exp_Int_Insights(
-                insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
+                self.insightDBMgr.save_Mitigation_Exp_Int_Insights(
+                    insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
 
-            self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
-            ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
+                self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
+                ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
 
-            self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
-            ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
+                self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
+                ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
 
-            print('Completed EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
-                  str(document_count)+' of ' + str(len(document_list)))
+                print('Completed EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
+                    str(document_count)+' of ' + str(len(document_list)))
+                
+            except Exception as exc:
+                print('Error Processing' + str(batch_num) + ', Document:' +
+                      str(document_count)+' of ' + str(len(document_list)) + ' -- Trying next Document')
+                print(exc)
+                document_count = document_count + 1
+
 
     def _create_combined_exp_int_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, exp_int_insight_entity: MitigationExpIntInsight, document_id=0, document_name='', mitigation_keyword='', mitigation_keyword_hit_id=0, year=0):
 

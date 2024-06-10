@@ -3,11 +3,11 @@ from multiprocessing import Process, Queue
 
 
 ##  COMMON SERVICE
-def get_process_buffer(queue_length:int, io_bound = False):
+def get_process_buffer(queue_length:int, io_bound = False, batch_size_multiplier = 5):
 
     processor_count = multiprocessing.cpu_count()
     if(io_bound):
-                default_process_count = processor_count * 5
+                default_process_count = processor_count * batch_size_multiplier
                 if(queue_length < default_process_count):
                        process_count = queue_length
                 else:
@@ -26,3 +26,6 @@ def get_process_buffer(queue_length:int, io_bound = False):
         j = i % process_count
         buffer[j] = buffer[j] + 1
     return buffer
+
+# buffer = get_process_buffer(167, True)
+# print(buffer)

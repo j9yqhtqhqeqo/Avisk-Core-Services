@@ -1,9 +1,8 @@
-
 from pathlib import Path
 import sys
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity
+from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity, Triangle_Chart_DB_Entity, YOY_DB_Entity,Exposure_Control_Chart_DB_Entity
 from DBEntities.FinancialMetricsDBEntities import FinancialMetricsDBEntity
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import pyodbc
@@ -32,6 +31,7 @@ class DashboardDBManager():
         self.dashboard_data_list = []
 
     def get_exposure_insights_by_company(self, company_name: str, year: int, content_type: int):
+        print('Inside get_exposure_insights_by_company')
 
         try:
             cursor = self.dbConnection.cursor()
@@ -62,7 +62,7 @@ class DashboardDBManager():
             print(f"Error: {str(exc)}")
             raise exc
 
-        # print(self.dashboard_data_list)
+        print(self.dashboard_data_list)
         return self.dashboard_data_list
 
 
@@ -508,10 +508,99 @@ class DashboardDBManager():
                 )
                 self.dashboard_data_list.append(dashboard_entity)
 
-            print(dashboard_entity)
+            # print(dashboard_entity)
             cursor.close()
         except Exception as exc:
             print(f"Error: {str(exc)}")
             raise exc
 
         return self.dashboard_data_list
+
+    def get_triangle_measures(self, year: int, company_name:str):
+        sql = "SELECT  sector_exposure_path_name sector_exposure_path_name, round(sector_exposure_internalization_score_normalized, 0)Sector_EI, round(company_exposure_internalization_score_normalized, 0) Compnay_EI\
+             , round(sector_exposure_mitigation_score_normalized, 0) Sector_EM, round(company_exposure_mitigation_score_normalized, 0) Company_EM,\
+               round(sector_internalization_mitigation_score_normalized, 0) Sector_IM, round(company_internalization_mitigation_score_normalized, 0) Company_IM\
+               FROM t_chart_triangulation\
+                WHERE company_name = ? and year =?\
+                order by sector_exposure_internalization_score_normalized desc"
+        
+        cursor = self.dbConnection.cursor()
+        try:
+            cursor.execute(sql, company_name, year)
+            rows = cursor.fetchall()
+
+            for row in rows:
+                dashboard_entity = Triangle_Chart_DB_Entity(
+                    sector_exposure_path_name= row.sector_exposure_path_name,
+                    Sector_EI=row.Sector_EI,
+                    Compnay_EI=row.Compnay_EI,
+                    Sector_EM=row.Sector_EM,
+                    Company_EM=row.Company_EM,
+                    Sector_IM=row.Sector_IM,
+                    Company_IM=row.Company_IM
+                )
+                self.dashboard_data_list.append(dashboard_entity)
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return self.dashboard_data_list
+    
+    def get_yoy_measures(self, company_name: str):
+        sql = 'select chart.year, chart.company_name, chart.exposure_path_name, round(chart.exposure_score_normalized, 0) exposure_score, round(chart.exposure_score_normalized, 0)exposure_score_normalized\
+                from t_chart_yoy chart inner join t_chart_top10_exposures top10 on top10.[year] = chart.year and top10.top10_sector_exposure = chart.exposure_path_name and top10.company_name = chart.company_name\
+                where chart.company_name =?\
+                order by chart.company_name,chart.exposure_path_name, chart.exposure_score desc,chart.year'
+        
+        cursor = self.dbConnection.cursor()
+        try:
+            cursor.execute(sql, company_name)
+            rows = cursor.fetchall()
+
+            for row in rows:
+                dashboard_entity = YOY_DB_Entity(
+                   company_name = row.company_name,
+                   sector_exposure_path_name = row.exposure_path_name,
+                   exposure_score = row.exposure_score,
+                   exposure_score_normalized = row.exposure_score_normalized,
+                   year = row.year
+                )
+                self.dashboard_data_list.append(dashboard_entity)
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return self.dashboard_data_list
+    
+    def get_exposure_vs_control_measures(self, year:int, company_name:str):
+        sql = 'select control.[year], control.company_name, control.top10_sector_exposure, round(exp.exposure_score,0) exposure_score, round(control.degree_of_control_company_normalized,0) exposure_control_score from [dbo].[t_chart_top10_exposures] control\
+        inner join t_chart_yoy exp on control.[year] = exp.year and control.top10_company_exposure = exp.exposure_path_name and exp.company_name =? and exp.year = ?\
+        where control.company_name =? and control.year = ?'
+        
+        cursor = self.dbConnection.cursor()
+        try:
+            cursor.execute(sql, company_name,year, company_name,year)
+            rows = cursor.fetchall()
+
+            for row in rows:
+                dashboard_entity = Exposure_Control_Chart_DB_Entity(
+                   company_name = row.company_name,
+                   sector_exposure_path_name=row.top10_sector_exposure,
+                   exposure_score = row.exposure_score,
+                   exposure_control_score=row.exposure_control_score,
+                   year = row.year
+                )
+                self.dashboard_data_list.append(dashboard_entity)
+            cursor.close()
+        except Exception as exc:
+            print(f"Error: {str(exc)}")
+            raise exc
+
+        return self.dashboard_data_list
+
+
+l_start_class = DashboardDBManager("Test")
+
+l_start_class.get_exposure_vs_control_measures(2018, 'Chesapeake Energy')
