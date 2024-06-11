@@ -12,8 +12,7 @@ import altair as alt
 
 def st_altair_chart():
 
-    df = pd.read_excel(
-        "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Testing/Data Extracts/Exposure Pathway Extract Dec 13.xlsx")
+    df = pd.read_excel("Exposure Pathway Extract Dec 13.xlsx")
 
     dataset_original = df[["Company", "Year", "Document Type", "ESG Category",
                            "Exposure Pathway", "Clusters", "Score"]].round(2)
