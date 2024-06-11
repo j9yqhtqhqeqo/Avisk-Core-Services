@@ -1,6 +1,6 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+# import sys
+# from pathlib import Path
+# sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 import streamlit as st
 import plotly.express as px
@@ -17,23 +17,16 @@ import matplotlib.patches as patches
 from matplotlib import pyplot as plt
 
 
-
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
-from DBEntities.DashboardDBManager import DashboardDBManager, Triangle_Chart_DB_Entity
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity, Triangle_Chart_DB_Entity, YOY_DB_Entity, Exposure_Control_Chart_DB_Entity
-
-from Utilities.TriangleChartHelper import radar_factory
-
 class StartUpClass:
 
     def __init__(self) -> None:
 
+        # print('ESG Insights.ai - Vesion 1.0, Build Date:06/11/2023 9:22 AM')
         # Global Variables
         self.exposure_list = []
         self.triangle_data_list = []
-        self.yoy_exposure_list =[]
-        self.exposure_vs_control_list =[]
-
+        self.yoy_exposure_list = []
+        self.exposure_vs_control_list = []
 
         with st.sidebar:
 
@@ -41,19 +34,17 @@ class StartUpClass:
             self.dataset_sector_sl.append('Upstream Oil & Gas')
             self.dataset_sector_sl.append('Mining and Metals(ICMM)')
 
-            self.dataset_year_sl=[]
-            for year in range(2023,2010, -1):
+            self.dataset_year_sl = []
+            for year in range(2023, 2010, -1):
                 self.dataset_year_sl.append(year)
-
 
             self.sl_sector = st.selectbox(
                 'Sector:', (self.dataset_sector_sl))
-            
+
             df = pd.read_excel(
                 "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/ESGInsights/Pages/CompanyList.xlsx")
-   
-            self.dataset_sector_comp_df = df[["Company", "Sector"]]
 
+            self.dataset_sector_comp_df = df[["Company", "Sector"]]
 
             data_filter = self.dataset_sector_comp_df["Sector"] == self.sl_sector
             self.dataset_comp_sector_selected_df = self.dataset_sector_comp_df[[
@@ -74,7 +65,8 @@ class StartUpClass:
 
     def create_tabs(self):
 
-        tab_titles = ['Top 10 Exposures', 'Triangles', 'YOY Exposure', 'Exposure Vs. Control']
+        tab_titles = ['Top 10 Exposures', 'Triangles',
+                      'YOY Exposure', 'Exposure Vs. Control']
         top10_exposures,  triangles, yoy, exposure_control = st.tabs(
             tab_titles)
 
@@ -94,7 +86,6 @@ class StartUpClass:
             self.load_data_for_exposure_control_chart()
             self.draw_exposure_control_chart()
 
-
         css = '''
         <style>
             .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
@@ -107,35 +98,32 @@ class StartUpClass:
 
     def load_data_for_top10_chart(self, from_file=False):
 
-        if(from_file == True):
-            
+        if (from_file == True):
+
             self.exposure_list = self.get_exposure_list_from_file()
             df = pd.DataFrame([vars(exposure)
                                for exposure in self.exposure_list])
             self.dataset = df.round(2)
 
         else:
-            self.exposure_list = DashboardDBManager("Test").get_top10_exposure_control_measures(
-            self.sl_year_start, self.sl_company)
-            df = pd.DataFrame([vars(exposure) for exposure in self.exposure_list])
-            self.dataset = df.round(2)
+            print('Not Connected to DB')
 
-        self.chart_header = 'Sector:'+self.sl_sector +', Company:' + self.sl_company + ', Year:' + \
+        self.chart_header = 'Sector:'+self.sl_sector + ', Company:' + self.sl_company + ', Year:' + \
             str(self.sl_year_start)
-        
+
     def load_data_for_triangles_chart(self):
         # self.exposure_list = DashboardDBManager("Test").get_triangle_measures(
         # self.sl_year_start, self.sl_company)
-        self.exposure_list= self.get_triangulation_data_from_file()
+        self.exposure_list = self.get_triangulation_data_from_file()
 
         df = pd.DataFrame([vars(exposure)
                           for exposure in self.exposure_list])
 
         self.triangle_dataset = df.round(2)
-        print('Selected Triangle Data...')
-        print(self.triangle_dataset)
+        # print('Selected Triangle Data...')
+        # print(self.triangle_dataset)
 
-        self.chart_header = 'Sector:'+self.sl_sector +', Company:' + self.sl_company + ', Year:' + \
+        self.chart_header = 'Sector:'+self.sl_sector + ', Company:' + self.sl_company + ', Year:' + \
             str(self.sl_year_start)
 
     def load_data_for_yoy_chart(self):
@@ -147,14 +135,14 @@ class StartUpClass:
 
         self.yoy_dataset = df.round(2)
         self.dataset_ranked = None
-        if (not self.yoy_dataset is None and self.yoy_dataset.size >0):
+        if (not self.yoy_dataset is None and self.yoy_dataset.size > 0):
             # print(self.yoy_dataset)
 
-            self.chart_header = 'Sector:'+self.sl_sector + ', Company:' + self.sl_company 
-            
+            self.chart_header = 'Sector:'+self.sl_sector + ', Company:' + self.sl_company
+
             self.yoy_dataset["Rank"] = self.yoy_dataset.groupby('year')["exposure_score"].rank(
                 ascending=False, method='first')
-            
+
             data_filter = self.yoy_dataset["Rank"] <= 5
 
             self.dataset_ranked = self.yoy_dataset.where(data_filter).dropna().sort_values(by=[
@@ -172,7 +160,7 @@ class StartUpClass:
         if (not self.exp_control_dataset is None and self.exp_control_dataset.size > 0):
             # print(self.exp_control_dataset)
             self.chart_header = 'Sector:'+self.sl_sector + ', Company:' + self.sl_company + ', Year:' + \
-            str(self.sl_year_start)
+                str(self.sl_year_start)
 
     def get_exposure_list_from_file(self):
         df = pd.read_excel(
@@ -211,7 +199,7 @@ class StartUpClass:
         data_filter = self.dataset_year["company_name"] == self.sl_company
         self.dataset = self.dataset_year.where(data_filter).dropna()
 
-        self.triangle_data_list =[]
+        self.triangle_data_list = []
         for index, row in self.dataset.iterrows():
             dashboard_entity = Triangle_Chart_DB_Entity(
                 sector_exposure_path_name=row['sector_exposure_path_name'],
@@ -236,8 +224,8 @@ class StartUpClass:
 
         data_filter = self.dataset_all["company_name"] == self.sl_company
         self.dataset = self.dataset_all.where(data_filter).dropna()
-        print('Year Over Year Data....')
-        print(self.dataset)
+        # print('Year Over Year Data....')
+        # print(self.dataset)
 
         for index, row in self.dataset.iterrows():
             dashboard_entity = YOY_DB_Entity(
@@ -245,15 +233,16 @@ class StartUpClass:
                 sector_exposure_path_name=row['exposure_path_name'],
                 exposure_score=row['exposure_score'],
                 exposure_score_normalized=row['exposure_score_normalized'],
-                year = row["year"]
+                year=row["year"]
             )
             self.yoy_exposure_list.append(dashboard_entity)
         return self.yoy_exposure_list
- 
+
     def get_exposure_vs_control_data_from_file(self):
         df = pd.read_excel(
             "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/ESGInsights/Pages/ExposureVsControl.xlsx")
-        self.dataset_all = df[["year", "company_name", "exposure_path_name", "exposure_score", "exposure_control_score"]].round(2)
+        self.dataset_all = df[["year", "company_name", "exposure_path_name",
+                               "exposure_score", "exposure_control_score"]].round(2)
 
         data_filter = self.dataset_all["year"] == self.sl_year_start
         self.dataset_year = self.dataset_all.where(data_filter).dropna()
@@ -278,12 +267,12 @@ class StartUpClass:
         fig, ax = plt.subplots(figsize=(20, 6))
 
         ax.set_title(
-                    self.chart_header,
-                    loc='center',
-                    fontsize=10,
-                    weight='bold'
-                )
-        
+            self.chart_header,
+            loc='center',
+            fontsize=10,
+            weight='bold'
+        )
+
         rows = 10
         cols = 20
 
@@ -300,9 +289,9 @@ class StartUpClass:
                 weight='bold', ha='center')
         ax.text(15, 10.5, 'Company Top 10 Exposure',
                 weight='bold', ha='left')
-        
-        ax.plot([0.0, 30], [list_length+0.4, list_length+0.4], lw='.5', c='black')
 
+        ax.plot([0.0, 30], [list_length+0.4, list_length+0.4],
+                lw='.5', c='black')
 
         list_length = len(self.exposure_list)
         row = list_length
@@ -310,7 +299,7 @@ class StartUpClass:
             # print(d)
             row = list_length
             list_length = list_length - 1
-        	# extract the row data from the list
+            # extract the row data from the list
 
             # the y (row) coordinate is based on the row index (loop)
 
@@ -319,28 +308,29 @@ class StartUpClass:
             # print(d.top10_sector_exposure)
 
             ax.text(x=.0, y=row,
-                    s= d.top10_sector_exposure, va='center', ha='left')
+                    s=d.top10_sector_exposure, va='center', ha='left')
 
             if (d.degree_of_control_sector_normalized is None):
-                sector_score =0
+                sector_score = 0
             else:
                 sector_score = d.degree_of_control_sector_normalized
-            
+
             # ax.text(x=8, y=row, s=round(sector_score, 0),
             #         va='center', ha='right', weight='bold')
             ax.text(x=8, y=row, s=round(sector_score, 0),
-                        va='center', ha='right')
+                    va='center', ha='right')
 
             if (d.degree_of_control_company_normalized is None):
-                comp_score =0
+                comp_score = 0
             else:
                 comp_score = d.degree_of_control_company_normalized
-             
-            ax.text(x=12, y=row, s=round(comp_score,2), va='center', ha='right')
+
+            ax.text(x=12, y=row, s=round(comp_score, 2),
+                    va='center', ha='right')
 
             ax.text(
                 x=15, y=row, s=d.top10_company_exposure, va='center', ha='left')
- 
+
             if (comp_score >= 50):
                 rect = patches.Rectangle(
                     (0.0, row-0.4),  # bottom left starting position (x,y)
@@ -375,29 +365,30 @@ class StartUpClass:
 
     def draw_triangle_charts(self):
 
-        if (not self.triangle_dataset is None and len(self.triangle_dataset)>0):
+        if (not self.triangle_dataset is None and len(self.triangle_dataset) > 0):
             # print('Triangle Selection Box')
 
             # print(self.triangle_dataset.loc[:, 'sector_exposure_path_name'])
             self.dataset_exposure = self.triangle_dataset['sector_exposure_path_name']
             self.sl_exposure_selected = st.selectbox(
                 'Exposure Pathway:', (self.dataset_exposure), index=0)
-            print(self.sl_exposure_selected)
+            # print(self.sl_exposure_selected)
 
             data_filter = self.triangle_dataset["sector_exposure_path_name"] == self.sl_exposure_selected
             dataset_exp_selected = self.triangle_dataset.where(
                 data_filter).dropna()
-            print(dataset_exp_selected)
+            # print(dataset_exp_selected)
 
             comp_exp_values = dataset_exp_selected[
                 ['Compnay_EI', 'Company_EM', 'Company_IM']].values.flatten()
             sector_exp_values = dataset_exp_selected[
                 ['Sector_EI', 'Sector_EM', 'Sector_IM']].values.flatten()
-            
+
             # print(comp_exp_values)
             # print(sector_exp_values)
 
-            categories = ['Exposure - Internalization', 'Exposure-Mitigation', 'Internalization-Mitigation']
+            categories = ['Exposure - Internalization',
+                          'Exposure-Mitigation', 'Internalization-Mitigation']
 
             fig = go.Figure()
 
@@ -416,34 +407,34 @@ class StartUpClass:
                 # fillcolor='blue',
                 name='Company'
             ))
-          
+
             st.plotly_chart(fig)
         else:
             st.write('No Data Found')
 
     def draw_yoy_chart(self):
-      
+
         if (not self.dataset_ranked is None and not self.dataset_ranked.empty):
-                # st.write(self.chart_header)
+            # st.write(self.chart_header)
 
-                yoy_chart = (alt.Chart(self.dataset_ranked)
-                            .mark_bar(size=30, cornerRadiusTopLeft=3,
-                                        cornerRadiusTopRight=3)
-                            .encode(
-                    x=alt.X('year:N', axis=alt.Axis(
-                        title='Year', titleFontSize=12, titleFontWeight='bold')),
-                    y=alt.Y('exposure_score:Q',    axis=alt.Axis(
-                        title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
-                    color=alt.Color(
-                        'sector_exposure_path_name'),
-                    order=alt.Order(
-                        'Rank',
-                        sort='ascending'
-                    ),
-                    tooltip=["sector_exposure_path_name", "exposure_score"])
-                    .properties(width=250, height=250,title=alt.Title(self.chart_header, fontSize=12, anchor='middle')))
+            yoy_chart = (alt.Chart(self.dataset_ranked)
+                         .mark_bar(size=30, cornerRadiusTopLeft=3,
+                                   cornerRadiusTopRight=3)
+                         .encode(
+                x=alt.X('year:N', axis=alt.Axis(
+                    title='Year', titleFontSize=12, titleFontWeight='bold')),
+                y=alt.Y('exposure_score:Q',    axis=alt.Axis(
+                    title='Risk Exposure', titleFontSize=12, titleFontWeight='bold')),
+                color=alt.Color(
+                    'sector_exposure_path_name'),
+                order=alt.Order(
+                    'Rank',
+                    sort='ascending'
+                ),
+                tooltip=["sector_exposure_path_name", "exposure_score"])
+                .properties(width=250, height=250, title=alt.Title(self.chart_header, fontSize=12, anchor='middle')))
 
-                st.altair_chart(yoy_chart, use_container_width=True)
+            st.altair_chart(yoy_chart, use_container_width=True)
         else:
             st.write('No Data Found for the Company')
 
@@ -453,23 +444,59 @@ class StartUpClass:
         if (not self.exp_control_dataset.empty):
 
             exp_control_chart = (alt.Chart(self.exp_control_dataset)
-                                .mark_circle()
-                                  .encode(x=alt.X('exposure_score', axis=alt.Axis(title='Exposure Score', titleFontSize=12, titleFontWeight='bold')),
-                                          y=alt.Y('exposure_control_score',  axis=alt.Axis(
-                                            title='Exposure Control Score', titleFontSize=12, titleFontWeight='bold')),
-                                          color=alt.Color(
-                                              'sector_exposure_path_name'),
-                                          size="exposure_control_score", tooltip=["sector_exposure_path_name", "exposure_score", "exposure_control_score"])).properties( title=alt.Title(self.chart_header, fontSize=12, anchor='middle'))
+                                 .mark_circle()
+                                 .encode(x=alt.X('exposure_score', axis=alt.Axis(title='Exposure Score', titleFontSize=12, titleFontWeight='bold')),
+                                         y=alt.Y('exposure_control_score',  axis=alt.Axis(
+                                             title='Exposure Control Score', titleFontSize=12, titleFontWeight='bold')),
+                                         color=alt.Color(
+                                     'sector_exposure_path_name'),
+                size="exposure_control_score", tooltip=["sector_exposure_path_name", "exposure_score", "exposure_control_score"])).properties(title=alt.Title(self.chart_header, fontSize=12, anchor='middle'))
 
         # exp_control_chart =    alt.Chart(self.exp_control_dataset).mark_point().encode(
         #         x='exposure_score',
         #         y='exposure_control_score',
         #         color='sector_exposure_path_name',
         #     ).interactive()
-        
+
             st.altair_chart(exp_control_chart, use_container_width=True)
         else:
             st.write('No Data Found for the Company')
 
+
+class Top10_Chart_DB_Entity:
+    def __init__(self, top10_company_exposure='', degree_of_control_sector_normalized=0, degree_of_control_company_normalized=0, top10_sector_exposure='') -> None:
+        self.top10_company_exposure = top10_company_exposure
+        self.degree_of_control_sector_normalized = degree_of_control_sector_normalized
+        self.degree_of_control_company_normalized = degree_of_control_company_normalized
+        self.top10_sector_exposure = top10_sector_exposure
+
+
+class Triangle_Chart_DB_Entity:
+    def __init__(self, sector_exposure_path_name='',  Sector_EI=0,   Compnay_EI=0, Sector_EM=0, Company_EM=0, Sector_IM=0, Company_IM=0) -> None:
+        self.sector_exposure_path_name = sector_exposure_path_name
+        self.Sector_EI = Sector_EI
+        self.Compnay_EI = Compnay_EI
+        self.Sector_EM = Sector_EM
+        self.Company_EM = Company_EM
+        self.Sector_IM = Sector_IM
+        self.Company_IM = Company_IM
+
+
+class YOY_DB_Entity:
+    def __init__(self, year=0, company_name='', sector_exposure_path_name='', exposure_score=0, exposure_score_normalized=0) -> None:
+        self.company_name = company_name
+        self.sector_exposure_path_name = sector_exposure_path_name
+        self.exposure_score = exposure_score
+        self.exposure_score_normalized = exposure_score_normalized
+        self.year = year
+
+
+class Exposure_Control_Chart_DB_Entity:
+    def __init__(self, year=0, company_name='', sector_exposure_path_name='', exposure_score=0, exposure_control_score=0) -> None:
+        self.company_name = company_name
+        self.sector_exposure_path_name = sector_exposure_path_name
+        self.exposure_score = exposure_score
+        self.exposure_control_score = exposure_control_score
+        self.year = year
 
 startup = StartUpClass()

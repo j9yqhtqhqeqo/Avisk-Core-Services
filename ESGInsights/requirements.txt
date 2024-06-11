@@ -1,0 +1,8 @@
+
+plotly
+altair
+pandas 
+numpy 
+matplotlib 
+matplotlib 
+ 
