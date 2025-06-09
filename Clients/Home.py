@@ -3,11 +3,11 @@ from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from Utilities.Lookups import Lookups, Processing_Type
-import streamlit as st
-from DBEntities.LookupsDBManager import LookupsDBManager
-from streamlit_autorefresh import st_autorefresh
 import time
+from streamlit_autorefresh import st_autorefresh
+from DBEntities.LookupsDBManager import LookupsDBManager
+import streamlit as st
+from Utilities.Lookups import Lookups, Processing_Type
 
 
 class StartUpClass:
@@ -24,7 +24,7 @@ class StartUpClass:
     def run_online_Mode(self):
 
         database_context = st.radio(
-            "Database Context", ["Development", "Test"], index=1)
+            "Database Context", ["Development", "Test"], index=0)
         if (database_context == 'Development'):
             self.database_context = 'Development'
         else:

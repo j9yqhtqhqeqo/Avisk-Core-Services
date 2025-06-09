@@ -1,0 +1,966 @@
+﻿company_name,year,sector_exposure_path_name,Sector_EI,Compnay_EI,Sector_EM,Company_EM,Sector_IM,Company_IM,CHG_PER_STOCK_PRICE,Combined_score,sector_exposure_id,Normalized_Stock_Price_Change
+ANTERO RESOURCES Corp,2013,Associated Energy Costs,100,115,79,102,72,0,-0.357086302,217,0,-0.054377353
+ANTERO RESOURCES Corp,2013,Dividend/reinvestment balance for long-term growth,36,16,75,30,78,0,-0.357086302,46,1,-0.011526996
+ANTERO RESOURCES Corp,2013,GDP and Disposable Income,75,79,66,79,73,0,-0.357086302,158,2,-0.039592727
+ANTERO RESOURCES Corp,2013,Innovation,83,99,69,89,68,0,-0.357086302,188,3,-0.047110333
+ANTERO RESOURCES Corp,2013,Market Transition,71,72,60,75,67,0,-0.357086302,147,4,-0.036836271
+ANTERO RESOURCES Corp,2013,Professional Skills Development,36,34,77,66,79,0,-0.357086302,100,5,-0.025058688
+ANTERO RESOURCES Corp,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,105,100,114,100,0,-0.357086302,219,6,-0.054878526
+ANTERO RESOURCES Corp,2013,Regulated Carbon Price,70,73,79,71,80,0,-0.357086302,144,7,-0.036084511
+ANTERO RESOURCES Corp,2013,Wages and Benefits,42,54,94,82,80,0,-0.357086302,136,8,-0.034079815
+ANTERO RESOURCES Corp,2013,Well-being and health,28,22,50,48,56,0,-0.357086302,70,9,-0.017541082
+Callon Petroleum Co,2013,Associated Energy Costs,100,104,79,67,72,74,1.262162162,245,0,0.175798596
+Callon Petroleum Co,2013,Dividend/reinvestment balance for long-term growth,36,15,75,38,78,0,1.262162162,53,1,0.0380299
+Callon Petroleum Co,2013,GDP and Disposable Income,75,64,66,54,73,74,1.262162162,192,2,0.137768695
+Callon Petroleum Co,2013,Innovation,83,77,69,60,68,71,1.262162162,208,3,0.14924942
+Callon Petroleum Co,2013,Market Transition,71,87,60,58,67,70,1.262162162,215,4,0.154272237
+Callon Petroleum Co,2013,Professional Skills Development,36,37,77,64,79,68,1.262162162,169,5,0.121265154
+Callon Petroleum Co,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,119,100,93,100,80,1.262162162,292,6,0.209523224
+Callon Petroleum Co,2013,Regulated Carbon Price,70,52,79,58,80,77,1.262162162,187,7,0.134180969
+Callon Petroleum Co,2013,Wages and Benefits,42,32,94,63,80,65,1.262162162,160,8,0.114807246
+Callon Petroleum Co,2013,Well-being and health,28,6,50,32,56,0,1.262162162,38,9,0.027266721
+ConocoPhillips,2013,Associated Energy Costs,100,105,79,73,72,63,0.170549085,241,0,0.022448023
+ConocoPhillips,2013,Dividend/reinvestment balance for long-term growth,36,46,75,90,78,0,0.170549085,136,1,0.012667764
+ConocoPhillips,2013,GDP and Disposable Income,75,77,66,54,73,61,0.170549085,192,2,0.017883902
+ConocoPhillips,2013,Innovation,83,73,69,57,68,56,0.170549085,186,3,0.01732503
+ConocoPhillips,2013,Market Transition,71,57,60,48,67,55,0.170549085,160,4,0.014903252
+ConocoPhillips,2013,Professional Skills Development,36,58,77,102,79,37,0.170549085,197,5,0.018349628
+ConocoPhillips,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,53,100,66,100,86,0.170549085,205,6,0.019094791
+ConocoPhillips,2013,Regulated Carbon Price,70,78,79,65,80,56,0.170549085,199,7,0.018535919
+ConocoPhillips,2013,Wages and Benefits,42,48,94,71,80,94,0.170549085,213,8,0.019839954
+ConocoPhillips,2013,Well-being and health,28,33,50,69,56,0,0.170549085,102,9,0.009500823
+"EOG Resources, Inc.",2013,Associated Energy Costs,100,135,79,82,72,72,-0.234200158,289,0,-0.030962418
+"EOG Resources, Inc.",2013,Dividend/reinvestment balance for long-term growth,36,22,75,57,78,47,-0.234200158,126,1,-0.013499186
+"EOG Resources, Inc.",2013,GDP and Disposable Income,75,128,66,78,73,70,-0.234200158,276,2,-0.029569645
+"EOG Resources, Inc.",2013,Innovation,83,126,69,75,68,66,-0.234200158,267,3,-0.028605417
+"EOG Resources, Inc.",2013,Market Transition,71,75,60,58,67,65,-0.234200158,198,4,-0.021213006
+"EOG Resources, Inc.",2013,Professional Skills Development,36,38,77,66,79,64,-0.234200158,168,5,-0.017998914
+"EOG Resources, Inc.",2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,136,100,109,100,89,-0.234200158,334,6,-0.035783556
+"EOG Resources, Inc.",2013,Regulated Carbon Price,70,67,79,81,80,83,-0.234200158,231,7,-0.024748507
+"EOG Resources, Inc.",2013,Wages and Benefits,42,35,94,113,80,99,-0.234200158,247,8,-0.026462689
+"EOG Resources, Inc.",2013,Well-being and health,28,15,50,35,56,0,-0.234200158,50,9,-0.00535682
+EQT Corp,2013,Associated Energy Costs,100,56,79,58,72,57,0.431127983,171,0,0.048184892
+EQT Corp,2013,Dividend/reinvestment balance for long-term growth,36,19,75,51,78,0,0.431127983,70,1,0.01972481
+EQT Corp,2013,GDP and Disposable Income,75,53,66,67,73,61,0.431127983,181,2,0.051002722
+EQT Corp,2013,Innovation,83,49,69,61,68,51,0.431127983,161,3,0.045367062
+EQT Corp,2013,Market Transition,71,45,60,51,67,52,0.431127983,148,4,0.041703883
+EQT Corp,2013,Professional Skills Development,36,13,77,42,79,0,0.431127983,55,5,0.015498065
+EQT Corp,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,51,100,79,100,95,0.431127983,225,6,0.063401174
+EQT Corp,2013,Regulated Carbon Price,70,71,79,78,80,70,0.431127983,219,7,0.061710476
+EQT Corp,2013,Wages and Benefits,42,35,94,72,80,78,0.431127983,185,8,0.052129854
+EQT Corp,2013,Well-being and health,28,39,50,43,56,33,0.431127983,115,9,0.032405044
+Enerplus Resources (USA) Corporation,2013,Associated Energy Costs,100,188,79,91,72,68,0.370978782,347,0,0.055201388
+Enerplus Resources (USA) Corporation,2013,Dividend/reinvestment balance for long-term growth,36,31,75,60,78,0,0.370978782,91,1,0.014476445
+Enerplus Resources (USA) Corporation,2013,GDP and Disposable Income,75,126,66,78,73,71,0.370978782,275,2,0.043747498
+Enerplus Resources (USA) Corporation,2013,Innovation,83,133,69,79,68,72,0.370978782,284,3,0.045179234
+Enerplus Resources (USA) Corporation,2013,Market Transition,71,140,60,77,67,69,0.370978782,286,4,0.045497398
+Enerplus Resources (USA) Corporation,2013,Professional Skills Development,36,31,77,66,79,43,0.370978782,140,5,0.022271453
+Enerplus Resources (USA) Corporation,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,132,100,113,100,97,0.370978782,342,6,0.054405979
+Enerplus Resources (USA) Corporation,2013,Regulated Carbon Price,70,62,79,76,80,72,0.370978782,210,7,0.03340718
+Enerplus Resources (USA) Corporation,2013,Wages and Benefits,42,44,94,68,80,90,0.370978782,202,8,0.032134526
+Enerplus Resources (USA) Corporation,2013,Well-being and health,28,32,50,75,56,48,0.370978782,155,9,0.024657681
+Hess,2013,Associated Energy Costs,100,79,79,62,72,66,0.157380254,207,0,0.01717328
+Hess,2013,Dividend/reinvestment balance for long-term growth,36,29,75,50,78,73,0.157380254,152,1,0.012610331
+Hess,2013,GDP and Disposable Income,75,78,66,58,73,74,0.157380254,210,2,0.017422168
+Hess,2013,Innovation,83,69,69,49,68,50,0.157380254,168,3,0.013937735
+Hess,2013,Market Transition,71,64,60,49,67,52,0.157380254,165,4,0.013688847
+Hess,2013,Professional Skills Development,36,24,77,54,79,54,0.157380254,132,5,0.010951077
+Hess,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,44,100,58,100,79,0.157380254,181,6,0.01501625
+Hess,2013,Regulated Carbon Price,70,80,79,111,80,113,0.157380254,304,7,0.025220663
+Hess,2013,Wages and Benefits,42,45,94,87,80,109,0.157380254,241,8,0.019994012
+Hess,2013,Well-being and health,28,35,50,51,56,51,0.157380254,137,9,0.011365891
+MARATHON OIL,2013,Associated Energy Costs,100,126,79,89,72,77,0.053380783,292,0,0.006185392
+MARATHON OIL,2013,Dividend/reinvestment balance for long-term growth,36,46,75,125,78,111,0.053380783,282,1,0.005973564
+MARATHON OIL,2013,GDP and Disposable Income,75,92,66,69,73,74,0.053380783,235,2,0.00497797
+MARATHON OIL,2013,Innovation,83,81,69,80,68,70,0.053380783,231,3,0.004893238
+MARATHON OIL,2013,Market Transition,71,101,60,63,67,63,0.053380783,227,4,0.004808507
+MARATHON OIL,2013,Professional Skills Development,36,44,77,113,79,94,0.053380783,251,5,0.005316895
+MARATHON OIL,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,113,100,151,100,119,0.053380783,383,6,0.008113032
+MARATHON OIL,2013,Regulated Carbon Price,70,83,79,92,80,76,0.053380783,251,7,0.005316895
+MARATHON OIL,2013,Wages and Benefits,42,49,94,155,80,100,0.053380783,304,8,0.006439587
+MARATHON OIL,2013,Well-being and health,28,17,50,47,56,0,0.053380783,64,9,0.001355702
+PIONEER NATURAL RESOURCES,2013,Associated Energy Costs,100,150,79,120,72,77,0.506156942,347,0,0.068527686
+PIONEER NATURAL RESOURCES,2013,Dividend/reinvestment balance for long-term growth,36,95,75,180,78,115,0.506156942,390,1,0.077019589
+PIONEER NATURAL RESOURCES,2013,GDP and Disposable Income,75,85,66,71,73,63,0.506156942,219,2,0.043249462
+PIONEER NATURAL RESOURCES,2013,Innovation,83,126,69,123,68,86,0.506156942,335,3,0.066157852
+PIONEER NATURAL RESOURCES,2013,Market Transition,71,85,60,64,67,62,0.506156942,211,4,0.041669573
+PIONEER NATURAL RESOURCES,2013,Professional Skills Development,36,50,77,98,79,80,0.506156942,228,5,0.045026837
+PIONEER NATURAL RESOURCES,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,92,100,102,100,118,0.506156942,312,6,0.061615671
+PIONEER NATURAL RESOURCES,2013,Regulated Carbon Price,70,63,79,94,80,79,0.506156942,236,7,0.046606726
+PIONEER NATURAL RESOURCES,2013,Wages and Benefits,42,35,94,134,80,0,0.506156942,169,8,0.033375155
+PIONEER NATURAL RESOURCES,2013,Well-being and health,28,38,50,78,56,0,0.506156942,116,9,0.022908391
+Range Resources,2013,Associated Energy Costs,100,125,79,99,72,0,0.024320988,224,0,0.003445858
+Range Resources,2013,Dividend/reinvestment balance for long-term growth,36,28,75,48,78,0,0.024320988,76,1,0.00116913
+Range Resources,2013,GDP and Disposable Income,75,98,66,82,73,0,0.024320988,180,2,0.002768993
+Range Resources,2013,Innovation,83,125,69,85,68,0,0.024320988,210,3,0.003230492
+Range Resources,2013,Market Transition,71,93,60,75,67,0,0.024320988,168,4,0.002584393
+Range Resources,2013,Professional Skills Development,36,31,77,70,79,0,0.024320988,101,5,0.001553713
+Range Resources,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,127,100,124,100,0,0.024320988,251,6,0.003861207
+Range Resources,2013,Regulated Carbon Price,70,63,79,88,80,0,0.024320988,151,7,0.002322877
+Range Resources,2013,Wages and Benefits,42,36,94,130,80,0,0.024320988,166,8,0.002553627
+Range Resources,2013,Well-being and health,28,14,50,40,56,0,0.024320988,54,9,0.000830698
+SM Energy Co,2013,Associated Energy Costs,100,136,79,74,72,65,0.203816278,275,0,0.024888755
+SM Energy Co,2013,Dividend/reinvestment balance for long-term growth,36,45,75,78,78,71,0.203816278,194,1,0.017557885
+SM Energy Co,2013,GDP and Disposable Income,75,99,66,66,73,65,0.203816278,230,2,0.02081605
+SM Energy Co,2013,Innovation,83,123,69,65,68,64,0.203816278,252,3,0.02280715
+SM Energy Co,2013,Market Transition,71,127,60,84,67,72,0.203816278,283,4,0.025612792
+SM Energy Co,2013,Professional Skills Development,36,47,77,116,79,88,0.203816278,251,5,0.022716646
+SM Energy Co,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,113,100,106,100,93,0.203816278,312,6,0.028237424
+SM Energy Co,2013,Regulated Carbon Price,70,59,79,70,80,65,0.203816278,194,7,0.017557885
+SM Energy Co,2013,Wages and Benefits,42,33,94,101,80,81,0.203816278,215,8,0.019458481
+SM Energy Co,2013,Well-being and health,28,15,50,31,56,0,0.203816278,46,9,0.00416321
+SOUTHWESTERN ENERGY CO,2013,Associated Energy Costs,100,167,79,100,72,82,0.234836286,349,0,0.033922957
+SOUTHWESTERN ENERGY CO,2013,Dividend/reinvestment balance for long-term growth,36,33,75,57,78,0,0.234836286,90,1,0.00874804
+SOUTHWESTERN ENERGY CO,2013,GDP and Disposable Income,75,131,66,84,73,82,0.234836286,297,2,0.028868534
+SOUTHWESTERN ENERGY CO,2013,Innovation,83,108,69,82,68,81,0.234836286,271,3,0.026341322
+SOUTHWESTERN ENERGY CO,2013,Market Transition,71,104,60,72,67,80,0.234836286,256,4,0.024883315
+SOUTHWESTERN ENERGY CO,2013,Professional Skills Development,36,39,77,77,79,64,0.234836286,180,5,0.017496081
+SOUTHWESTERN ENERGY CO,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,131,100,169,100,129,0.234836286,429,6,0.041698993
+SOUTHWESTERN ENERGY CO,2013,Regulated Carbon Price,70,74,79,89,80,94,0.234836286,257,7,0.024980516
+SOUTHWESTERN ENERGY CO,2013,Wages and Benefits,42,37,94,82,80,107,0.234836286,226,8,0.021967302
+SOUTHWESTERN ENERGY CO,2013,Well-being and health,28,19,50,42,56,0,0.234836286,61,9,0.005929227
+Seneca Resources/NATIONAL FUEL GAS CO,2013,Associated Energy Costs,100,37,79,37,72,35,0.141646292,109,0,0.026036165
+Seneca Resources/NATIONAL FUEL GAS CO,2013,Dividend/reinvestment balance for long-term growth,36,17,75,30,78,39,0.141646292,86,1,0.020542295
+Seneca Resources/NATIONAL FUEL GAS CO,2013,GDP and Disposable Income,75,26,66,29,73,34,0.141646292,89,2,0.021258887
+Seneca Resources/NATIONAL FUEL GAS CO,2013,Innovation,83,37,69,27,68,31,0.141646292,95,3,0.02269207
+Seneca Resources/NATIONAL FUEL GAS CO,2013,Market Transition,71,26,60,28,67,33,0.141646292,87,4,0.020781159
+Seneca Resources/NATIONAL FUEL GAS CO,2013,Professional Skills Development,36,6,77,16,79,0,0.141646292,22,5,0.005255006
+Seneca Resources/NATIONAL FUEL GAS CO,2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,26,100,43,100,36,0.141646292,105,6,0.025080709
+"VITAL ENERGY, INC.",2013,Associated Energy Costs,100,152,79,90,72,0,0.41388737,242,0,0.06077715
+"VITAL ENERGY, INC.",2013,Dividend/reinvestment balance for long-term growth,36,14,75,39,78,0,0.41388737,53,1,0.013310698
+"VITAL ENERGY, INC.",2013,GDP and Disposable Income,75,93,66,69,73,0,0.41388737,162,2,0.04068553
+"VITAL ENERGY, INC.",2013,Innovation,83,137,69,85,68,0,0.41388737,222,3,0.055754245
+"VITAL ENERGY, INC.",2013,Market Transition,71,109,60,70,67,0,0.41388737,179,4,0.044955
+"VITAL ENERGY, INC.",2013,Professional Skills Development,36,52,77,111,79,0,0.41388737,163,5,0.040936676
+"VITAL ENERGY, INC.",2013,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",91,159,100,146,100,0,0.41388737,305,6,0.076599301
+"VITAL ENERGY, INC.",2013,Regulated Carbon Price,70,67,79,77,80,0,0.41388737,144,7,0.036164916
+"VITAL ENERGY, INC.",2013,Wages and Benefits,42,41,94,83,80,0,0.41388737,124,8,0.031142011
+"VITAL ENERGY, INC.",2013,Well-being and health,28,22,50,32,56,0,0.41388737,54,9,0.013561843
+ANTERO RESOURCES Corp,2014,Associated Energy Costs,100,120,78,102,66,0,-0.464285714,222,0,-0.067721044
+ANTERO RESOURCES Corp,2014,Dividend/reinvestment balance for long-term growth,32,20,68,37,77,0,-0.464285714,57,1,-0.017387836
+ANTERO RESOURCES Corp,2014,GDP and Disposable Income,77,91,68,88,68,0,-0.464285714,179,2,-0.054603905
+ANTERO RESOURCES Corp,2014,Innovation,85,111,71,88,65,0,-0.464285714,199,3,-0.0607049
+ANTERO RESOURCES Corp,2014,Market Transition,74,86,62,77,61,0,-0.464285714,163,4,-0.049723109
+ANTERO RESOURCES Corp,2014,Professional Skills Development,38,36,84,82,79,0,-0.464285714,118,5,-0.03599587
+ANTERO RESOURCES Corp,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,117,100,116,96,0,-0.464285714,233,6,-0.071076591
+ANTERO RESOURCES Corp,2014,Regulated Carbon Price,67,75,79,74,79,0,-0.464285714,149,7,-0.045452412
+ANTERO RESOURCES Corp,2014,Wages and Benefits,42,49,96,84,100,0,-0.464285714,133,8,-0.040571616
+ANTERO RESOURCES Corp,2014,Well-being and health,29,21,52,48,43,0,-0.464285714,69,9,-0.021048433
+Callon Petroleum Co,2014,Associated Energy Costs,100,111,78,70,66,69,-0.107526882,250,0,-0.014959221
+Callon Petroleum Co,2014,Dividend/reinvestment balance for long-term growth,32,18,68,42,77,0,-0.107526882,60,1,-0.003590213
+Callon Petroleum Co,2014,GDP and Disposable Income,77,64,68,52,68,71,-0.107526882,187,2,-0.011189497
+Callon Petroleum Co,2014,Innovation,85,80,71,61,65,66,-0.107526882,207,3,-0.012386235
+Callon Petroleum Co,2014,Market Transition,74,93,62,57,61,63,-0.107526882,213,4,-0.012745256
+Callon Petroleum Co,2014,Professional Skills Development,38,37,84,72,79,62,-0.107526882,171,5,-0.010232107
+Callon Petroleum Co,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,134,100,98,96,81,-0.107526882,313,6,-0.018728945
+Callon Petroleum Co,2014,Regulated Carbon Price,67,53,79,64,79,69,-0.107526882,186,7,-0.011129661
+Callon Petroleum Co,2014,Wages and Benefits,42,34,96,67,100,72,-0.107526882,173,8,-0.010351781
+Callon Petroleum Co,2014,Well-being and health,29,9,52,28,43,0,-0.107526882,37,9,-0.002213965
+ConocoPhillips,2014,Associated Energy Costs,100,90,78,69,66,58,-0.114996446,217,0,-0.012384233
+ConocoPhillips,2014,Dividend/reinvestment balance for long-term growth,32,43,68,102,77,112,-0.114996446,257,1,-0.014667041
+ConocoPhillips,2014,GDP and Disposable Income,77,80,68,56,68,58,-0.114996446,194,2,-0.011071618
+ConocoPhillips,2014,Innovation,85,74,71,55,65,51,-0.114996446,180,3,-0.010272635
+ConocoPhillips,2014,Market Transition,74,57,62,45,61,51,-0.114996446,153,4,-0.00873174
+ConocoPhillips,2014,Professional Skills Development,38,67,84,128,79,75,-0.114996446,270,5,-0.015408953
+ConocoPhillips,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,52,100,66,96,78,-0.114996446,196,6,-0.011185759
+ConocoPhillips,2014,Regulated Carbon Price,67,82,79,68,79,55,-0.114996446,205,7,-0.01169939
+ConocoPhillips,2014,Wages and Benefits,42,51,96,71,100,78,-0.114996446,200,8,-0.011414039
+ConocoPhillips,2014,Well-being and health,29,29,52,73,43,41,-0.114996446,143,9,-0.008161038
+"EOG Resources, Inc.",2014,Associated Energy Costs,100,126,78,81,66,0,0.869726281,207,0,0.121479987
+"EOG Resources, Inc.",2014,Dividend/reinvestment balance for long-term growth,32,26,68,65,77,0,0.869726281,91,1,0.053404245
+"EOG Resources, Inc.",2014,GDP and Disposable Income,77,111,68,76,68,0,0.869726281,187,2,0.10974279
+"EOG Resources, Inc.",2014,Innovation,85,117,71,76,65,0,0.869726281,193,3,0.113263949
+"EOG Resources, Inc.",2014,Market Transition,74,74,62,58,61,0,0.869726281,132,4,0.077465499
+"EOG Resources, Inc.",2014,Professional Skills Development,38,35,84,67,79,0,0.869726281,102,5,0.059859704
+"EOG Resources, Inc.",2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,132,100,113,96,0,0.869726281,245,6,0.14378066
+"EOG Resources, Inc.",2014,Regulated Carbon Price,67,58,79,75,79,0,0.869726281,133,7,0.078052359
+"EOG Resources, Inc.",2014,Wages and Benefits,42,33,96,112,100,0,0.869726281,145,8,0.085094677
+"EOG Resources, Inc.",2014,Well-being and health,29,15,52,32,43,0,0.869726281,47,9,0.027582412
+EQT Corp,2014,Associated Energy Costs,100,62,78,64,66,54,-0.145509663,180,0,-0.015452354
+EQT Corp,2014,Dividend/reinvestment balance for long-term growth,32,23,68,64,77,0,-0.145509663,87,1,-0.007468638
+EQT Corp,2014,GDP and Disposable Income,77,58,68,73,68,67,-0.145509663,198,2,-0.016997589
+EQT Corp,2014,Innovation,85,65,71,75,65,57,-0.145509663,197,3,-0.016911743
+EQT Corp,2014,Market Transition,74,50,62,60,61,56,-0.145509663,166,4,-0.014250504
+EQT Corp,2014,Professional Skills Development,38,14,84,43,79,41,-0.145509663,98,5,-0.008412948
+EQT Corp,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,51,100,76,96,98,-0.145509663,225,6,-0.019315442
+EQT Corp,2014,Regulated Carbon Price,67,71,79,86,79,74,-0.145509663,231,7,-0.01983052
+EQT Corp,2014,Wages and Benefits,42,36,96,74,100,88,-0.145509663,198,8,-0.016997589
+EQT Corp,2014,Well-being and health,29,40,52,44,43,31,-0.145509663,115,9,-0.009872337
+Enerplus Resources (USA) Corporation,2014,Associated Energy Costs,100,182,78,82,66,74,-0.493759361,338,0,-0.07303749
+Enerplus Resources (USA) Corporation,2014,Dividend/reinvestment balance for long-term growth,32,25,68,51,77,41,-0.493759361,117,1,-0.025282208
+Enerplus Resources (USA) Corporation,2014,GDP and Disposable Income,77,139,68,86,68,78,-0.493759361,303,2,-0.065474436
+Enerplus Resources (USA) Corporation,2014,Innovation,85,137,71,78,65,77,-0.493759361,292,3,-0.063097476
+Enerplus Resources (USA) Corporation,2014,Market Transition,74,141,62,72,61,75,-0.493759361,288,4,-0.062233127
+Enerplus Resources (USA) Corporation,2014,Professional Skills Development,38,27,84,54,79,38,-0.493759361,119,5,-0.025714382
+Enerplus Resources (USA) Corporation,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,128,100,100,96,93,-0.493759361,321,6,-0.069364007
+Enerplus Resources (USA) Corporation,2014,Regulated Carbon Price,67,56,79,72,79,64,-0.493759361,192,7,-0.041488752
+Enerplus Resources (USA) Corporation,2014,Wages and Benefits,42,30,96,52,100,71,-0.493759361,153,8,-0.033061349
+Enerplus Resources (USA) Corporation,2014,Well-being and health,29,41,52,71,43,50,-0.493759361,162,9,-0.035006134
+Hess,2014,Associated Energy Costs,100,79,78,62,66,57,-0.181105212,198,0,-0.019013166
+Hess,2014,Dividend/reinvestment balance for long-term growth,32,27,68,57,77,60,-0.181105212,144,1,-0.013827757
+Hess,2014,GDP and Disposable Income,77,65,68,58,68,69,-0.181105212,192,2,-0.01843701
+Hess,2014,Innovation,85,62,71,50,65,43,-0.181105212,155,3,-0.014884044
+Hess,2014,Market Transition,74,65,62,50,61,45,-0.181105212,160,4,-0.015364175
+Hess,2014,Professional Skills Development,38,26,84,59,79,45,-0.181105212,130,5,-0.012483392
+Hess,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,48,100,65,96,76,-0.181105212,189,6,-0.018148932
+Hess,2014,Regulated Carbon Price,67,104,79,140,79,117,-0.181105212,361,7,-0.03466542
+Hess,2014,Wages and Benefits,42,43,96,82,100,102,-0.181105212,227,8,-0.021797923
+Hess,2014,Well-being and health,29,31,52,57,43,42,-0.181105212,130,9,-0.012483392
+MARATHON OIL,2014,Associated Energy Costs,100,119,78,87,66,77,-0.264921171,283,0,-0.031264675
+MARATHON OIL,2014,Dividend/reinvestment balance for long-term growth,32,46,68,114,77,87,-0.264921171,247,1,-0.027287543
+MARATHON OIL,2014,GDP and Disposable Income,77,89,68,73,68,74,-0.264921171,236,2,-0.026072309
+MARATHON OIL,2014,Innovation,85,80,71,76,65,71,-0.264921171,227,3,-0.025078026
+MARATHON OIL,2014,Market Transition,74,93,62,65,61,69,-0.264921171,227,4,-0.025078026
+MARATHON OIL,2014,Professional Skills Development,38,47,84,121,79,91,-0.264921171,259,5,-0.028613254
+MARATHON OIL,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,120,100,148,96,110,-0.264921171,378,6,-0.041759884
+MARATHON OIL,2014,Regulated Carbon Price,67,76,79,91,79,74,-0.264921171,241,7,-0.026624688
+MARATHON OIL,2014,Wages and Benefits,42,40,96,114,100,82,-0.264921171,236,8,-0.026072309
+MARATHON OIL,2014,Well-being and health,29,19,52,45,43,0,-0.264921171,64,9,-0.007070457
+PIONEER NATURAL RESOURCES,2014,Associated Energy Costs,100,136,78,108,66,0,-0.126269103,244,0,-0.019928629
+PIONEER NATURAL RESOURCES,2014,Dividend/reinvestment balance for long-term growth,32,48,68,72,77,0,-0.126269103,120,1,-0.009800965
+PIONEER NATURAL RESOURCES,2014,GDP and Disposable Income,77,71,68,65,68,0,-0.126269103,136,2,-0.011107761
+PIONEER NATURAL RESOURCES,2014,Innovation,85,113,71,99,65,0,-0.126269103,212,3,-0.017315039
+PIONEER NATURAL RESOURCES,2014,Market Transition,74,87,62,63,61,0,-0.126269103,150,4,-0.012251207
+PIONEER NATURAL RESOURCES,2014,Professional Skills Development,38,51,84,97,79,0,-0.126269103,148,5,-0.012087857
+PIONEER NATURAL RESOURCES,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,82,100,86,96,0,-0.126269103,168,6,-0.013721351
+PIONEER NATURAL RESOURCES,2014,Regulated Carbon Price,67,47,79,63,79,0,-0.126269103,110,7,-0.008984218
+PIONEER NATURAL RESOURCES,2014,Wages and Benefits,42,33,96,98,100,0,-0.126269103,131,8,-0.010699387
+PIONEER NATURAL RESOURCES,2014,Well-being and health,29,38,52,89,43,0,-0.126269103,127,9,-0.010372688
+Range Resources,2014,Associated Energy Costs,100,129,78,94,66,71,-0.372785344,294,0,-0.049191603
+Range Resources,2014,Dividend/reinvestment balance for long-term growth,32,27,68,48,77,72,-0.372785344,147,1,-0.024595801
+Range Resources,2014,GDP and Disposable Income,77,92,68,77,68,73,-0.372785344,242,2,-0.040491047
+Range Resources,2014,Innovation,85,102,71,74,65,70,-0.372785344,246,3,-0.041160321
+Range Resources,2014,Market Transition,74,87,62,72,61,70,-0.372785344,229,4,-0.038315908
+Range Resources,2014,Professional Skills Development,38,32,84,76,79,57,-0.372785344,165,5,-0.027607532
+Range Resources,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,134,100,131,96,93,-0.372785344,358,6,-0.059899979
+Range Resources,2014,Regulated Carbon Price,67,57,79,76,79,94,-0.372785344,227,7,-0.037981272
+Range Resources,2014,Wages and Benefits,42,34,96,127,100,112,-0.372785344,273,8,-0.045677917
+Range Resources,2014,Well-being and health,29,13,52,34,43,0,-0.372785344,47,9,-0.007863964
+SM Energy Co,2014,Associated Energy Costs,100,143,78,76,66,59,-0.275073643,278,0,-0.034214977
+SM Energy Co,2014,Dividend/reinvestment balance for long-term growth,32,49,68,88,77,84,-0.275073643,221,1,-0.027199676
+SM Energy Co,2014,GDP and Disposable Income,77,106,68,65,68,59,-0.275073643,230,2,-0.028307355
+SM Energy Co,2014,Innovation,85,149,71,70,65,59,-0.275073643,278,3,-0.034214977
+SM Energy Co,2014,Market Transition,74,119,62,76,61,64,-0.275073643,259,4,-0.031876543
+SM Energy Co,2014,Professional Skills Development,38,49,84,99,79,81,-0.275073643,229,5,-0.028184279
+SM Energy Co,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,111,100,109,96,89,-0.275073643,309,6,-0.038030316
+SM Energy Co,2014,Regulated Carbon Price,67,58,79,82,79,62,-0.275073643,202,7,-0.024861242
+SM Energy Co,2014,Wages and Benefits,42,27,96,82,100,72,-0.275073643,181,8,-0.022276657
+SM Energy Co,2014,Well-being and health,29,14,52,34,43,0,-0.275073643,48,9,-0.005907622
+SOUTHWESTERN ENERGY CO,2014,Associated Energy Costs,100,176,78,102,66,0,-0.495979135,278,0,-0.079015587
+SOUTHWESTERN ENERGY CO,2014,Dividend/reinvestment balance for long-term growth,32,30,68,52,77,0,-0.495979135,82,1,-0.023306756
+SOUTHWESTERN ENERGY CO,2014,GDP and Disposable Income,77,141,68,86,68,0,-0.495979135,227,2,-0.064519922
+SOUTHWESTERN ENERGY CO,2014,Innovation,85,124,71,90,65,0,-0.495979135,214,3,-0.060824948
+SOUTHWESTERN ENERGY CO,2014,Market Transition,74,114,62,75,61,0,-0.495979135,189,4,-0.05371923
+SOUTHWESTERN ENERGY CO,2014,Professional Skills Development,38,52,84,95,79,0,-0.495979135,147,5,-0.041781623
+SOUTHWESTERN ENERGY CO,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,126,100,151,96,0,-0.495979135,277,6,-0.078731358
+SOUTHWESTERN ENERGY CO,2014,Regulated Carbon Price,67,77,79,82,79,0,-0.495979135,159,7,-0.045192368
+SOUTHWESTERN ENERGY CO,2014,Wages and Benefits,42,37,96,77,100,0,-0.495979135,114,8,-0.032402075
+SOUTHWESTERN ENERGY CO,2014,Well-being and health,29,19,52,39,43,0,-0.495979135,58,9,-0.016485266
+Seneca Resources/NATIONAL FUEL GAS CO,2014,Associated Energy Costs,100,42,78,49,66,39,-0.138635066,130,0,-0.027101592
+Seneca Resources/NATIONAL FUEL GAS CO,2014,Dividend/reinvestment balance for long-term growth,32,10,68,21,77,36,-0.138635066,67,1,-0.013967743
+Seneca Resources/NATIONAL FUEL GAS CO,2014,GDP and Disposable Income,77,26,68,31,68,31,-0.138635066,88,2,-0.018345693
+Seneca Resources/NATIONAL FUEL GAS CO,2014,Innovation,85,28,71,28,65,30,-0.138635066,86,3,-0.017928745
+Seneca Resources/NATIONAL FUEL GAS CO,2014,Market Transition,74,21,62,35,61,34,-0.138635066,90,4,-0.018762641
+Seneca Resources/NATIONAL FUEL GAS CO,2014,Professional Skills Development,38,7,84,23,79,0,-0.138635066,30,5,-0.006254214
+Seneca Resources/NATIONAL FUEL GAS CO,2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,26,100,49,96,43,-0.138635066,118,6,-0.024599906
+Seneca Resources/NATIONAL FUEL GAS CO,2014,Wages and Benefits,42,9,96,17,100,30,-0.138635066,56,8,-0.011674532
+"VITAL ENERGY, INC.",2014,Associated Energy Costs,100,132,78,89,66,73,-0.495746326,294,0,-0.063897159
+"VITAL ENERGY, INC.",2014,Dividend/reinvestment balance for long-term growth,32,18,68,39,77,0,-0.495746326,57,1,-0.012388225
+"VITAL ENERGY, INC.",2014,GDP and Disposable Income,77,80,68,70,68,70,-0.495746326,220,2,-0.047814201
+"VITAL ENERGY, INC.",2014,Innovation,85,121,71,87,65,65,-0.495746326,273,3,-0.059333076
+"VITAL ENERGY, INC.",2014,Market Transition,74,98,62,71,61,61,-0.495746326,230,4,-0.049987573
+"VITAL ENERGY, INC.",2014,Professional Skills Development,38,57,84,107,79,75,-0.495746326,239,5,-0.051943609
+"VITAL ENERGY, INC.",2014,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",93,164,100,167,96,111,-0.495746326,442,6,-0.096063076
+"VITAL ENERGY, INC.",2014,Regulated Carbon Price,67,75,79,84,79,86,-0.495746326,245,7,-0.053247633
+"VITAL ENERGY, INC.",2014,Wages and Benefits,42,42,96,104,100,83,-0.495746326,229,8,-0.049770236
+"VITAL ENERGY, INC.",2014,Well-being and health,29,16,52,36,43,0,-0.495746326,52,9,-0.011301538
+ANTERO RESOURCES Corp,2016,Associated Energy Costs,97,125,74,100,77,84,-0.19464211,309,0,-0.02611568
+ANTERO RESOURCES Corp,2016,Dividend/reinvestment balance for long-term growth,30,19,54,31,66,0,-0.19464211,50,1,-0.004225838
+ANTERO RESOURCES Corp,2016,GDP and Disposable Income,77,100,65,94,76,89,-0.19464211,283,2,-0.023918245
+ANTERO RESOURCES Corp,2016,Innovation,85,121,66,91,80,81,-0.19464211,293,3,-0.024763412
+ANTERO RESOURCES Corp,2016,Market Transition,72,94,58,76,70,80,-0.19464211,250,4,-0.021129191
+ANTERO RESOURCES Corp,2016,Professional Skills Development,32,39,60,76,70,64,-0.19464211,179,5,-0.015128501
+ANTERO RESOURCES Corp,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,129,100,125,100,100,-0.19464211,354,6,-0.029918935
+ANTERO RESOURCES Corp,2016,Regulated Carbon Price,70,76,74,88,83,93,-0.19464211,257,7,-0.021720809
+ANTERO RESOURCES Corp,2016,Wages and Benefits,41,62,77,107,87,100,-0.19464211,269,8,-0.02273501
+ANTERO RESOURCES Corp,2016,Well-being and health,29,20,50,39,52,0,-0.19464211,59,9,-0.004986489
+Callon Petroleum Co,2016,Associated Energy Costs,97,108,74,70,77,77,0.48700565,255,0,0.067419349
+Callon Petroleum Co,2016,Dividend/reinvestment balance for long-term growth,30,20,54,38,66,0,0.48700565,58,1,0.015334597
+Callon Petroleum Co,2016,GDP and Disposable Income,77,68,65,53,76,77,0.48700565,198,2,0.052349142
+Callon Petroleum Co,2016,Innovation,85,70,66,61,80,73,0.48700565,204,3,0.053935479
+Callon Petroleum Co,2016,Market Transition,72,86,58,56,70,69,0.48700565,211,4,0.055786206
+Callon Petroleum Co,2016,Professional Skills Development,32,36,60,64,70,74,0.48700565,174,5,0.046003791
+Callon Petroleum Co,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,157,100,107,100,92,0.48700565,356,6,0.094122699
+Callon Petroleum Co,2016,Regulated Carbon Price,70,56,74,55,83,78,0.48700565,189,7,0.049969635
+Callon Petroleum Co,2016,Wages and Benefits,41,29,77,56,87,79,0.48700565,164,8,0.043359895
+Callon Petroleum Co,2016,Well-being and health,29,10,50,23,52,0,0.48700565,33,9,0.008724857
+ConocoPhillips,2016,Associated Energy Costs,97,119,74,63,77,66,0.238390862,248,0,0.031717239
+ConocoPhillips,2016,Dividend/reinvestment balance for long-term growth,30,32,54,46,66,0,0.238390862,78,1,0.009975583
+ConocoPhillips,2016,GDP and Disposable Income,77,103,65,60,76,72,0.238390862,235,2,0.030054642
+ConocoPhillips,2016,Innovation,85,115,66,54,80,61,0.238390862,230,3,0.029415181
+ConocoPhillips,2016,Market Transition,72,84,58,42,70,62,0.238390862,188,4,0.024043714
+ConocoPhillips,2016,Professional Skills Development,32,30,60,43,70,46,0.238390862,119,5,0.015219159
+ConocoPhillips,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,61,100,56,100,84,0.238390862,201,6,0.025706311
+ConocoPhillips,2016,Regulated Carbon Price,70,97,74,81,83,81,0.238390862,259,7,0.033124052
+ConocoPhillips,2016,Wages and Benefits,41,46,77,63,87,95,0.238390862,204,8,0.026089987
+ConocoPhillips,2016,Well-being and health,29,19,50,42,52,41,0.238390862,102,9,0.013044994
+"EOG Resources, Inc.",2016,Associated Energy Costs,97,137,74,84,77,73,0.343993326,294,0,0.044221267
+"EOG Resources, Inc.",2016,Dividend/reinvestment balance for long-term growth,30,30,54,51,66,81,0.343993326,162,1,0.024366821
+"EOG Resources, Inc.",2016,GDP and Disposable Income,77,116,65,75,76,75,0.343993326,266,2,0.040009718
+"EOG Resources, Inc.",2016,Innovation,85,126,66,76,80,74,0.343993326,276,3,0.041513843
+"EOG Resources, Inc.",2016,Market Transition,72,84,58,58,70,70,0.343993326,212,4,0.031887444
+"EOG Resources, Inc.",2016,Professional Skills Development,32,39,60,66,70,67,0.343993326,172,5,0.025870945
+"EOG Resources, Inc.",2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,156,100,121,100,102,0.343993326,379,6,0.057006327
+"EOG Resources, Inc.",2016,Regulated Carbon Price,70,58,74,62,83,88,0.343993326,208,7,0.031285794
+"EOG Resources, Inc.",2016,Wages and Benefits,41,38,77,118,87,116,0.343993326,272,8,0.040912193
+"EOG Resources, Inc.",2016,Well-being and health,29,15,50,31,52,0,0.343993326,46,9,0.006918974
+EQT Corp,2016,Associated Energy Costs,97,64,74,69,77,57,-0.091256831,190,0,-0.011208014
+EQT Corp,2016,Dividend/reinvestment balance for long-term growth,30,21,54,50,66,0,-0.091256831,71,1,-0.004188258
+EQT Corp,2016,GDP and Disposable Income,77,56,65,63,76,61,-0.091256831,180,2,-0.010618119
+EQT Corp,2016,Innovation,85,55,66,66,80,51,-0.091256831,172,3,-0.010146202
+EQT Corp,2016,Market Transition,72,47,58,51,70,51,-0.091256831,149,4,-0.008789443
+EQT Corp,2016,Professional Skills Development,32,13,60,30,70,31,-0.091256831,74,5,-0.004365227
+EQT Corp,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,55,100,70,100,91,-0.091256831,216,6,-0.012741742
+EQT Corp,2016,Regulated Carbon Price,70,80,74,74,83,70,-0.091256831,224,7,-0.013213659
+EQT Corp,2016,Wages and Benefits,41,25,77,65,87,85,-0.091256831,175,8,-0.010323171
+EQT Corp,2016,Well-being and health,29,27,50,34,52,35,-0.091256831,96,9,-0.005662997
+Enerplus Resources (USA) Corporation,2016,Associated Energy Costs,97,174,74,104,77,93,1.048346056,371,0,0.157464124
+Enerplus Resources (USA) Corporation,2016,Dividend/reinvestment balance for long-term growth,30,31,54,49,66,0,1.048346056,80,1,0.033954528
+Enerplus Resources (USA) Corporation,2016,GDP and Disposable Income,77,104,65,83,76,94,1.048346056,281,2,0.11926528
+Enerplus Resources (USA) Corporation,2016,Innovation,85,120,66,81,80,96,1.048346056,297,3,0.126056186
+Enerplus Resources (USA) Corporation,2016,Market Transition,72,144,58,91,70,96,1.048346056,331,4,0.14048686
+Enerplus Resources (USA) Corporation,2016,Professional Skills Development,32,37,60,52,70,70,1.048346056,159,5,0.067484625
+Enerplus Resources (USA) Corporation,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,161,100,125,100,116,1.048346056,402,6,0.170621504
+Enerplus Resources (USA) Corporation,2016,Regulated Carbon Price,70,72,74,75,83,98,1.048346056,245,7,0.103985742
+Enerplus Resources (USA) Corporation,2016,Wages and Benefits,41,42,77,56,87,88,1.048346056,186,8,0.078944278
+Enerplus Resources (USA) Corporation,2016,Well-being and health,29,32,50,45,52,41,1.048346056,118,9,0.050082929
+Hess,2016,Associated Energy Costs,97,78,74,64,77,64,-0.084330484,206,0,-0.008549252
+Hess,2016,Dividend/reinvestment balance for long-term growth,30,32,54,62,66,77,-0.084330484,171,1,-0.007096709
+Hess,2016,GDP and Disposable Income,77,71,65,56,76,67,-0.084330484,194,2,-0.008051237
+Hess,2016,Innovation,85,76,66,53,80,53,-0.084330484,182,3,-0.007553222
+Hess,2016,Market Transition,72,60,58,48,70,54,-0.084330484,162,4,-0.006723198
+Hess,2016,Professional Skills Development,32,28,60,58,70,55,-0.084330484,141,5,-0.005851672
+Hess,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,54,100,66,100,78,-0.084330484,198,6,-0.008217242
+Hess,2016,Regulated Carbon Price,70,140,74,124,83,109,-0.084330484,373,7,-0.015479956
+Hess,2016,Wages and Benefits,41,52,77,78,87,94,-0.084330484,224,8,-0.009296274
+Hess,2016,Well-being and health,29,46,50,71,52,64,-0.084330484,181,9,-0.007511721
+MARATHON OIL,2016,Associated Energy Costs,97,132,74,86,77,0,0.418312388,218,0,0.051696202
+MARATHON OIL,2016,Dividend/reinvestment balance for long-term growth,30,52,54,144,66,0,0.418312388,196,1,0.046479154
+MARATHON OIL,2016,GDP and Disposable Income,77,94,65,74,76,0,0.418312388,168,2,0.039839275
+MARATHON OIL,2016,Innovation,85,104,66,74,80,0,0.418312388,178,3,0.04221066
+MARATHON OIL,2016,Market Transition,72,100,58,67,70,0,0.418312388,167,4,0.039602137
+MARATHON OIL,2016,Professional Skills Development,32,52,60,122,70,0,0.418312388,174,5,0.041262106
+MARATHON OIL,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,121,100,163,100,0,0.418312388,284,6,0.067347346
+MARATHON OIL,2016,Regulated Carbon Price,70,74,74,89,83,0,0.418312388,163,7,0.038653582
+MARATHON OIL,2016,Wages and Benefits,41,42,77,121,87,0,0.418312388,163,8,0.038653582
+MARATHON OIL,2016,Well-being and health,29,15,50,38,52,0,0.418312388,53,9,0.012568343
+PIONEER NATURAL RESOURCES,2016,Associated Energy Costs,97,122,74,87,77,81,0.323220122,290,0,0.046402889
+PIONEER NATURAL RESOURCES,2016,Dividend/reinvestment balance for long-term growth,30,44,54,63,66,0,0.323220122,107,1,0.017121066
+PIONEER NATURAL RESOURCES,2016,GDP and Disposable Income,77,65,65,52,76,61,0.323220122,178,2,0.028481773
+PIONEER NATURAL RESOURCES,2016,Innovation,85,98,66,80,80,78,0.323220122,256,3,0.04096255
+PIONEER NATURAL RESOURCES,2016,Market Transition,72,70,58,50,70,60,0.323220122,180,4,0.028801793
+PIONEER NATURAL RESOURCES,2016,Professional Skills Development,32,55,60,94,70,80,0.323220122,229,5,0.036642281
+PIONEER NATURAL RESOURCES,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,79,100,85,100,103,0.323220122,267,6,0.04272266
+PIONEER NATURAL RESOURCES,2016,Regulated Carbon Price,70,64,74,70,83,62,0.323220122,196,7,0.031361952
+PIONEER NATURAL RESOURCES,2016,Wages and Benefits,41,36,77,89,87,58,0.323220122,183,8,0.029281823
+PIONEER NATURAL RESOURCES,2016,Well-being and health,29,32,50,59,52,43,0.323220122,134,9,0.021441335
+Range Resources,2016,Associated Energy Costs,97,135,74,89,77,85,-0.101297097,309,0,-0.013052879
+Range Resources,2016,Dividend/reinvestment balance for long-term growth,30,33,54,53,66,85,-0.101297097,171,1,-0.007223438
+Range Resources,2016,GDP and Disposable Income,77,94,65,72,76,83,-0.101297097,249,2,-0.010518339
+Range Resources,2016,Innovation,85,112,66,77,80,82,-0.101297097,271,3,-0.01144767
+Range Resources,2016,Market Transition,72,87,58,68,70,82,-0.101297097,237,4,-0.010011431
+Range Resources,2016,Professional Skills Development,32,33,60,73,70,65,-0.101297097,171,5,-0.007223438
+Range Resources,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,145,100,125,100,105,-0.101297097,375,6,-0.015840872
+Range Resources,2016,Regulated Carbon Price,70,68,74,79,83,116,-0.101297097,263,7,-0.011109732
+Range Resources,2016,Wages and Benefits,41,39,77,127,87,138,-0.101297097,304,8,-0.012841667
+Range Resources,2016,Well-being and health,29,15,50,33,52,0,-0.101297097,48,9,-0.002027632
+SM Energy Co,2016,Associated Energy Costs,97,138,74,66,77,0,0.281750267,204,0,0.038549332
+SM Energy Co,2016,Dividend/reinvestment balance for long-term growth,30,41,54,71,66,0,0.281750267,112,1,0.021164339
+SM Energy Co,2016,GDP and Disposable Income,77,101,65,58,76,0,0.281750267,159,2,0.030045803
+SM Energy Co,2016,Innovation,85,136,66,65,80,0,0.281750267,201,3,0.03798243
+SM Energy Co,2016,Market Transition,72,108,58,67,70,0,0.281750267,175,4,0.03306928
+SM Energy Co,2016,Professional Skills Development,32,45,60,93,70,0,0.281750267,138,5,0.02607749
+SM Energy Co,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,120,100,109,100,0,0.281750267,229,6,0.043273515
+SM Energy Co,2016,Regulated Carbon Price,70,62,74,67,83,0,0.281750267,129,7,0.024376784
+SM Energy Co,2016,Wages and Benefits,41,33,77,65,87,0,0.281750267,98,8,0.018518797
+SM Energy Co,2016,Well-being and health,29,14,50,32,52,0,0.281750267,46,9,0.008692497
+SOUTHWESTERN ENERGY CO,2016,Associated Energy Costs,97,119,74,67,77,74,0.012391574,260,0,0.001581644
+SOUTHWESTERN ENERGY CO,2016,Dividend/reinvestment balance for long-term growth,30,26,54,42,66,0,0.012391574,68,1,0.000413661
+SOUTHWESTERN ENERGY CO,2016,GDP and Disposable Income,77,117,65,68,76,74,0.012391574,259,2,0.001575561
+SOUTHWESTERN ENERGY CO,2016,Innovation,85,96,66,58,80,72,0.012391574,226,3,0.001374814
+SOUTHWESTERN ENERGY CO,2016,Market Transition,72,93,58,55,70,72,0.012391574,220,4,0.001338314
+SOUTHWESTERN ENERGY CO,2016,Professional Skills Development,32,30,60,64,70,73,0.012391574,167,5,0.001015902
+SOUTHWESTERN ENERGY CO,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,90,100,93,100,112,0.012391574,295,6,0.001794558
+SOUTHWESTERN ENERGY CO,2016,Regulated Carbon Price,70,62,74,71,83,82,0.012391574,215,7,0.001307898
+SOUTHWESTERN ENERGY CO,2016,Wages and Benefits,41,34,77,52,87,68,0.012391574,154,8,0.00093682
+SOUTHWESTERN ENERGY CO,2016,Well-being and health,29,58,50,64,52,51,0.012391574,173,9,0.001052402
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Associated Energy Costs,97,74,74,87,77,85,0.191208791,246,0,0.022767358
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Dividend/reinvestment balance for long-term growth,30,38,54,53,66,56,0.191208791,147,1,0.013604885
+Seneca Resources/NATIONAL FUEL GAS CO,2016,GDP and Disposable Income,77,74,65,77,76,84,0.191208791,235,2,0.021749306
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Innovation,85,83,66,82,80,81,0.191208791,246,3,0.022767358
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Market Transition,72,73,58,72,70,82,0.191208791,227,4,0.021008904
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Professional Skills Development,32,24,60,63,70,61,0.191208791,148,5,0.013697435
+Seneca Resources/NATIONAL FUEL GAS CO,2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,102,100,124,100,108,0.191208791,334,6,0.030911779
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Regulated Carbon Price,70,66,74,65,83,75,0.191208791,206,7,0.019065349
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Wages and Benefits,41,54,77,103,87,82,0.191208791,239,8,0.022119507
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Well-being and health,29,12,50,26,52,0,0.191208791,38,9,0.003516909
+"VITAL ENERGY, INC.",2016,Associated Energy Costs,97,133,74,78,77,83,0.84110971,294,0,0.103423779
+"VITAL ENERGY, INC.",2016,Dividend/reinvestment balance for long-term growth,30,27,54,55,66,0,0.84110971,82,1,0.028846088
+"VITAL ENERGY, INC.",2016,GDP and Disposable Income,77,111,65,68,76,88,0.84110971,267,2,0.093925677
+"VITAL ENERGY, INC.",2016,Innovation,85,141,66,83,80,89,0.84110971,313,3,0.110107628
+"VITAL ENERGY, INC.",2016,Market Transition,72,117,58,68,70,88,0.84110971,273,4,0.096036366
+"VITAL ENERGY, INC.",2016,Professional Skills Development,32,54,60,91,70,84,0.84110971,229,5,0.080557977
+"VITAL ENERGY, INC.",2016,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,157,100,155,100,122,0.84110971,434,6,0.152673197
+"VITAL ENERGY, INC.",2016,Regulated Carbon Price,70,58,74,74,83,102,0.84110971,234,7,0.082316885
+"VITAL ENERGY, INC.",2016,Wages and Benefits,41,34,77,77,87,100,0.84110971,211,8,0.074225909
+"VITAL ENERGY, INC.",2016,Well-being and health,29,21,50,33,52,0,0.84110971,54,9,0.018996204
+ANTERO RESOURCES Corp,2017,Associated Energy Costs,97,114,72,88,79,83,-0.521829522,285,0,-0.06651226
+ANTERO RESOURCES Corp,2017,Dividend/reinvestment balance for long-term growth,31,20,58,30,74,0,-0.521829522,50,1,-0.011668818
+ANTERO RESOURCES Corp,2017,GDP and Disposable Income,78,84,65,84,81,87,-0.521829522,255,2,-0.05951097
+ANTERO RESOURCES Corp,2017,Innovation,87,121,66,95,76,81,-0.521829522,297,3,-0.069312776
+ANTERO RESOURCES Corp,2017,Market Transition,74,85,58,71,74,80,-0.521829522,236,4,-0.055076819
+ANTERO RESOURCES Corp,2017,Professional Skills Development,33,34,62,68,70,71,-0.521829522,173,5,-0.040374109
+ANTERO RESOURCES Corp,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,131,100,116,100,107,-0.521829522,354,6,-0.082615228
+ANTERO RESOURCES Corp,2017,Regulated Carbon Price,79,82,80,93,92,90,-0.521829522,265,7,-0.061844733
+ANTERO RESOURCES Corp,2017,Wages and Benefits,42,56,85,101,87,109,-0.521829522,266,8,-0.06207811
+ANTERO RESOURCES Corp,2017,Well-being and health,25,21,40,34,51,0,-0.521829522,55,9,-0.012835699
+Callon Petroleum Co,2017,Associated Energy Costs,97,108,72,68,79,72,0.006079027,248,0,0.000762955
+Callon Petroleum Co,2017,Dividend/reinvestment balance for long-term growth,31,32,58,75,74,0,0.006079027,107,1,0.000329178
+Callon Petroleum Co,2017,GDP and Disposable Income,78,66,65,57,81,65,0.006079027,188,2,0.000578369
+Callon Petroleum Co,2017,Innovation,87,65,66,61,76,65,0.006079027,191,3,0.000587598
+Callon Petroleum Co,2017,Market Transition,74,78,58,56,74,61,0.006079027,195,4,0.000599904
+Callon Petroleum Co,2017,Professional Skills Development,33,37,62,64,70,72,0.006079027,173,5,0.000532223
+Callon Petroleum Co,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,143,100,105,100,98,0.006079027,346,6,0.001064445
+Callon Petroleum Co,2017,Regulated Carbon Price,79,68,80,77,92,78,0.006079027,223,7,0.000686044
+Callon Petroleum Co,2017,Wages and Benefits,42,39,85,115,87,109,0.006079027,263,8,0.000809101
+Callon Petroleum Co,2017,Well-being and health,25,9,40,33,51,0,0.006079027,42,9,0.00012921
+ConocoPhillips,2017,Associated Energy Costs,97,109,72,61,79,62,0.188891117,232,0,0.021988329
+ConocoPhillips,2017,Dividend/reinvestment balance for long-term growth,31,42,58,75,74,103,0.188891117,220,1,0.020851001
+ConocoPhillips,2017,GDP and Disposable Income,78,102,65,60,81,68,0.188891117,230,2,0.021798774
+ConocoPhillips,2017,Innovation,87,98,66,57,76,63,0.188891117,218,3,0.020661447
+ConocoPhillips,2017,Market Transition,74,88,58,50,74,65,0.188891117,203,4,0.019239788
+ConocoPhillips,2017,Professional Skills Development,33,34,62,46,70,51,0.188891117,131,5,0.012415824
+ConocoPhillips,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,66,100,58,100,87,0.188891117,211,6,0.019998006
+ConocoPhillips,2017,Regulated Carbon Price,79,130,80,85,92,86,0.188891117,301,7,0.028527961
+ConocoPhillips,2017,Wages and Benefits,42,50,85,69,87,90,0.188891117,209,8,0.019808451
+ConocoPhillips,2017,Well-being and health,25,12,40,26,51,0,0.188891117,38,9,0.003601537
+Crescent Energy Co,2017,Associated Energy Costs,97,142,72,62,79,77,-0.371057514,281,0,-0.051566351
+Crescent Energy Co,2017,Dividend/reinvestment balance for long-term growth,31,28,58,48,74,80,-0.371057514,156,1,-0.028627583
+Crescent Energy Co,2017,GDP and Disposable Income,78,120,65,54,81,73,-0.371057514,247,2,-0.045327006
+Crescent Energy Co,2017,Innovation,87,114,66,55,76,79,-0.371057514,248,3,-0.045510516
+Crescent Energy Co,2017,Market Transition,74,95,58,53,74,79,-0.371057514,227,4,-0.041656803
+Crescent Energy Co,2017,Professional Skills Development,33,29,62,87,70,79,-0.371057514,195,5,-0.035784478
+Crescent Energy Co,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,103,100,93,100,85,-0.371057514,281,6,-0.051566351
+Crescent Energy Co,2017,Regulated Carbon Price,79,32,80,52,92,71,-0.371057514,155,7,-0.028444073
+Crescent Energy Co,2017,Wages and Benefits,42,28,85,46,87,102,-0.371057514,176,8,-0.032297786
+Crescent Energy Co,2017,Well-being and health,25,14,40,42,51,0,-0.371057514,56,9,-0.010276568
+DEVON ENERGY CORP,2017,Associated Energy Costs,97,99,72,57,79,54,-0.23801534,210,0,-0.028808773
+DEVON ENERGY CORP,2017,Dividend/reinvestment balance for long-term growth,31,28,58,50,74,0,-0.23801534,78,1,-0.010700401
+DEVON ENERGY CORP,2017,GDP and Disposable Income,78,74,65,48,81,55,-0.23801534,177,2,-0.02428168
+DEVON ENERGY CORP,2017,Innovation,87,81,66,53,76,54,-0.23801534,188,3,-0.025790711
+DEVON ENERGY CORP,2017,Market Transition,74,75,58,50,74,56,-0.23801534,181,4,-0.024830419
+DEVON ENERGY CORP,2017,Professional Skills Development,33,43,62,91,70,73,-0.23801534,207,5,-0.028397219
+DEVON ENERGY CORP,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,82,100,82,100,96,-0.23801534,260,6,-0.035668005
+DEVON ENERGY CORP,2017,Regulated Carbon Price,79,81,80,64,92,70,-0.23801534,215,7,-0.029494696
+DEVON ENERGY CORP,2017,Wages and Benefits,42,40,85,50,87,91,-0.23801534,181,8,-0.024830419
+DEVON ENERGY CORP,2017,Well-being and health,25,15,40,23,51,0,-0.23801534,38,9,-0.005213016
+"EOG Resources, Inc.",2017,Associated Energy Costs,97,122,72,65,79,67,0.075936271,254,0,0.009189049
+"EOG Resources, Inc.",2017,Dividend/reinvestment balance for long-term growth,31,30,58,57,74,0,0.075936271,87,1,0.00314743
+"EOG Resources, Inc.",2017,GDP and Disposable Income,78,118,65,75,81,69,0.075936271,262,2,0.009478467
+"EOG Resources, Inc.",2017,Innovation,87,120,66,69,76,60,0.075936271,249,3,0.009008162
+"EOG Resources, Inc.",2017,Market Transition,74,80,58,47,74,58,0.075936271,185,4,0.006692811
+"EOG Resources, Inc.",2017,Professional Skills Development,33,37,62,61,70,58,0.075936271,156,5,0.005643668
+"EOG Resources, Inc.",2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,131,100,100,100,105,0.075936271,336,6,0.012155592
+"EOG Resources, Inc.",2017,Regulated Carbon Price,79,70,80,76,92,79,0.075936271,225,7,0.008139905
+"EOG Resources, Inc.",2017,Wages and Benefits,42,41,85,111,87,116,0.075936271,268,8,0.009695532
+"EOG Resources, Inc.",2017,Well-being and health,25,19,40,29,51,29,0.075936271,77,9,0.002785656
+EQT Corp,2017,Associated Energy Costs,97,77,72,69,79,55,-0.222489477,201,0,-0.026136987
+EQT Corp,2017,Dividend/reinvestment balance for long-term growth,31,21,58,58,74,0,-0.222489477,79,1,-0.010272746
+EQT Corp,2017,GDP and Disposable Income,78,68,65,63,81,64,-0.222489477,195,2,-0.025356779
+EQT Corp,2017,Innovation,87,69,66,69,76,55,-0.222489477,193,3,-0.025096709
+EQT Corp,2017,Market Transition,74,59,58,54,74,53,-0.222489477,166,4,-0.02158577
+EQT Corp,2017,Professional Skills Development,33,16,62,33,70,36,-0.222489477,85,5,-0.011052955
+EQT Corp,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,61,100,71,100,107,-0.222489477,239,6,-0.031078308
+EQT Corp,2017,Regulated Carbon Price,79,96,80,81,92,75,-0.222489477,252,7,-0.03276876
+EQT Corp,2017,Wages and Benefits,42,36,85,79,87,53,-0.222489477,168,8,-0.02184584
+EQT Corp,2017,Well-being and health,25,49,40,42,51,42,-0.222489477,133,9,-0.017294623
+Enerplus Resources (USA) Corporation,2017,Associated Energy Costs,97,172,72,106,79,95,0.398757764,373,0,0.056878258
+Enerplus Resources (USA) Corporation,2017,Dividend/reinvestment balance for long-term growth,31,33,58,53,74,0,0.398757764,86,1,0.013114022
+Enerplus Resources (USA) Corporation,2017,GDP and Disposable Income,78,112,65,90,81,97,0.398757764,299,2,0.0455941
+Enerplus Resources (USA) Corporation,2017,Innovation,87,136,66,93,76,100,0.398757764,329,3,0.050168759
+Enerplus Resources (USA) Corporation,2017,Market Transition,74,145,58,98,74,98,0.398757764,341,4,0.051998622
+Enerplus Resources (USA) Corporation,2017,Professional Skills Development,33,46,62,72,70,72,0.398757764,190,5,0.028972839
+Enerplus Resources (USA) Corporation,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,166,100,142,100,118,0.398757764,426,6,0.064960156
+Enerplus Resources (USA) Corporation,2017,Regulated Carbon Price,79,77,80,75,92,87,0.398757764,239,7,0.036444782
+Enerplus Resources (USA) Corporation,2017,Wages and Benefits,42,44,85,62,87,93,0.398757764,199,8,0.030345237
+Enerplus Resources (USA) Corporation,2017,Well-being and health,25,37,40,49,51,47,0.398757764,133,9,0.020280988
+Hess,2017,Associated Energy Costs,97,80,72,58,79,60,0.049989629,198,0,0.005214935
+Hess,2017,Dividend/reinvestment balance for long-term growth,31,29,58,56,74,68,0.049989629,153,1,0.004029722
+Hess,2017,GDP and Disposable Income,78,74,65,52,81,61,0.049989629,187,2,0.004925216
+Hess,2017,Innovation,87,61,66,47,76,48,0.049989629,156,3,0.004108737
+Hess,2017,Market Transition,74,61,58,44,74,51,0.049989629,156,4,0.004108737
+Hess,2017,Professional Skills Development,33,26,62,43,70,47,0.049989629,116,5,0.003055214
+Hess,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,52,100,71,100,72,0.049989629,195,6,0.005135921
+Hess,2017,Regulated Carbon Price,79,116,80,118,92,114,0.049989629,348,7,0.009165643
+Hess,2017,Wages and Benefits,42,47,85,73,87,96,0.049989629,216,8,0.00568902
+Hess,2017,Well-being and health,25,33,40,69,51,71,0.049989629,173,9,0.004556484
+MARATHON OIL,2017,Associated Energy Costs,97,133,72,112,79,109,0.020886076,354,0,0.002532947
+MARATHON OIL,2017,Dividend/reinvestment balance for long-term growth,31,51,58,140,74,131,0.020886076,322,1,0.00230398
+MARATHON OIL,2017,GDP and Disposable Income,78,92,65,83,81,98,0.020886076,273,2,0.001953374
+MARATHON OIL,2017,Innovation,87,105,66,98,76,92,0.020886076,295,3,0.002110789
+MARATHON OIL,2017,Market Transition,74,110,58,73,74,81,0.020886076,264,4,0.001888977
+MARATHON OIL,2017,Professional Skills Development,33,55,62,136,70,142,0.020886076,333,5,0.002382687
+MARATHON OIL,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,111,100,150,100,145,0.020886076,406,6,0.002905018
+MARATHON OIL,2017,Regulated Carbon Price,79,108,80,103,92,94,0.020886076,305,7,0.002182341
+MARATHON OIL,2017,Wages and Benefits,42,53,85,138,87,118,0.020886076,309,8,0.002210962
+MARATHON OIL,2017,Well-being and health,25,17,40,41,51,0,0.020886076,58,9,0.000415003
+PIONEER NATURAL RESOURCES,2017,Associated Energy Costs,97,114,72,70,79,84,-0.077592225,268,0,-0.009954388
+PIONEER NATURAL RESOURCES,2017,Dividend/reinvestment balance for long-term growth,31,46,58,68,74,78,-0.077592225,192,1,-0.007131502
+PIONEER NATURAL RESOURCES,2017,GDP and Disposable Income,78,78,65,55,81,68,-0.077592225,201,2,-0.007465791
+PIONEER NATURAL RESOURCES,2017,Innovation,87,107,66,70,76,76,-0.077592225,253,3,-0.009397239
+PIONEER NATURAL RESOURCES,2017,Market Transition,74,66,58,46,74,66,-0.077592225,178,4,-0.006611496
+PIONEER NATURAL RESOURCES,2017,Professional Skills Development,33,39,62,62,70,81,-0.077592225,182,5,-0.006760069
+PIONEER NATURAL RESOURCES,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,83,100,82,100,106,-0.077592225,271,6,-0.010065818
+PIONEER NATURAL RESOURCES,2017,Regulated Carbon Price,79,60,80,66,92,60,-0.077592225,186,7,-0.006908642
+PIONEER NATURAL RESOURCES,2017,Wages and Benefits,42,32,85,87,87,105,-0.077592225,224,8,-0.008320085
+PIONEER NATURAL RESOURCES,2017,Well-being and health,25,32,40,63,51,39,-0.077592225,134,9,-0.004977194
+Range Resources,2017,Associated Energy Costs,97,130,72,88,79,89,-0.500343643,307,0,-0.063447129
+Range Resources,2017,Dividend/reinvestment balance for long-term growth,31,30,58,51,74,0,-0.500343643,81,1,-0.016740122
+Range Resources,2017,GDP and Disposable Income,78,97,65,71,81,86,-0.500343643,254,2,-0.052493716
+Range Resources,2017,Innovation,87,130,66,86,76,88,-0.500343643,304,3,-0.062827124
+Range Resources,2017,Market Transition,74,88,58,68,74,87,-0.500343643,243,4,-0.050220366
+Range Resources,2017,Professional Skills Development,33,38,62,71,70,64,-0.500343643,173,5,-0.035753594
+Range Resources,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,150,100,122,100,110,-0.500343643,382,6,-0.078947241
+Range Resources,2017,Regulated Carbon Price,79,69,80,87,92,124,-0.500343643,280,7,-0.057867088
+Range Resources,2017,Wages and Benefits,42,38,85,142,87,163,-0.500343643,343,8,-0.070887183
+Range Resources,2017,Well-being and health,25,16,40,38,51,0,-0.500343643,54,9,-0.011160081
+SM Energy Co,2017,Associated Energy Costs,97,151,72,68,79,0,-0.24937552,219,0,-0.035394192
+SM Energy Co,2017,Dividend/reinvestment balance for long-term growth,31,35,58,53,74,0,-0.24937552,88,1,-0.014222324
+SM Energy Co,2017,GDP and Disposable Income,78,105,65,60,81,0,-0.24937552,165,2,-0.026666857
+SM Energy Co,2017,Innovation,87,155,66,68,76,0,-0.24937552,223,3,-0.036040662
+SM Energy Co,2017,Market Transition,74,139,58,72,74,0,-0.24937552,211,4,-0.034101254
+SM Energy Co,2017,Professional Skills Development,33,49,62,94,70,0,-0.24937552,143,5,-0.023111276
+SM Energy Co,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,112,100,109,100,0,-0.24937552,221,6,-0.035717427
+SM Energy Co,2017,Regulated Carbon Price,79,70,80,72,92,0,-0.24937552,142,7,-0.022949659
+SM Energy Co,2017,Wages and Benefits,42,30,85,58,87,0,-0.24937552,88,8,-0.014222324
+SM Energy Co,2017,Well-being and health,25,13,40,30,51,0,-0.24937552,43,9,-0.006949545
+SOUTHWESTERN ENERGY CO,2017,Associated Energy Costs,97,121,72,77,79,77,-0.47001224,275,0,-0.062562133
+SOUTHWESTERN ENERGY CO,2017,Dividend/reinvestment balance for long-term growth,31,24,58,42,74,0,-0.47001224,66,1,-0.015014912
+SOUTHWESTERN ENERGY CO,2017,GDP and Disposable Income,78,102,65,69,81,77,-0.47001224,248,2,-0.056419669
+SOUTHWESTERN ENERGY CO,2017,Innovation,87,91,66,62,76,77,-0.47001224,230,3,-0.052324693
+SOUTHWESTERN ENERGY CO,2017,Market Transition,74,92,58,62,74,77,-0.47001224,231,4,-0.052552191
+SOUTHWESTERN ENERGY CO,2017,Professional Skills Development,33,41,62,106,70,76,-0.47001224,223,5,-0.050732202
+SOUTHWESTERN ENERGY CO,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,100,100,115,100,123,-0.47001224,338,6,-0.076894548
+SOUTHWESTERN ENERGY CO,2017,Regulated Carbon Price,79,67,80,75,92,75,-0.47001224,217,7,-0.04936721
+SOUTHWESTERN ENERGY CO,2017,Wages and Benefits,42,37,85,60,87,96,-0.47001224,193,8,-0.043907242
+SOUTHWESTERN ENERGY CO,2017,Well-being and health,25,21,40,24,51,0,-0.47001224,45,9,-0.01023744
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Associated Energy Costs,97,72,72,78,79,94,-0.137034552,244,0,-0.015061455
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Dividend/reinvestment balance for long-term growth,31,38,58,61,74,64,-0.137034552,163,1,-0.010061546
+Seneca Resources/NATIONAL FUEL GAS CO,2017,GDP and Disposable Income,78,79,65,77,81,92,-0.137034552,248,2,-0.015308364
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Innovation,87,90,66,79,76,90,-0.137034552,259,3,-0.015987364
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Market Transition,74,74,58,72,74,94,-0.137034552,240,4,-0.014814546
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Professional Skills Development,33,31,62,76,70,71,-0.137034552,178,5,-0.010987455
+Seneca Resources/NATIONAL FUEL GAS CO,2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,106,100,119,100,109,-0.137034552,334,6,-0.02061691
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Regulated Carbon Price,79,66,80,82,92,108,-0.137034552,256,7,-0.015802183
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Wages and Benefits,42,40,85,117,87,105,-0.137034552,262,8,-0.016172546
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Well-being and health,25,12,40,24,51,0,-0.137034552,36,9,-0.002222182
+"VITAL ENERGY, INC.",2017,Associated Energy Costs,97,129,72,77,79,0,-0.403424658,206,0,-0.051522306
+"VITAL ENERGY, INC.",2017,Dividend/reinvestment balance for long-term growth,31,20,58,36,74,0,-0.403424658,56,1,-0.014006064
+"VITAL ENERGY, INC.",2017,GDP and Disposable Income,78,104,65,68,81,0,-0.403424658,172,2,-0.043018624
+"VITAL ENERGY, INC.",2017,Innovation,87,120,66,76,76,0,-0.403424658,196,3,-0.049021223
+"VITAL ENERGY, INC.",2017,Market Transition,74,102,58,67,74,0,-0.403424658,169,4,-0.0422683
+"VITAL ENERGY, INC.",2017,Professional Skills Development,33,54,62,93,70,0,-0.403424658,147,5,-0.036765917
+"VITAL ENERGY, INC.",2017,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,163,100,155,100,0,-0.403424658,318,6,-0.079534434
+"VITAL ENERGY, INC.",2017,Regulated Carbon Price,79,72,80,85,92,0,-0.403424658,157,7,-0.039267
+"VITAL ENERGY, INC.",2017,Wages and Benefits,42,38,85,85,87,0,-0.403424658,123,8,-0.030763319
+"VITAL ENERGY, INC.",2017,Well-being and health,25,26,40,43,51,0,-0.403424658,69,9,-0.017257471
+ANTERO RESOURCES Corp,2019,Associated Energy Costs,93,112,66,74,44,48,0.934027778,234,0,0.103535055
+ANTERO RESOURCES Corp,2019,Dividend/reinvestment balance for long-term growth,37,34,72,52,63,0,0.934027778,86,1,0.038051345
+ANTERO RESOURCES Corp,2019,GDP and Disposable Income,78,111,62,94,47,56,0.934027778,261,2,0.115481407
+ANTERO RESOURCES Corp,2019,Innovation,85,140,62,86,42,54,0.934027778,280,3,0.123888099
+ANTERO RESOURCES Corp,2019,Market Transition,68,116,54,84,40,53,0.934027778,253,4,0.111941747
+ANTERO RESOURCES Corp,2019,Professional Skills Development,35,36,59,61,44,44,0.934027778,141,5,0.062386507
+ANTERO RESOURCES Corp,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,109,89,94,57,68,0.934027778,271,6,0.119905982
+ANTERO RESOURCES Corp,2019,Regulated Carbon Price,78,106,73,90,49,52,0.934027778,248,7,0.109729459
+ANTERO RESOURCES Corp,2019,Wages and Benefits,48,63,100,99,100,61,0.934027778,223,8,0.098668022
+ANTERO RESOURCES Corp,2019,Well-being and health,40,40,50,50,32,24,0.934027778,114,9,0.050440155
+Callon Petroleum Co,2019,Associated Energy Costs,93,150,66,58,44,21,-0.927417219,229,0,-0.136665729
+Callon Petroleum Co,2019,Dividend/reinvestment balance for long-term growth,37,28,72,49,63,0,-0.927417219,77,1,-0.045953105
+Callon Petroleum Co,2019,GDP and Disposable Income,78,115,62,53,47,0,-0.927417219,168,2,-0.100261321
+Callon Petroleum Co,2019,Innovation,85,113,62,53,42,20,-0.927417219,186,3,-0.111003605
+Callon Petroleum Co,2019,Market Transition,68,104,54,46,40,16,-0.927417219,166,4,-0.099067734
+Callon Petroleum Co,2019,Professional Skills Development,35,43,59,45,44,18,-0.927417219,106,5,-0.063260119
+Callon Petroleum Co,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,160,89,96,57,18,-0.927417219,274,6,-0.16352144
+Callon Petroleum Co,2019,Regulated Carbon Price,78,77,73,71,49,0,-0.927417219,148,7,-0.088325449
+Callon Petroleum Co,2019,Wages and Benefits,48,38,100,58,100,20,-0.927417219,116,8,-0.069228055
+Callon Petroleum Co,2019,Well-being and health,40,26,50,38,32,20,-0.927417219,84,9,-0.05013066
+ConocoPhillips,2019,Associated Energy Costs,93,89,66,72,44,41,-0.538507642,202,0,-0.052805118
+ConocoPhillips,2019,Dividend/reinvestment balance for long-term growth,37,85,72,173,63,90,-0.538507642,348,1,-0.090971194
+ConocoPhillips,2019,GDP and Disposable Income,78,72,62,63,47,44,-0.538507642,179,2,-0.046792654
+ConocoPhillips,2019,Innovation,85,95,62,79,42,39,-0.538507642,213,3,-0.055680645
+ConocoPhillips,2019,Market Transition,68,64,54,61,40,40,-0.538507642,165,4,-0.043132894
+ConocoPhillips,2019,Professional Skills Development,35,58,59,88,44,29,-0.538507642,175,5,-0.045747008
+ConocoPhillips,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,77,89,83,57,57,-0.538507642,217,6,-0.05672629
+ConocoPhillips,2019,Regulated Carbon Price,78,80,73,73,49,43,-0.538507642,196,7,-0.051236649
+ConocoPhillips,2019,Wages and Benefits,48,61,100,161,100,56,-0.538507642,278,8,-0.072672391
+ConocoPhillips,2019,Well-being and health,40,35,50,52,32,0,-0.538507642,87,9,-0.022742798
+Crescent Energy Co,2019,Associated Energy Costs,93,87,66,42,44,42,-0.761609907,171,0,-0.089202256
+Crescent Energy Co,2019,Dividend/reinvestment balance for long-term growth,37,25,72,44,63,27,-0.761609907,96,1,-0.05007846
+Crescent Energy Co,2019,GDP and Disposable Income,78,121,62,47,47,44,-0.761609907,212,2,-0.110589932
+Crescent Energy Co,2019,Innovation,85,96,62,48,42,43,-0.761609907,187,3,-0.097548666
+Crescent Energy Co,2019,Market Transition,68,69,54,46,40,38,-0.761609907,153,4,-0.079812545
+Crescent Energy Co,2019,Professional Skills Development,35,23,59,48,44,36,-0.761609907,107,5,-0.055816616
+Crescent Energy Co,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,97,89,71,57,46,-0.761609907,214,6,-0.111633233
+Crescent Energy Co,2019,Regulated Carbon Price,78,26,73,47,49,40,-0.761609907,113,7,-0.05894652
+Crescent Energy Co,2019,Wages and Benefits,48,21,100,47,100,52,-0.761609907,120,8,-0.062598075
+Crescent Energy Co,2019,Well-being and health,40,18,50,46,32,23,-0.761609907,87,9,-0.045383604
+DEVON ENERGY CORP,2019,Associated Energy Costs,93,132,66,69,44,37,-0.781024211,238,0,-0.119232689
+DEVON ENERGY CORP,2019,Dividend/reinvestment balance for long-term growth,37,29,72,39,63,0,-0.781024211,68,1,-0.034066483
+DEVON ENERGY CORP,2019,GDP and Disposable Income,78,73,62,45,47,27,-0.781024211,145,2,-0.072641764
+DEVON ENERGY CORP,2019,Innovation,85,110,62,51,42,28,-0.781024211,189,3,-0.094684782
+DEVON ENERGY CORP,2019,Market Transition,68,72,54,47,40,29,-0.781024211,148,4,-0.074144697
+DEVON ENERGY CORP,2019,Professional Skills Development,35,41,59,75,44,37,-0.781024211,153,5,-0.076649586
+DEVON ENERGY CORP,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,86,89,81,57,49,-0.781024211,216,6,-0.10821118
+DEVON ENERGY CORP,2019,Regulated Carbon Price,78,97,73,80,49,42,-0.781024211,219,7,-0.109714113
+DEVON ENERGY CORP,2019,Wages and Benefits,48,46,100,47,100,46,-0.781024211,139,8,-0.069635898
+DEVON ENERGY CORP,2019,Well-being and health,40,15,50,29,32,0,-0.781024211,44,9,-0.022043018
+Diversified Energy,2019,Associated Energy Costs,93,42,66,52,44,56,-0.406666667,150,0,-0.048335975
+Diversified Energy,2019,Dividend/reinvestment balance for long-term growth,37,19,72,47,63,28,-0.406666667,94,1,-0.030290544
+Diversified Energy,2019,GDP and Disposable Income,78,50,62,45,47,24,-0.406666667,119,2,-0.03834654
+Diversified Energy,2019,Innovation,85,48,62,47,42,25,-0.406666667,120,3,-0.03866878
+Diversified Energy,2019,Market Transition,68,37,54,37,40,24,-0.406666667,98,4,-0.031579503
+Diversified Energy,2019,Professional Skills Development,35,15,59,38,44,90,-0.406666667,143,5,-0.046080296
+Diversified Energy,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,44,89,63,57,49,-0.406666667,156,6,-0.050269414
+Diversified Energy,2019,Regulated Carbon Price,78,43,73,46,49,0,-0.406666667,89,7,-0.028679345
+Diversified Energy,2019,Wages and Benefits,48,21,100,42,100,60,-0.406666667,123,8,-0.039635499
+Diversified Energy,2019,Well-being and health,40,53,50,64,32,53,-0.406666667,170,9,-0.054780771
+"EOG Resources, Inc.",2019,Associated Energy Costs,93,108,66,63,44,41,-0.622907396,212,0,-0.072959319
+"EOG Resources, Inc.",2019,Dividend/reinvestment balance for long-term growth,37,24,72,56,63,52,-0.622907396,132,1,-0.045427501
+"EOG Resources, Inc.",2019,GDP and Disposable Income,78,114,62,74,47,44,-0.622907396,232,2,-0.079842274
+"EOG Resources, Inc.",2019,Innovation,85,104,62,63,42,42,-0.622907396,209,3,-0.071926876
+"EOG Resources, Inc.",2019,Market Transition,68,71,54,50,40,40,-0.622907396,161,4,-0.055407785
+"EOG Resources, Inc.",2019,Professional Skills Development,35,33,59,52,44,40,-0.622907396,125,5,-0.043018467
+"EOG Resources, Inc.",2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,104,89,95,57,60,-0.622907396,259,6,-0.089134263
+"EOG Resources, Inc.",2019,Regulated Carbon Price,78,57,73,65,49,51,-0.622907396,173,7,-0.059537558
+"EOG Resources, Inc.",2019,Wages and Benefits,48,31,100,103,100,76,-0.622907396,210,8,-0.072271024
+"EOG Resources, Inc.",2019,Well-being and health,40,26,50,45,32,26,-0.622907396,97,9,-0.03338233
+EQT Corp,2019,Associated Energy Costs,93,74,66,64,44,32,-0.662487946,170,0,-0.066759307
+EQT Corp,2019,Dividend/reinvestment balance for long-term growth,37,39,72,90,63,54,-0.662487946,183,1,-0.07186443
+EQT Corp,2019,GDP and Disposable Income,78,53,62,49,47,29,-0.662487946,131,2,-0.051443937
+EQT Corp,2019,Innovation,85,62,62,67,42,34,-0.662487946,163,3,-0.064010394
+EQT Corp,2019,Market Transition,68,46,54,49,40,28,-0.662487946,123,4,-0.048302322
+EQT Corp,2019,Professional Skills Development,35,23,59,47,44,31,-0.662487946,101,5,-0.039662882
+EQT Corp,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,71,89,79,57,59,-0.662487946,209,6,-0.082074677
+EQT Corp,2019,Regulated Carbon Price,78,94,73,92,49,41,-0.662487946,227,7,-0.08914331
+EQT Corp,2019,Wages and Benefits,48,46,100,111,100,57,-0.662487946,214,8,-0.084038186
+EQT Corp,2019,Well-being and health,40,72,50,63,32,31,-0.662487946,166,9,-0.0651885
+Enerplus Resources (USA) Corporation,2019,Associated Energy Costs,93,184,66,96,44,49,-0.824019025,329,0,-0.125336227
+Enerplus Resources (USA) Corporation,2019,Dividend/reinvestment balance for long-term growth,37,26,72,39,63,0,-0.824019025,65,1,-0.024762476
+Enerplus Resources (USA) Corporation,2019,GDP and Disposable Income,78,112,62,80,47,52,-0.824019025,244,2,-0.092954527
+Enerplus Resources (USA) Corporation,2019,Innovation,85,141,62,80,42,53,-0.824019025,274,3,-0.104383362
+Enerplus Resources (USA) Corporation,2019,Market Transition,68,151,54,86,40,52,-0.824019025,289,4,-0.11009778
+Enerplus Resources (USA) Corporation,2019,Professional Skills Development,35,47,59,70,44,43,-0.824019025,160,5,-0.060953788
+Enerplus Resources (USA) Corporation,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,175,89,121,57,58,-0.824019025,354,6,-0.134860257
+Enerplus Resources (USA) Corporation,2019,Regulated Carbon Price,78,77,73,66,49,50,-0.824019025,193,7,-0.073525507
+Enerplus Resources (USA) Corporation,2019,Wages and Benefits,48,48,100,60,100,52,-0.824019025,160,8,-0.060953788
+Enerplus Resources (USA) Corporation,2019,Well-being and health,40,33,50,42,32,20,-0.824019025,95,9,-0.036191312
+Hess,2019,Associated Energy Costs,93,74,66,53,44,37,-0.447119376,164,0,-0.04580111
+Hess,2019,Dividend/reinvestment balance for long-term growth,37,37,72,62,63,49,-0.447119376,148,1,-0.041332709
+Hess,2019,GDP and Disposable Income,78,72,62,56,47,39,-0.447119376,167,2,-0.046638936
+Hess,2019,Innovation,85,63,62,46,42,30,-0.447119376,139,3,-0.038819234
+Hess,2019,Market Transition,68,57,54,45,40,34,-0.447119376,136,4,-0.037981409
+Hess,2019,Professional Skills Development,35,26,59,49,44,32,-0.447119376,107,5,-0.029882432
+Hess,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,55,89,71,57,39,-0.447119376,165,6,-0.046080385
+Hess,2019,Regulated Carbon Price,78,100,73,111,49,69,-0.447119376,280,7,-0.078197018
+Hess,2019,Wages and Benefits,48,35,100,65,100,60,-0.447119376,160,8,-0.04468401
+Hess,2019,Well-being and health,40,37,50,59,32,39,-0.447119376,135,9,-0.037702134
+MARATHON OIL,2019,Associated Energy Costs,93,84,66,63,44,30,-0.803111909,177,0,-0.089968866
+MARATHON OIL,2019,Dividend/reinvestment balance for long-term growth,37,31,72,78,63,62,-0.803111909,171,1,-0.086919074
+MARATHON OIL,2019,GDP and Disposable Income,78,63,62,53,47,21,-0.803111909,137,2,-0.069636919
+MARATHON OIL,2019,Innovation,85,62,62,55,42,23,-0.803111909,140,3,-0.071161815
+MARATHON OIL,2019,Market Transition,68,53,54,43,40,21,-0.803111909,117,4,-0.059470945
+MARATHON OIL,2019,Professional Skills Development,35,35,59,63,44,22,-0.803111909,120,5,-0.060995841
+MARATHON OIL,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,76,89,90,57,43,-0.803111909,209,6,-0.106234423
+MARATHON OIL,2019,Regulated Carbon Price,78,96,73,87,49,0,-0.803111909,183,7,-0.093018658
+MARATHON OIL,2019,Wages and Benefits,48,41,100,104,100,38,-0.803111909,183,8,-0.093018658
+MARATHON OIL,2019,Well-being and health,40,61,50,54,32,28,-0.803111909,143,9,-0.072686711
+Ovintiv Inc.,2019,Associated Energy Costs,93,99,66,61,44,40,-0.925414365,200,0,-0.082478999
+Ovintiv Inc.,2019,Dividend/reinvestment balance for long-term growth,37,28,72,86,63,49,-0.925414365,163,1,-0.067220384
+Ovintiv Inc.,2019,GDP and Disposable Income,78,81,62,84,47,55,-0.925414365,220,2,-0.090726899
+Ovintiv Inc.,2019,Innovation,85,80,62,76,42,44,-0.925414365,200,3,-0.082478999
+Ovintiv Inc.,2019,Market Transition,68,70,54,63,40,47,-0.925414365,180,4,-0.074231099
+Ovintiv Inc.,2019,Professional Skills Development,35,29,59,60,44,27,-0.925414365,116,5,-0.047837819
+Ovintiv Inc.,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,71,89,66,57,57,-0.925414365,194,6,-0.080004629
+Ovintiv Inc.,2019,Regulated Carbon Price,78,75,73,94,49,82,-0.925414365,251,7,-0.103511143
+Ovintiv Inc.,2019,Wages and Benefits,48,90,100,336,100,198,-0.925414365,624,8,-0.257334476
+Ovintiv Inc.,2019,Well-being and health,40,26,50,44,32,26,-0.925414365,96,9,-0.039589919
+PIONEER NATURAL RESOURCES,2019,Associated Energy Costs,93,111,66,65,44,36,-0.539335435,212,0,-0.072183783
+PIONEER NATURAL RESOURCES,2019,Dividend/reinvestment balance for long-term growth,37,28,72,38,63,0,-0.539335435,66,1,-0.02247231
+PIONEER NATURAL RESOURCES,2019,GDP and Disposable Income,78,89,62,64,47,36,-0.539335435,189,2,-0.064352523
+PIONEER NATURAL RESOURCES,2019,Innovation,85,115,62,68,42,35,-0.539335435,218,3,-0.07422672
+PIONEER NATURAL RESOURCES,2019,Market Transition,68,76,54,51,40,35,-0.539335435,162,4,-0.055159306
+PIONEER NATURAL RESOURCES,2019,Professional Skills Development,35,41,59,65,44,40,-0.539335435,146,5,-0.049711473
+PIONEER NATURAL RESOURCES,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,94,89,86,57,58,-0.539335435,238,6,-0.081036511
+PIONEER NATURAL RESOURCES,2019,Regulated Carbon Price,78,48,73,63,49,34,-0.539335435,145,7,-0.049370984
+PIONEER NATURAL RESOURCES,2019,Wages and Benefits,48,24,100,61,100,14,-0.539335435,99,8,-0.033708465
+PIONEER NATURAL RESOURCES,2019,Well-being and health,40,34,50,49,32,26,-0.539335435,109,9,-0.03711336
+Range Resources,2019,Associated Energy Costs,93,137,66,77,44,46,-0.797153025,260,0,-0.101053041
+Range Resources,2019,Dividend/reinvestment balance for long-term growth,37,37,72,48,63,56,-0.797153025,141,1,-0.054801841
+Range Resources,2019,GDP and Disposable Income,78,103,62,67,47,46,-0.797153025,216,2,-0.083951757
+Range Resources,2019,Innovation,85,145,62,78,42,46,-0.797153025,269,3,-0.104551031
+Range Resources,2019,Market Transition,68,88,54,62,40,46,-0.797153025,196,4,-0.076178446
+Range Resources,2019,Professional Skills Development,35,39,59,64,44,33,-0.797153025,136,5,-0.052858514
+Range Resources,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,165,89,118,57,56,-0.797153025,339,6,-0.131757618
+Range Resources,2019,Regulated Carbon Price,78,78,73,71,49,58,-0.797153025,207,7,-0.080453767
+Range Resources,2019,Wages and Benefits,48,42,100,117,100,73,-0.797153025,232,8,-0.090170406
+Range Resources,2019,Well-being and health,40,19,50,36,32,0,-0.797153025,55,9,-0.021376605
+SM Energy Co,2019,Associated Energy Costs,93,173,66,68,44,42,-0.930245855,283,0,-0.13149829
+SM Energy Co,2019,Dividend/reinvestment balance for long-term growth,37,35,72,48,63,0,-0.930245855,83,1,-0.038566636
+SM Energy Co,2019,GDP and Disposable Income,78,137,62,59,47,41,-0.930245855,237,2,-0.11012401
+SM Energy Co,2019,Innovation,85,196,62,68,42,43,-0.930245855,307,3,-0.142650089
+SM Energy Co,2019,Market Transition,68,149,54,67,40,44,-0.930245855,260,4,-0.12081115
+SM Energy Co,2019,Professional Skills Development,35,49,59,95,44,48,-0.930245855,192,5,-0.089214388
+SM Energy Co,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,116,89,105,57,59,-0.930245855,280,6,-0.130104315
+SM Energy Co,2019,Regulated Carbon Price,78,61,73,64,49,41,-0.930245855,166,7,-0.077133273
+SM Energy Co,2019,Wages and Benefits,48,32,100,67,100,47,-0.930245855,146,8,-0.067840107
+SM Energy Co,2019,Well-being and health,40,15,50,33,32,0,-0.930245855,48,9,-0.022303597
+SOUTHWESTERN ENERGY CO,2019,Associated Energy Costs,93,138,66,84,44,47,-0.639658849,269,0,-0.088421496
+SOUTHWESTERN ENERGY CO,2019,Dividend/reinvestment balance for long-term growth,37,30,72,53,63,0,-0.639658849,83,1,-0.027282469
+SOUTHWESTERN ENERGY CO,2019,GDP and Disposable Income,78,109,62,71,47,44,-0.639658849,224,2,-0.073629796
+SOUTHWESTERN ENERGY CO,2019,Innovation,85,110,62,74,42,44,-0.639658849,228,3,-0.074944613
+SOUTHWESTERN ENERGY CO,2019,Market Transition,68,101,54,66,40,43,-0.639658849,210,4,-0.069027933
+SOUTHWESTERN ENERGY CO,2019,Professional Skills Development,35,43,59,88,44,39,-0.639658849,170,5,-0.055879756
+SOUTHWESTERN ENERGY CO,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,144,89,124,57,64,-0.639658849,332,6,-0.109129876
+SOUTHWESTERN ENERGY CO,2019,Regulated Carbon Price,78,83,73,76,49,54,-0.639658849,213,7,-0.070014047
+SOUTHWESTERN ENERGY CO,2019,Wages and Benefits,48,46,100,73,100,54,-0.639658849,173,8,-0.056865869
+SOUTHWESTERN ENERGY CO,2019,Well-being and health,40,20,50,24,32,0,-0.639658849,44,9,-0.014462996
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Associated Energy Costs,93,97,66,81,44,45,-0.388287402,223,0,-0.048346226
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Dividend/reinvestment balance for long-term growth,37,39,72,50,63,28,-0.388287402,117,1,-0.025365509
+Seneca Resources/NATIONAL FUEL GAS CO,2019,GDP and Disposable Income,78,91,62,79,47,47,-0.388287402,217,2,-0.047045431
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Innovation,85,96,62,80,42,42,-0.388287402,218,3,-0.04726223
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Market Transition,68,81,54,73,40,42,-0.388287402,196,4,-0.042492647
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Professional Skills Development,35,29,59,70,44,36,-0.388287402,135,5,-0.029267895
+Seneca Resources/NATIONAL FUEL GAS CO,2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,102,89,111,57,62,-0.388287402,275,6,-0.059619785
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Regulated Carbon Price,78,77,73,72,49,51,-0.388287402,200,7,-0.043359844
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Wages and Benefits,48,44,100,87,100,50,-0.388287402,181,8,-0.039240659
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Well-being and health,40,13,50,16,32,0,-0.388287402,29,9,-0.006287177
+"VITAL ENERGY, INC.",2019,Associated Energy Costs,93,112,66,71,44,41,-0.877022654,224,0,-0.107468859
+"VITAL ENERGY, INC.",2019,Dividend/reinvestment balance for long-term growth,37,25,72,48,63,0,-0.877022654,73,1,-0.035023334
+"VITAL ENERGY, INC.",2019,GDP and Disposable Income,78,74,62,56,47,40,-0.877022654,170,2,-0.081561188
+"VITAL ENERGY, INC.",2019,Innovation,85,97,62,69,42,38,-0.877022654,204,3,-0.097873425
+"VITAL ENERGY, INC.",2019,Market Transition,68,78,54,55,40,34,-0.877022654,167,4,-0.080121873
+"VITAL ENERGY, INC.",2019,Professional Skills Development,35,45,59,63,44,36,-0.877022654,144,5,-0.069087124
+"VITAL ENERGY, INC.",2019,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,189,89,154,57,63,-0.877022654,406,6,-0.194787307
+"VITAL ENERGY, INC.",2019,Regulated Carbon Price,78,64,73,67,49,62,-0.877022654,193,7,-0.092595937
+"VITAL ENERGY, INC.",2019,Wages and Benefits,48,45,100,75,100,58,-0.877022654,178,8,-0.085399361
+"VITAL ENERGY, INC.",2019,Well-being and health,40,30,50,39,32,0,-0.877022654,69,9,-0.033104247
+ANTERO RESOURCES Corp,2020,Associated Energy Costs,94,114,75,83,70,75,2.111310592,272,0,0.255802441
+ANTERO RESOURCES Corp,2020,Dividend/reinvestment balance for long-term growth,37,30,70,61,100,0,2.111310592,91,1,0.085580964
+ANTERO RESOURCES Corp,2020,GDP and Disposable Income,79,98,67,82,73,77,2.111310592,257,2,0.241695689
+ANTERO RESOURCES Corp,2020,Innovation,88,135,72,76,76,71,2.111310592,282,3,0.265206943
+ANTERO RESOURCES Corp,2020,Market Transition,70,104,60,70,68,71,2.111310592,245,4,0.230410287
+ANTERO RESOURCES Corp,2020,Professional Skills Development,34,29,68,55,73,62,2.111310592,146,5,0.137305722
+ANTERO RESOURCES Corp,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,106,100,102,94,105,2.111310592,313,6,0.294360898
+ANTERO RESOURCES Corp,2020,Regulated Carbon Price,81,86,80,109,78,92,2.111310592,287,7,0.269909194
+ANTERO RESOURCES Corp,2020,Wages and Benefits,43,38,76,67,83,99,2.111310592,204,8,0.191851831
+ANTERO RESOURCES Corp,2020,Well-being and health,37,41,55,58,55,49,2.111310592,148,9,0.139186623
+Callon Petroleum Co,2020,Associated Energy Costs,94,143,75,73,70,65,6.04379562,281,0,0.82282295
+Callon Petroleum Co,2020,Dividend/reinvestment balance for long-term growth,37,32,70,61,100,0,6.04379562,93,1,0.272322186
+Callon Petroleum Co,2020,GDP and Disposable Income,79,115,67,67,73,67,6.04379562,249,2,0.729120693
+Callon Petroleum Co,2020,Innovation,88,115,72,68,76,63,6.04379562,246,3,0.720336106
+Callon Petroleum Co,2020,Market Transition,70,91,60,54,68,64,6.04379562,209,4,0.61199287
+Callon Petroleum Co,2020,Professional Skills Development,34,46,68,57,73,52,6.04379562,155,5,0.453870311
+Callon Petroleum Co,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,150,100,109,94,93,6.04379562,352,6,1.030724834
+Callon Petroleum Co,2020,Regulated Carbon Price,81,67,80,67,78,76,6.04379562,210,7,0.614921066
+Callon Petroleum Co,2020,Wages and Benefits,43,32,76,63,83,87,6.04379562,182,8,0.532931591
+Callon Petroleum Co,2020,Well-being and health,37,19,55,39,55,29,6.04379562,87,9,0.254753013
+ConocoPhillips,2020,Associated Energy Costs,94,108,75,84,70,48,0.719805195,240,0,0.089416794
+ConocoPhillips,2020,Dividend/reinvestment balance for long-term growth,37,50,70,108,100,221,0.719805195,379,1,0.141204021
+ConocoPhillips,2020,GDP and Disposable Income,79,96,67,68,73,41,0.719805195,205,2,0.076376845
+ConocoPhillips,2020,Innovation,88,109,72,85,76,48,0.719805195,242,3,0.090161934
+ConocoPhillips,2020,Market Transition,70,79,60,64,68,43,0.719805195,186,4,0.069298016
+ConocoPhillips,2020,Professional Skills Development,34,46,68,80,73,59,0.719805195,185,5,0.068925446
+ConocoPhillips,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,65,100,74,94,79,0.719805195,218,6,0.081220255
+ConocoPhillips,2020,Regulated Carbon Price,81,60,80,55,78,0,0.719805195,115,7,0.042845547
+ConocoPhillips,2020,Wages and Benefits,43,36,76,71,83,0,0.719805195,107,8,0.039864988
+ConocoPhillips,2020,Well-being and health,37,15,55,40,55,0,0.719805195,55,9,0.020491349
+Crescent Energy Co,2020,Associated Energy Costs,94,86,75,58,70,65,4.402597403,209,0,0.498992873
+Crescent Energy Co,2020,Dividend/reinvestment balance for long-term growth,37,26,70,53,100,55,4.402597403,134,1,0.319928445
+Crescent Energy Co,2020,GDP and Disposable Income,79,111,67,52,73,71,4.402597403,234,2,0.558681015
+Crescent Energy Co,2020,Innovation,88,97,72,53,76,69,4.402597403,219,3,0.52286813
+Crescent Energy Co,2020,Market Transition,70,73,60,55,68,68,4.402597403,196,4,0.467955038
+Crescent Energy Co,2020,Professional Skills Development,34,28,68,66,73,63,4.402597403,157,5,0.374841536
+Crescent Energy Co,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,90,100,78,94,80,4.402597403,248,6,0.592106375
+Crescent Energy Co,2020,Regulated Carbon Price,81,27,80,55,78,75,4.402597403,157,7,0.374841536
+Crescent Energy Co,2020,Wages and Benefits,43,23,76,51,83,95,4.402597403,169,8,0.403491844
+Crescent Energy Co,2020,Well-being and health,37,22,55,49,55,50,4.402597403,121,9,0.288890611
+DEVON ENERGY CORP,2020,Associated Energy Costs,94,109,75,82,70,71,2.162083936,262,0,0.323509989
+DEVON ENERGY CORP,2020,Dividend/reinvestment balance for long-term growth,37,28,70,44,100,0,2.162083936,72,1,0.088903509
+DEVON ENERGY CORP,2020,GDP and Disposable Income,79,59,67,51,73,54,2.162083936,164,2,0.202502436
+DEVON ENERGY CORP,2020,Innovation,88,81,72,58,76,53,2.162083936,192,3,0.237076023
+DEVON ENERGY CORP,2020,Market Transition,70,71,60,64,68,57,2.162083936,192,4,0.237076023
+DEVON ENERGY CORP,2020,Professional Skills Development,34,32,68,71,73,53,2.162083936,156,5,0.192624268
+DEVON ENERGY CORP,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,90,100,94,94,86,2.162083936,270,6,0.333388157
+DEVON ENERGY CORP,2020,Regulated Carbon Price,81,82,80,84,78,65,2.162083936,231,7,0.28523209
+DEVON ENERGY CORP,2020,Wages and Benefits,43,34,76,56,83,83,2.162083936,173,8,0.213615375
+DEVON ENERGY CORP,2020,Well-being and health,37,14,55,25,55,0,2.162083936,39,9,0.048156067
+"Diamondback Energy, Inc.",2020,Associated Energy Costs,94,125,75,80,70,81,1.804961832,286,0,0.216625717
+"Diamondback Energy, Inc.",2020,Dividend/reinvestment balance for long-term growth,37,27,70,52,100,0,1.804961832,79,1,0.059837174
+"Diamondback Energy, Inc.",2020,GDP and Disposable Income,79,126,67,82,73,82,1.804961832,290,2,0.219655447
+"Diamondback Energy, Inc.",2020,Innovation,88,143,72,83,76,81,1.804961832,307,3,0.232531801
+"Diamondback Energy, Inc.",2020,Market Transition,70,127,60,77,68,86,1.804961832,290,4,0.219655447
+"Diamondback Energy, Inc.",2020,Professional Skills Development,34,59,68,106,73,97,1.804961832,262,5,0.198447335
+"Diamondback Energy, Inc.",2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,154,100,122,94,103,1.804961832,379,6,0.287066947
+"Diamondback Energy, Inc.",2020,Regulated Carbon Price,81,76,80,75,78,65,1.804961832,216,7,0.163605437
+"Diamondback Energy, Inc.",2020,Wages and Benefits,43,40,76,68,83,77,1.804961832,185,8,0.140125027
+"Diamondback Energy, Inc.",2020,Well-being and health,37,26,55,34,55,29,1.804961832,89,9,0.067411499
+Diversified Energy,2020,Associated Energy Costs,94,59,75,64,70,56,0.842696629,179,0,0.080065126
+Diversified Energy,2020,Dividend/reinvestment balance for long-term growth,37,41,70,89,100,126,0.842696629,256,1,0.114506548
+Diversified Energy,2020,GDP and Disposable Income,79,51,67,55,73,56,0.842696629,162,2,0.072461175
+Diversified Energy,2020,Innovation,88,62,72,68,76,53,0.842696629,183,3,0.08185429
+Diversified Energy,2020,Market Transition,70,48,60,49,68,48,0.842696629,145,4,0.064857225
+Diversified Energy,2020,Professional Skills Development,34,22,68,60,73,47,0.842696629,129,5,0.057700565
+Diversified Energy,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,65,100,87,94,70,0.842696629,222,6,0.099298647
+Diversified Energy,2020,Regulated Carbon Price,81,75,80,83,78,71,0.842696629,229,7,0.102429686
+Diversified Energy,2020,Wages and Benefits,43,36,76,64,83,85,0.842696629,185,8,0.082748873
+Diversified Energy,2020,Well-being and health,37,54,55,71,55,69,0.842696629,194,9,0.086774494
+"EOG Resources, Inc.",2020,Associated Energy Costs,94,127,75,86,70,77,1.019387468,290,0,0.127204116
+"EOG Resources, Inc.",2020,Dividend/reinvestment balance for long-term growth,37,25,70,69,100,79,1.019387468,173,1,0.075883835
+"EOG Resources, Inc.",2020,GDP and Disposable Income,79,118,67,78,73,79,1.019387468,275,2,0.120624593
+"EOG Resources, Inc.",2020,Innovation,88,100,72,76,76,68,1.019387468,244,3,0.107026911
+"EOG Resources, Inc.",2020,Market Transition,70,81,60,62,68,62,1.019387468,205,4,0.089920151
+"EOG Resources, Inc.",2020,Professional Skills Development,34,37,68,87,73,70,1.019387468,194,5,0.085095167
+"EOG Resources, Inc.",2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,125,100,127,94,111,1.019387468,363,6,0.159224463
+"EOG Resources, Inc.",2020,Regulated Carbon Price,81,70,80,74,78,74,1.019387468,218,7,0.095622404
+"EOG Resources, Inc.",2020,Wages and Benefits,43,28,76,99,83,129,1.019387468,256,8,0.11229053
+"EOG Resources, Inc.",2020,Well-being and health,37,21,55,41,55,44,1.019387468,106,9,0.046495298
+EQT Corp,2020,Associated Energy Costs,94,97,75,75,70,55,1.654285714,227,0,0.197643609
+EQT Corp,2020,Dividend/reinvestment balance for long-term growth,37,35,70,78,100,0,1.654285714,113,1,0.098386466
+EQT Corp,2020,GDP and Disposable Income,79,63,67,57,73,49,1.654285714,169,2,0.147144361
+EQT Corp,2020,Innovation,88,79,72,71,76,50,1.654285714,200,3,0.174135338
+EQT Corp,2020,Market Transition,70,53,60,54,68,49,1.654285714,156,4,0.135825564
+EQT Corp,2020,Professional Skills Development,34,30,68,60,73,54,1.654285714,144,5,0.125377444
+EQT Corp,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,79,100,98,94,108,1.654285714,285,6,0.248142857
+EQT Corp,2020,Regulated Carbon Price,81,97,80,93,78,60,1.654285714,250,7,0.217669173
+EQT Corp,2020,Wages and Benefits,43,34,76,72,83,60,1.654285714,166,8,0.144532331
+EQT Corp,2020,Well-being and health,37,64,55,72,55,54,1.654285714,190,9,0.165428571
+Enerplus Resources (USA) Corporation,2020,Associated Energy Costs,94,162,75,92,70,84,2.385135135,338,0,0.325990973
+Enerplus Resources (USA) Corporation,2020,Dividend/reinvestment balance for long-term growth,37,26,70,46,100,0,2.385135135,72,1,0.069441864
+Enerplus Resources (USA) Corporation,2020,GDP and Disposable Income,79,116,67,88,73,89,2.385135135,293,2,0.282589808
+Enerplus Resources (USA) Corporation,2020,Innovation,88,122,72,74,76,90,2.385135135,286,3,0.275838515
+Enerplus Resources (USA) Corporation,2020,Market Transition,70,139,60,85,68,88,2.385135135,312,4,0.300914744
+Enerplus Resources (USA) Corporation,2020,Professional Skills Development,34,48,68,85,73,67,2.385135135,200,5,0.192894067
+Enerplus Resources (USA) Corporation,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,177,100,121,94,107,2.385135135,405,6,0.390610485
+Enerplus Resources (USA) Corporation,2020,Regulated Carbon Price,81,75,80,78,78,87,2.385135135,240,7,0.23147288
+Enerplus Resources (USA) Corporation,2020,Wages and Benefits,43,53,76,77,83,89,2.385135135,219,8,0.211219003
+Enerplus Resources (USA) Corporation,2020,Well-being and health,37,28,55,48,55,32,2.385135135,108,9,0.104162796
+Hess,2020,Associated Energy Costs,94,80,75,69,70,70,1.124924925,219,0,0.114054888
+Hess,2020,Dividend/reinvestment balance for long-term growth,37,42,70,82,100,90,1.124924925,214,1,0.111450895
+Hess,2020,GDP and Disposable Income,79,88,67,72,73,82,1.124924925,242,2,0.126033255
+Hess,2020,Innovation,88,71,72,54,76,69,1.124924925,194,3,0.101034924
+Hess,2020,Market Transition,70,60,60,56,68,67,1.124924925,183,4,0.095306139
+Hess,2020,Professional Skills Development,34,32,68,58,73,60,1.124924925,150,5,0.078119786
+Hess,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,65,100,90,94,104,1.124924925,259,6,0.134886831
+Hess,2020,Regulated Carbon Price,81,85,80,116,78,116,1.124924925,317,7,0.165093149
+Hess,2020,Wages and Benefits,43,40,76,83,83,112,1.124924925,235,8,0.122387665
+Hess,2020,Well-being and health,37,61,55,86,55,0,1.124924925,147,9,0.076557391
+MARATHON OIL,2020,Associated Energy Costs,94,79,75,69,70,67,2.246200608,215,0,0.230407028
+MARATHON OIL,2020,Dividend/reinvestment balance for long-term growth,37,31,70,95,100,109,2.246200608,235,1,0.25184024
+MARATHON OIL,2020,GDP and Disposable Income,79,61,67,63,73,77,2.246200608,201,2,0.21540378
+MARATHON OIL,2020,Innovation,88,55,72,63,76,64,2.246200608,182,3,0.195042228
+MARATHON OIL,2020,Market Transition,70,53,60,55,68,62,2.246200608,170,4,0.182182301
+MARATHON OIL,2020,Professional Skills Development,34,29,68,51,73,63,2.246200608,143,5,0.153247465
+MARATHON OIL,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,76,100,104,94,115,2.246200608,295,6,0.316139876
+MARATHON OIL,2020,Regulated Carbon Price,81,82,80,92,78,75,2.246200608,249,7,0.266843488
+MARATHON OIL,2020,Wages and Benefits,43,42,76,117,83,96,2.246200608,255,8,0.273273452
+MARATHON OIL,2020,Well-being and health,37,75,55,76,55,0,2.246200608,151,9,0.16182075
+Ovintiv Inc.,2020,Associated Energy Costs,94,110,75,80,70,83,7.822222222,273,0,0.97376501
+Ovintiv Inc.,2020,Dividend/reinvestment balance for long-term growth,37,51,70,81,100,77,7.822222222,209,1,0.745483103
+Ovintiv Inc.,2020,GDP and Disposable Income,79,98,67,75,73,88,7.822222222,261,2,0.930962152
+Ovintiv Inc.,2020,Innovation,88,97,72,68,76,77,7.822222222,242,3,0.863190961
+Ovintiv Inc.,2020,Market Transition,70,91,60,64,68,79,7.822222222,234,4,0.834655723
+Ovintiv Inc.,2020,Professional Skills Development,34,32,68,62,73,60,7.822222222,154,5,0.549303339
+Ovintiv Inc.,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,78,100,79,94,120,7.822222222,277,6,0.988032629
+Ovintiv Inc.,2020,Regulated Carbon Price,81,77,80,77,78,81,7.822222222,235,7,0.838222628
+Ovintiv Inc.,2020,Wages and Benefits,43,51,76,79,83,73,7.822222222,203,8,0.724081674
+Ovintiv Inc.,2020,Well-being and health,37,24,55,44,55,37,7.822222222,105,9,0.374525004
+PIONEER NATURAL RESOURCES,2020,Associated Energy Costs,94,79,75,71,70,66,1.264005702,216,0,0.152187977
+PIONEER NATURAL RESOURCES,2020,Dividend/reinvestment balance for long-term growth,37,29,70,52,100,0,1.264005702,81,1,0.057070492
+PIONEER NATURAL RESOURCES,2020,GDP and Disposable Income,79,73,67,62,73,67,1.264005702,202,2,0.142323942
+PIONEER NATURAL RESOURCES,2020,Innovation,88,95,72,93,76,66,1.264005702,254,3,0.178961788
+PIONEER NATURAL RESOURCES,2020,Market Transition,70,56,60,52,68,64,1.264005702,172,4,0.121186723
+PIONEER NATURAL RESOURCES,2020,Professional Skills Development,34,35,68,72,73,50,1.264005702,157,5,0.110618113
+PIONEER NATURAL RESOURCES,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,77,100,96,94,104,1.264005702,277,6,0.19516699
+PIONEER NATURAL RESOURCES,2020,Regulated Carbon Price,81,48,80,68,78,62,1.264005702,178,7,0.125414167
+PIONEER NATURAL RESOURCES,2020,Wages and Benefits,43,27,76,64,83,36,1.264005702,127,8,0.089480894
+PIONEER NATURAL RESOURCES,2020,Well-being and health,37,32,55,60,55,38,1.264005702,130,9,0.091594616
+Range Resources,2020,Associated Energy Costs,94,110,75,75,70,33,3.530701754,218,0,0.45169776
+Range Resources,2020,Dividend/reinvestment balance for long-term growth,37,26,70,50,100,0,3.530701754,76,1,0.157472613
+Range Resources,2020,GDP and Disposable Income,79,78,67,64,73,34,3.530701754,176,2,0.364673421
+Range Resources,2020,Innovation,88,105,72,71,76,35,3.530701754,211,3,0.437193703
+Range Resources,2020,Market Transition,70,54,60,55,68,36,3.530701754,145,4,0.30044117
+Range Resources,2020,Professional Skills Development,34,32,68,55,73,36,3.530701754,123,5,0.254856993
+Range Resources,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,103,100,97,94,47,3.530701754,247,6,0.511785994
+Range Resources,2020,Regulated Carbon Price,81,72,80,85,78,0,3.530701754,157,7,0.325305267
+Range Resources,2020,Wages and Benefits,43,35,76,90,83,54,3.530701754,179,8,0.370889445
+Range Resources,2020,Well-being and health,37,44,55,70,55,58,3.530701754,172,9,0.356385388
+SM Energy Co,2020,Associated Energy Costs,94,198,75,79,70,71,12.41803279,348,0,1.882175702
+SM Energy Co,2020,Dividend/reinvestment balance for long-term growth,37,38,70,57,100,0,12.41803279,95,1,0.513812332
+SM Energy Co,2020,GDP and Disposable Income,79,140,67,66,73,68,12.41803279,274,2,1.481942937
+SM Energy Co,2020,Innovation,88,207,72,79,76,71,12.41803279,357,3,1.930852659
+SM Energy Co,2020,Market Transition,70,133,60,74,68,75,12.41803279,282,4,1.525211344
+SM Energy Co,2020,Professional Skills Development,34,47,68,108,73,78,12.41803279,233,5,1.260192352
+SM Energy Co,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,117,100,119,94,96,12.41803279,332,6,1.795638888
+SM Energy Co,2020,Regulated Carbon Price,81,66,80,75,78,62,12.41803279,203,7,1.097935826
+SM Energy Co,2020,Wages and Benefits,43,30,76,78,83,0,12.41803279,108,8,0.584123494
+SM Energy Co,2020,Well-being and health,37,16,55,48,55,0,12.41803279,64,9,0.346147255
+SOUTHWESTERN ENERGY CO,2020,Associated Energy Costs,94,142,75,94,70,78,1.75147929,314,0,0.219809951
+SOUTHWESTERN ENERGY CO,2020,Dividend/reinvestment balance for long-term growth,37,38,70,79,100,0,1.75147929,117,1,0.081903708
+SOUTHWESTERN ENERGY CO,2020,GDP and Disposable Income,79,121,67,84,73,78,1.75147929,283,2,0.198108968
+SOUTHWESTERN ENERGY CO,2020,Innovation,88,130,72,95,76,83,1.75147929,308,3,0.215609761
+SOUTHWESTERN ENERGY CO,2020,Market Transition,70,112,60,76,68,76,1.75147929,264,4,0.184808366
+SOUTHWESTERN ENERGY CO,2020,Professional Skills Development,34,49,68,116,73,73,1.75147929,238,5,0.166607542
+SOUTHWESTERN ENERGY CO,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,162,100,157,94,110,1.75147929,429,6,0.300313595
+SOUTHWESTERN ENERGY CO,2020,Regulated Carbon Price,81,86,80,96,78,94,1.75147929,276,7,0.193208747
+SOUTHWESTERN ENERGY CO,2020,Wages and Benefits,43,47,76,80,83,96,1.75147929,223,8,0.156107067
+SOUTHWESTERN ENERGY CO,2020,Well-being and health,37,22,55,28,55,0,1.75147929,50,9,0.035001585
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Associated Energy Costs,94,96,75,81,70,0,0.34057388,177,0,0.043587546
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Dividend/reinvestment balance for long-term growth,37,36,70,52,100,0,0.34057388,88,1,0.021670645
+Seneca Resources/NATIONAL FUEL GAS CO,2020,GDP and Disposable Income,79,86,67,79,73,0,0.34057388,165,2,0.040632459
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Innovation,88,89,72,84,76,0,0.34057388,173,3,0.042602517
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Market Transition,70,74,60,71,68,0,0.34057388,145,4,0.035707312
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Professional Skills Development,34,26,68,61,73,0,0.34057388,87,5,0.021424387
+Seneca Resources/NATIONAL FUEL GAS CO,2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,97,100,118,94,0,0.34057388,215,6,0.052945325
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Regulated Carbon Price,81,71,80,82,78,0,0.34057388,153,7,0.037677371
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Wages and Benefits,43,39,76,97,83,0,0.34057388,136,8,0.033490996
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Well-being and health,37,17,55,27,55,0,0.34057388,44,9,0.010835322
+"VITAL ENERGY, INC.",2020,Associated Energy Costs,94,107,75,77,70,53,-0.802631579,237,0,-0.107047656
+"VITAL ENERGY, INC.",2020,Dividend/reinvestment balance for long-term growth,37,24,70,49,100,56,-0.802631579,129,1,-0.058266446
+"VITAL ENERGY, INC.",2020,GDP and Disposable Income,79,84,67,56,73,28,-0.802631579,168,2,-0.075881883
+"VITAL ENERGY, INC.",2020,Innovation,88,85,72,67,76,59,-0.802631579,211,3,-0.095304031
+"VITAL ENERGY, INC.",2020,Market Transition,70,81,60,56,68,40,-0.802631579,177,4,-0.079946983
+"VITAL ENERGY, INC.",2020,Professional Skills Development,34,48,68,78,73,58,-0.802631579,184,5,-0.083108728
+"VITAL ENERGY, INC.",2020,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,126,100,114,94,58,-0.802631579,298,6,-0.134600006
+"VITAL ENERGY, INC.",2020,Regulated Carbon Price,81,67,80,73,78,0,-0.802631579,140,7,-0.063234902
+"VITAL ENERGY, INC.",2020,Wages and Benefits,43,33,76,66,83,0,-0.802631579,99,8,-0.044716109
+"VITAL ENERGY, INC.",2020,Well-being and health,37,30,55,51,55,53,-0.802631579,134,9,-0.060524835
+Crescent Energy Co,2022,Associated Energy Costs,88,78,72,56,81,71,0.907330567,205,0,0.106836741
+Crescent Energy Co,2022,Dividend/reinvestment balance for long-term growth,43,21,82,52,100,0,0.907330567,73,1,0.038044303
+Crescent Energy Co,2022,GDP and Disposable Income,75,86,63,46,75,73,0.907330567,205,2,0.106836741
+Crescent Energy Co,2022,Innovation,90,83,74,54,78,73,0.907330567,210,3,0.109442515
+Crescent Energy Co,2022,Market Transition,66,65,62,57,83,71,0.907330567,193,4,0.100582883
+Crescent Energy Co,2022,Professional Skills Development,40,28,70,65,82,59,0.907330567,152,5,0.079215535
+Crescent Energy Co,2022,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,79,100,74,98,82,0.907330567,235,6,0.122471386
+Crescent Energy Co,2022,Regulated Carbon Price,77,29,72,53,74,92,0.907330567,174,7,0.090680941
+Crescent Energy Co,2022,Wages and Benefits,45,22,80,48,84,110,0.907330567,180,8,0.09380787
+Crescent Energy Co,2022,Well-being and health,46,27,71,46,62,41,0.907330567,114,9,0.059411651
+EQT Corp,2022,Associated Energy Costs,88,90,72,69,81,46,0.880267364,205,0,0.106274917
+EQT Corp,2022,Dividend/reinvestment balance for long-term growth,43,29,82,77,100,0,0.880267364,106,1,0.054951908
+EQT Corp,2022,GDP and Disposable Income,75,66,63,56,75,44,0.880267364,166,2,0.086056762
+EQT Corp,2022,Innovation,90,75,74,73,78,47,0.880267364,195,3,0.101090775
+EQT Corp,2022,Market Transition,66,63,62,54,83,46,0.880267364,163,4,0.08450152
+EQT Corp,2022,Professional Skills Development,40,36,70,67,82,62,0.880267364,165,5,0.085538348
+EQT Corp,2022,"Provisioning services (Raw Materials, Nutrients, Food, Energy)",100,84,100,98,98,68,0.880267364,250,6,0.129603558
+EQT Corp,2022,Regulated Carbon Price,77,73,72,73,74,0,0.880267364,146,7,0.075688478
+EQT Corp,2022,Wages and Benefits,45,29,80,61,84,47,0.880267364,137,8,0.07102275
+EQT Corp,2022,Well-being and health,46,62,71,61,62,42,0.880267364,165,9,0.085538348

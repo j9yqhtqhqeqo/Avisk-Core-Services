@@ -144,7 +144,11 @@ class DataSourceProcessor:
                     self.download_webpage_as_pdf_file(
                         url=source_url, f_name=l_file_location, f_log=self.logfile)
                 elif (source_type == 'file'):
-                    print('Processing Manually dowloaded file')
+                    print('Processing Manually dowloaded file:')
+                    l_file_location = PARM_PDF_IN_FOLDER + \
+                        '/' + 'Manual Downloads' + '/'+source_url
+                    print(l_file_location)
+
 
                 # Convert the downloaded file to Text Format
                 ouput_folder = f'{PARM_PDF_OUT_FOLDER}/{year}'

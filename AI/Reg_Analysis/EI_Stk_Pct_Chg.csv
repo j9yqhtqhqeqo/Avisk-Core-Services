@@ -1,0 +1,146 @@
+company_name,year,sector_exposure_path_name,Sector_EI,Compnay_EI,SEC_COMP,Normalized_Stock_Price_Change,Normalized_Stock_Price_Change_Scaled,,Start,Attention,End
+ANTERO RESOURCES Corp,2013,Associated Energy Costs,100,115,215,-6%,0.157006492,,,,-1
+ANTERO RESOURCES Corp,2014,Associated Energy Costs,100,120,220,-8%,0.1416476,,-1,5,-1
+ANTERO RESOURCES Corp,2015,Associated Energy Costs,100,122,222,2%,0.234121253,,-1,2,1
+ANTERO RESOURCES Corp,2016,Associated Energy Costs,97,125,222,-3%,0.187395074,,1,3,-1
+ANTERO RESOURCES Corp,2017,Associated Energy Costs,97,114,211,-8%,0.138858873,,-1,-11,-1
+ANTERO RESOURCES Corp,2018,Associated Energy Costs,88,112,200,-9%,0.123985199,,-1,-2,-1
+ANTERO RESOURCES Corp,2019,Associated Energy Costs,93,112,205,12%,0.339047761,,-1,0,1
+ANTERO RESOURCES Corp,2020,Associated Energy Costs,94,114,208,31%,0.5265701,,1,2,1
+ANTERO RESOURCES Corp,2021,Associated Energy Costs,92,112,204,10%,0.3198322,,1,-2,1
+Callon Petroleum Co,2013,Associated Energy Costs,100,104,204,22%,0.439746317,,,,1
+Callon Petroleum Co,2014,Associated Energy Costs,100,111,211,-2%,0.199533616,,1,7,-1
+Callon Petroleum Co,2015,Associated Energy Costs,100,107,207,3%,0.249275085,,-1,-4,1
+Callon Petroleum Co,2016,Associated Energy Costs,97,108,205,8%,0.300571244,,1,-2,1
+Callon Petroleum Co,2017,Associated Energy Costs,97,108,205,0%,0.219406924,,1,0,1
+Callon Petroleum Co,2018,Associated Energy Costs,88,109,197,-7%,0.147306103,,1,-8,-1
+Callon Petroleum Co,2019,Associated Energy Costs,93,150,243,-16%,0.055493744,,-1,46,-1
+Callon Petroleum Co,2020,Associated Energy Costs,94,143,237,107%,1.285380119,,-1,-6,1
+Callon Petroleum Co,2021,Associated Energy Costs,92,137,229,10%,0.32297621,,1,-8,1
+ConocoPhillips,2013,Associated Energy Costs,100,105,205,3%,0.246904413,,,,1
+ConocoPhillips,2014,Associated Energy Costs,100,90,190,-2%,0.201829552,,1,-15,-1
+ConocoPhillips,2015,Associated Energy Costs,100,121,221,-6%,0.154981401,,-1,31,-1
+ConocoPhillips,2016,Associated Energy Costs,97,119,216,4%,0.258571069,,-1,-5,1
+ConocoPhillips,2017,Associated Energy Costs,97,109,206,3%,0.246554747,,1,-10,1
+ConocoPhillips,2018,Associated Energy Costs,88,84,172,2%,0.235551479,,1,-34,1
+ConocoPhillips,2019,Associated Energy Costs,93,89,182,-7%,0.151451638,,1,10,-1
+ConocoPhillips,2020,Associated Energy Costs,94,108,202,12%,0.335465789,,-1,20,1
+ConocoPhillips,2021,Associated Energy Costs,92,97,189,14%,0.362166206,,1,-13,1
+Crescent Energy Co,2017,Associated Energy Costs,97,142,239,-7%,0.143651215,,,,-1
+Crescent Energy Co,2018,Associated Energy Costs,88,126,214,-10%,0.122217828,,-1,-25,-1
+Crescent Energy Co,2019,Associated Energy Costs,93,87,180,-11%,0.104735418,,-1,-34,-1
+Crescent Energy Co,2020,Associated Energy Costs,94,86,180,65%,0.867828794,,-1,0,1
+Crescent Energy Co,2021,Associated Energy Costs,92,75,167,11%,0.331576275,,1,-13,1
+Crescent Energy Co,2022,Associated Energy Costs,88,78,166,14%,0.355014106,,1,-1,1
+DEVON ENERGY CORP,2017,Associated Energy Costs,97,99,196,-4%,0.180260369,,,,-1
+DEVON ENERGY CORP,2018,Associated Energy Costs,88,106,194,0%,0.216998229,,-1,-2,-1
+DEVON ENERGY CORP,2019,Associated Energy Costs,93,132,225,-15%,0.071320287,,-1,31,-1
+DEVON ENERGY CORP,2020,Associated Energy Costs,94,109,203,39%,0.611167622,,-1,-22,1
+DEVON ENERGY CORP,2021,Associated Energy Costs,92,83,175,27%,0.486088123,,1,-28,1
+"Diamondback Energy, Inc.",2020,Associated Energy Costs,94,125,219,25%,0.468245329,,,,1
+"Diamondback Energy, Inc.",2021,Associated Energy Costs,92,107,199,12%,0.339258223,,1,-20,1
+Diversified Energy,2019,Associated Energy Costs,93,42,135,-5%,0.172475062,,,,-1
+Diversified Energy,2020,Associated Energy Costs,94,59,153,10%,0.315307366,,-1,18,1
+Diversified Energy,2021,Associated Energy Costs,92,50,142,0%,0.214554096,,1,-11,-1
+"EOG Resources, Inc.",2013,Associated Energy Costs,100,135,235,-4%,0.177697893,,,,-1
+"EOG Resources, Inc.",2014,Associated Energy Costs,100,126,226,15%,0.369125645,,-1,-9,1
+"EOG Resources, Inc.",2015,Associated Energy Costs,100,132,232,-4%,0.182007773,,1,6,-1
+"EOG Resources, Inc.",2016,Associated Energy Costs,97,137,234,6%,0.277371626,,-1,2,1
+"EOG Resources, Inc.",2017,Associated Energy Costs,97,122,219,1%,0.230451833,,1,-15,1
+"EOG Resources, Inc.",2018,Associated Energy Costs,88,111,199,-2%,0.202737363,,1,-20,-1
+"EOG Resources, Inc.",2019,Associated Energy Costs,93,108,201,-10%,0.118278923,,-1,2,-1
+"EOG Resources, Inc.",2020,Associated Energy Costs,94,127,221,18%,0.395249981,,-1,20,1
+"EOG Resources, Inc.",2021,Associated Energy Costs,92,112,204,11%,0.328876472,,1,-17,1
+EQT Corp,2013,Associated Energy Costs,100,56,156,6%,0.274405669,,,,1
+EQT Corp,2014,Associated Energy Costs,100,62,162,-2%,0.199194149,,1,6,-1
+EQT Corp,2015,Associated Energy Costs,100,63,163,-2%,0.195511171,,-1,1,-1
+EQT Corp,2016,Associated Energy Costs,97,64,161,-1%,0.205205209,,-1,-2,-1
+EQT Corp,2017,Associated Energy Costs,97,77,174,-3%,0.187353371,,-1,13,-1
+EQT Corp,2018,Associated Energy Costs,88,78,166,-2%,0.193400116,,-1,-8,-1
+EQT Corp,2019,Associated Energy Costs,93,74,167,-8%,0.133864716,,-1,1,-1
+EQT Corp,2020,Associated Energy Costs,94,97,191,25%,0.472692866,,-1,24,1
+EQT Corp,2021,Associated Energy Costs,92,93,185,13%,0.347647114,,1,-6,1
+EQT Corp,2022,Associated Energy Costs,88,90,178,13%,0.348906442,,,,1
+Enerplus Resources (USA) Corporation,2013,Associated Energy Costs,100,188,288,8%,0.294280238,,1,110,1
+Enerplus Resources (USA) Corporation,2014,Associated Energy Costs,100,182,282,-10%,0.119201178,,1,-6,-1
+Enerplus Resources (USA) Corporation,2015,Associated Energy Costs,100,188,288,-11%,0.104618196,,-1,6,-1
+Enerplus Resources (USA) Corporation,2016,Associated Energy Costs,97,174,271,20%,0.417311847,,-1,-17,1
+Enerplus Resources (USA) Corporation,2017,Associated Energy Costs,97,172,269,7%,0.289242693,,1,-2,1
+Enerplus Resources (USA) Corporation,2018,Associated Energy Costs,88,152,240,-4%,0.173392001,,1,-29,-1
+Enerplus Resources (USA) Corporation,2019,Associated Energy Costs,93,184,277,-15%,0.065854331,,-1,37,-1
+Enerplus Resources (USA) Corporation,2020,Associated Energy Costs,94,162,256,41%,0.626837129,,-1,-21,1
+Enerplus Resources (USA) Corporation,2021,Associated Energy Costs,92,187,279,27%,0.487902595,,1,23,1
+Hess,2013,Associated Energy Costs,100,79,179,2%,0.241118547,,,,1
+Hess,2014,Associated Energy Costs,100,79,179,-3%,0.192375746,,1,0,-1
+Hess,2015,Associated Energy Costs,100,72,172,-3%,0.189608003,,-1,-7,-1
+Hess,2016,Associated Energy Costs,97,78,175,-1%,0.208062859,,-1,3,-1
+Hess,2017,Associated Energy Costs,97,80,177,1%,0.22529607,,-1,2,1
+Hess,2018,Associated Energy Costs,88,70,158,3%,0.245565347,,1,-19,1
+Hess,2019,Associated Energy Costs,93,74,167,-6%,0.158880346,,1,9,-1
+Hess,2020,Associated Energy Costs,94,80,174,14%,0.362610185,,-1,7,1
+Hess,2021,Associated Energy Costs,92,86,178,8%,0.295661362,,1,4,1
+MARATHON OIL,2013,Associated Energy Costs,100,126,226,1%,0.227333161,,,,1
+MARATHON OIL,2014,Associated Energy Costs,100,119,219,-4%,0.175144021,,1,,-1
+MARATHON OIL,2015,Associated Energy Costs,100,112,212,-10%,0.115810003,,-1,48,-1
+MARATHON OIL,2016,Associated Energy Costs,97,132,229,7%,0.288639976,,-1,-7,1
+MARATHON OIL,2017,Associated Energy Costs,97,133,230,0%,0.221715805,,1,-7,1
+MARATHON OIL,2018,Associated Energy Costs,88,86,174,1%,0.22393093,,1,17,1
+MARATHON OIL,2019,Associated Energy Costs,93,84,177,-11%,0.106326913,,1,1,-1
+MARATHON OIL,2020,Associated Energy Costs,94,79,173,30%,0.522762708,,-1,-56,1
+MARATHON OIL,2021,Associated Energy Costs,92,92,184,19%,0.406727481,,1,3,1
+Ovintiv Inc.,2019,Associated Energy Costs,93,99,192,-14%,0.077224137,,,,-1
+Ovintiv Inc.,2020,Associated Energy Costs,94,110,204,121%,1.431991924,,-1,11,1
+Ovintiv Inc.,2021,Associated Energy Costs,92,173,265,23%,0.44605726,,1,8,1
+PIONEER NATURAL RESOURCES,2013,Associated Energy Costs,100,150,250,9%,0.311091777,,,,1
+PIONEER NATURAL RESOURCES,2014,Associated Energy Costs,100,136,236,-2%,0.194065247,,1,61,-1
+PIONEER NATURAL RESOURCES,2015,Associated Energy Costs,100,128,228,-3%,0.191092004,,-1,-15,-1
+PIONEER NATURAL RESOURCES,2016,Associated Energy Costs,97,122,219,6%,0.277686566,,-1,-14,1
+PIONEER NATURAL RESOURCES,2017,Associated Energy Costs,97,114,211,-1%,0.204925549,,1,-8,-1
+PIONEER NATURAL RESOURCES,2018,Associated Energy Costs,88,107,195,-2%,0.19794064,,-1,-9,-1
+PIONEER NATURAL RESOURCES,2019,Associated Energy Costs,93,111,204,-9%,0.127682626,,-1,-8,-1
+PIONEER NATURAL RESOURCES,2020,Associated Energy Costs,94,79,173,18%,0.399616718,,-1,-16,1
+PIONEER NATURAL RESOURCES,2021,Associated Energy Costs,92,88,180,8%,0.302311959,,1,9,1
+Range Resources,2013,Associated Energy Costs,100,125,225,0%,0.222497315,,,,1
+Range Resources,2014,Associated Energy Costs,100,129,229,-7%,0.150370215,,1,7,-1
+Range Resources,2015,Associated Energy Costs,100,115,215,-6%,0.154779338,,-1,45,-1
+Range Resources,2016,Associated Energy Costs,97,135,232,-2%,0.200419122,,-1,4,-1
+Range Resources,2017,Associated Energy Costs,97,130,227,-8%,0.135635003,,-1,-14,-1
+Range Resources,2018,Associated Energy Costs,88,137,225,-4%,0.178216514,,-1,17,-1
+Range Resources,2019,Associated Energy Costs,93,137,230,-13%,0.090358601,,-1,-5,-1
+Range Resources,2020,Associated Energy Costs,94,110,204,59%,0.807732277,,-1,-2,1
+Range Resources,2021,Associated Energy Costs,92,102,194,32%,0.539259003,,1,5,1
+SM Energy Co,2013,Associated Energy Costs,100,136,236,3%,0.25316823,,,,1
+SM Energy Co,2014,Associated Energy Costs,100,143,243,-5%,0.170709609,,1,-10,-1
+SM Energy Co,2015,Associated Energy Costs,100,145,245,-11%,0.105405341,,-1,42,-1
+SM Energy Co,2016,Associated Energy Costs,97,138,235,5%,0.267112771,,-1,7,1
+SM Energy Co,2017,Associated Energy Costs,97,151,248,-4%,0.174552366,,1,2,-1
+SM Energy Co,2018,Associated Energy Costs,88,154,242,-1%,0.212838724,,-1,-10,-1
+SM Energy Co,2019,Associated Energy Costs,93,173,266,-17%,0.051273222,,-1,13,-1
+SM Energy Co,2020,Associated Energy Costs,94,198,292,248%,2.696988327,,-1,-6,1
+SM Energy Co,2021,Associated Energy Costs,92,168,260,26%,0.4773066,,1,24,1
+SOUTHWESTERN ENERGY CO,2013,Associated Energy Costs,100,167,267,5%,0.264910582,,,,1
+SOUTHWESTERN ENERGY CO,2014,Associated Energy Costs,100,176,276,-10%,0.120964567,,1,-32,-1
+SOUTHWESTERN ENERGY CO,2015,Associated Energy Costs,100,135,235,-12%,0.102113349,,-1,7,-1
+SOUTHWESTERN ENERGY CO,2016,Associated Energy Costs,97,119,216,0%,0.220422968,,-1,9,1
+SOUTHWESTERN ENERGY CO,2017,Associated Energy Costs,97,121,218,-8%,0.136677142,,1,-41,-1
+SOUTHWESTERN ENERGY CO,2018,Associated Energy Costs,88,114,202,1%,0.232663227,,-1,-19,1
+SOUTHWESTERN ENERGY CO,2019,Associated Energy Costs,93,138,231,-11%,0.111261709,,1,2,-1
+SOUTHWESTERN ENERGY CO,2020,Associated Energy Costs,94,142,236,27%,0.491997466,,-1,-16,1
+SOUTHWESTERN ENERGY CO,2021,Associated Energy Costs,92,124,216,9%,0.309569502,,1,29,1
+Seneca Resources/NATIONAL FUEL GAS CO,2013,Associated Energy Costs,100,37,137,3%,0.248337113,,,,1
+Seneca Resources/NATIONAL FUEL GAS CO,2014,Associated Energy Costs,100,42,142,-3%,0.183935355,,1,-20,-1
+Seneca Resources/NATIONAL FUEL GAS CO,2015,Associated Energy Costs,100,28,128,-4%,0.182516166,,-1,-79,-1
+Seneca Resources/NATIONAL FUEL GAS CO,2016,Associated Energy Costs,97,74,171,2%,0.241971458,,-1,5,1
+Seneca Resources/NATIONAL FUEL GAS CO,2017,Associated Energy Costs,97,72,169,-2%,0.202161264,,1,-14,-1
+Seneca Resources/NATIONAL FUEL GAS CO,2018,Associated Energy Costs,88,75,163,2%,0.241806226,,-1,43,1
+Seneca Resources/NATIONAL FUEL GAS CO,2019,Associated Energy Costs,93,97,190,-6%,0.162090269,,1,-2,-1
+Seneca Resources/NATIONAL FUEL GAS CO,2020,Associated Energy Costs,94,96,190,5%,0.270203767,,-1,-6,1
+"VITAL ENERGY, INC.",2013,Associated Energy Costs,100,152,252,7%,0.292751783,,,,1
+"VITAL ENERGY, INC.",2014,Associated Energy Costs,100,132,232,-8%,0.136896494,,1,0,-1
+"VITAL ENERGY, INC.",2015,Associated Energy Costs,100,148,248,-7%,0.153370058,,-1,62,-1
+"VITAL ENERGY, INC.",2016,Associated Energy Costs,97,133,230,13%,0.349535103,,-1,-20,1
+"VITAL ENERGY, INC.",2017,Associated Energy Costs,97,129,226,-6%,0.155536648,,1,16,-1
+"VITAL ENERGY, INC.",2018,Associated Energy Costs,88,124,212,-10%,0.114615778,,-1,-18,-1
+"VITAL ENERGY, INC.",2019,Associated Energy Costs,93,112,205,-13%,0.088973313,,-1,-4,-1
+"VITAL ENERGY, INC.",2020,Associated Energy Costs,94,107,201,-13%,0.093014473,,-1,-14,-1
+"VITAL ENERGY, INC.",2021,Associated Energy Costs,92,93,185,24%,0.458737142,,-1,-7,1

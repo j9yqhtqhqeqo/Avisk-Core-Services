@@ -208,7 +208,7 @@ class DictionaryManager:
 
             new_exclude_file_name = 'new_exclude_list_'+ f'{dt.datetime.now()}.txt'
             os.rename(NEW_EXCLUDE_DITCTORY_ITEM_PATH,f'{VALIDATION_FILES_FOLDER}{new_exclude_file_name}')
-            print('Sent File'+new_exclude_file_name+'for Validation')
+            print('Sent File:'+new_exclude_file_name+'for Validation')
 
                 
 class ContextResolver:

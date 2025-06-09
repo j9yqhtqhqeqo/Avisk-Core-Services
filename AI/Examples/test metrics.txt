@@ -1,0 +1,4 @@
+Error Metrics:
+Mean Absolute Error (MAE): 1.574
+Mean Squared Error (MSE): 6.434
+Root Mean Squared Error (RMSE): 2.537

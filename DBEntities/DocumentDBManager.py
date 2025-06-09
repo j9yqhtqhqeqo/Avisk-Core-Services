@@ -5,7 +5,7 @@ sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 import pyodbc
 import datetime as dt
 import re
-from Utilities.Lookups import Lookups
+from Utilities.Lookups import Lookups,DB_Connection
 
 from DocumentHeaderEntity import DocHeaderEntity
 
@@ -16,7 +16,7 @@ class DocumentDBManager():
         super().__init__()
         self.d_current_document_seed=0
         self.b_load_document_seed_from_db = True
-        self.dbConnection = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
+        self.dbConnection = pyodbc.connect(DB_Connection().DEV_DB_CONNECTION_STRING)
         self.current_count:int
         
     def getCurrentDocumentSeed(self):

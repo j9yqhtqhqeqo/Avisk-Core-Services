@@ -1,11 +1,14 @@
-import pyodbc
-from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
+from DBEntities.DataSourceDBEntity import DataSourceDBEntity
+import pyodbc
+from Utilities.Lookups import Lookups, Processing_Type, DB_Connection
 
-DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
+
+
+DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
 
 
@@ -29,7 +32,12 @@ class DataSourceDBManager():
 
         cursor = self.dbConnection.cursor()
         cursor.execute("select max(batch_id) from dbo.t_document")
-        new_batch_id = cursor.fetchone()[0] + 1
+        last_batch_id = cursor.fetchone()[0]
+        if last_batch_id is None:
+            new_batch_id = 1
+        else:
+            new_batch_id = last_batch_id + 1
+
         return new_batch_id
 
     # Get unprocessed data source List
@@ -119,5 +127,5 @@ class DataSourceDBManager():
             self.add_stage1_processed_files_to_t_document(document, False)
 
 
-data_src_mgr = DataSourceDBManager("Test")
+data_src_mgr = DataSourceDBManager("Development")
 data_src_mgr.datafix_load_t_document_bulk()

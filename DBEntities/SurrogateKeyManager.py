@@ -3,13 +3,12 @@ from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 from Utilities.LoggingServices import logGenerator
-from Utilities.Lookups import Lookups
+from Utilities.Lookups import Lookups,DB_Connection
 import pyodbc
 
 PARM_LOGFILE = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
-DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
-TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
+DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 
 
 key_word_hit_id =0

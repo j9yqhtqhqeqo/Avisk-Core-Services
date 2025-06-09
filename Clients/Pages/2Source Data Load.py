@@ -32,7 +32,8 @@ class StartUpClass:
         (DataSourceProcessor(self.database_context)).download_content_from_source_and_process_text()
 
     def run_online_Mode(self):
-        database_context = st.radio("Database Context",["Development","Test"])
+        database_context = st.radio(
+            "Database Context", ["Development", "Test"], index=0)
         if(database_context == 'Development'):
             self.database_context='Development'
         else:

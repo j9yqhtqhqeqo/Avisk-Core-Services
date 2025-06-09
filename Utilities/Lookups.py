@@ -28,3 +28,6 @@ class Processing_Type:
         self.Exp_Int_Insight_GEN = 8
         self.Mitigation_Exp_INT_Insight_GEN = 9
 
+class DB_Connection:
+     def __init__(self):
+        self.DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=avisk-dev-server.database.windows.net;UID=aviskdbadmin;PWD=Qf8wiegqej8h!;database=avisk-dev'

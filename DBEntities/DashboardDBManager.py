@@ -5,11 +5,13 @@ sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity, Triangle_Chart_DB_Entity, YOY_DB_Entity,Exposure_Control_Chart_DB_Entity
 from DBEntities.FinancialMetricsDBEntities import FinancialMetricsDBEntity
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
+from Utilities.Lookups import Lookups, Processing_Type, DB_Connection
+
 import pyodbc
 import pandas as pd
 
 
-DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
+DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
 
 

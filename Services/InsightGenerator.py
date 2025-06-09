@@ -1381,7 +1381,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                                            insight_entity.keyword1+' ,'+insight_entity.keyword2 + " ,Score"+str(score))
             # print("Mitigation:"+mitigation_keyword+",Exp Keywords:"+exp_insight_entity.keyword1+' ,'+exp_insight_entity.keyword2, +" , Score"+score)
 
-    def generate_mitigation_exp_int_insights(self, document_list: [], batch_num=0):
+    def generate_mitigation_exp_int_insights(self, document_list, batch_num=0):
         self.log_generator.log_details(
             "Generating Exposure Pathway, ->Internalization -> Mitigation Insights")
         print("###########################################################")

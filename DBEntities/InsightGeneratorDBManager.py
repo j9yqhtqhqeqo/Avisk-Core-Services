@@ -12,7 +12,7 @@ from DBEntities.ProximityEntity import Insight
 from DBEntities.ProximityEntity import MitigationExpIntInsight
 from DBEntities.ProximityEntity import ExpIntInsight
 from DBEntities.ProximityEntity import DocumentEntity
-from Utilities.Lookups import Lookups
+from Utilities.Lookups import Lookups,DB_Connection
 from Utilities.LoggingServices import logGenerator
 from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
 
@@ -24,8 +24,7 @@ EXP_INT_MITIGATION_THRESHOLD = 10
 
 PARM_LOGFILE = (
     r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
-DEV_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev'
-TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
+DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 DB_LOGGING_ENABLED = True
 
 
@@ -592,20 +591,23 @@ class InsightGeneratorDBManager:
 
     def update_validation_completed_status(self):
         exp_sql = f"UPDATE t_document set \
-                        exp_validation_completed_ind = 1,,modify_dt = CURRENT_TIMESTAMP ,\
+                        exp_validation_completed_ind = 1,modify_dt = CURRENT_TIMESTAMP \
                   where \
                         exp_validation_completed_ind = 2 and exp_pathway_keyword_search_completed_ind = 0"
 
         int_sql = f"UPDATE t_document set \
-                        int_validation_completed_ind =1,modify_dt = CURRENT_TIMESTAMP ,\
+                        int_validation_completed_ind =1,modify_dt = CURRENT_TIMESTAMP \
                     where \
                         int_validation_completed_ind = 2 and internalization_keyword_search_completed_ind = 0"
 
         mit_sql = f"UPDATE t_document set \
-                        mit_validation_completed_ind = 1,modify_dt = CURRENT_TIMESTAMP ,\
+                        mit_validation_completed_ind = 1,modify_dt = CURRENT_TIMESTAMP \
                     where \
                         mit_validation_completed_ind = 2 and mitigation_search_completed_ind = 0"
         try:
+            # print(exp_sql)
+            # print(int_sql)
+            # print(mit_sql)
             cursor = self.dbConnection.cursor()
             cursor.execute(exp_sql)
             cursor.execute(int_sql)
