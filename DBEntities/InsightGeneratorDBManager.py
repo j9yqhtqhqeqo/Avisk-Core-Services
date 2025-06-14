@@ -1415,15 +1415,19 @@ class InsightGeneratorDBManager:
                       INNER JOIN t_key_word_hits exp2_hits on exp2_hits.key_word_hit_id = expint.exp_keyword_hit_id2\
                       INNER JOIN  t_key_word_hits int1_hits on int1_hits.key_word_hit_id = expint.int_key_word_hit_id1\
                       INNER JOIN  t_key_word_hits int2_hits on int2_hits.key_word_hit_id = expint.int_key_word_hit_id2\
-                where expint.[year] = ? and expint.document_id = ? and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD} and expint.exposure_path_id in (\
-                                select  top 10 exposure_path_id\
-                                from t_sector_exp_insights where year= ? and sector_id=? order by score_normalized DESC)"
+                where expint.[year] = ? and expint.document_id = ? and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD}"
+       
+        # DATE:Jun 10, 2025 - Filtering will not work if Sector Scores are not yet calculated
+        # and expint.exposure_path_id in (\
+        #                         select  top 10 exposure_path_id\
+        #                         from t_sector_exp_insights where year= ? and sector_id=? order by score_normalized DESC)"
 
         try:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql,year, document_id, year,sector_id)
+            cursor.execute(sql,year, document_id)
+            # cursor.execute(sql,year, document_id, year,sector_id)
             rows = cursor.fetchall()
             for row in rows:
                 insight_entity = MitigationExpIntInsight()
@@ -2141,7 +2145,6 @@ class InsightGeneratorDBManager:
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
-        cursor.close()
 
         for sector_year in sector_year_list:
             try:
@@ -2243,7 +2246,7 @@ class InsightGeneratorDBManager:
                 print(f"Error: {str(exc)}")
                 raise exc
         cursor.close()
-        print('Completed Processing Triangulation Chart Data')
+        print('Completed Processing YoY Chart Data')
 
 #
 #     def test_in_class(self):

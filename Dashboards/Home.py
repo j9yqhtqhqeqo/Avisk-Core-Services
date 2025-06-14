@@ -1,9 +1,13 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
 from pylab import *
-import mplcursors
+# import mplcursors
 import streamlit as st
 import mpld3
 import streamlit.components.v1 as components

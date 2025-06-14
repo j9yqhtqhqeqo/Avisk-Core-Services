@@ -1,6 +1,6 @@
-# import sys
-# from pathlib import Path
-# sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 import streamlit as st
 import plotly.express as px
@@ -41,7 +41,8 @@ class StartUpClass:
             self.sl_sector = st.selectbox(
                 'Sector:', (self.dataset_sector_sl))
 
-            df = pd.read_excel("CompanyList.xlsx")
+            df = pd.read_excel(
+                "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/ESGInsights/Pages/CompanyList.xlsx")
 
             self.dataset_sector_comp_df = df[["Company", "Sector"]]
 
@@ -162,7 +163,8 @@ class StartUpClass:
                 str(self.sl_year_start)
 
     def get_exposure_list_from_file(self):
-        df = pd.read_excel("Top10ChartData.xlsx")
+        df = pd.read_excel(
+            "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/ESGInsights/Pages/Top10ChartData.xlsx")
         self.dataset_all = df[["year", "company_name", "top10_sector_exposure", "degree_of_control_sector_normalized", "degree_of_control_company_normalized",
                                "top10_company_exposure"]].round(2)
 
@@ -186,7 +188,8 @@ class StartUpClass:
     def get_triangulation_data_from_file(self):
         # print('Loading Triangulation data from File.....')
 
-        df = pd.read_excel("TriangulationData.xlsx")
+        df = pd.read_excel(
+            "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/ESGInsights/Pages/TriangulationData.xlsx")
         self.dataset_all = df[["company_name", "year", "sector_exposure_path_name", "Sector_EI",
                                "Compnay_EI", "Sector_EM", "Company_EM", "Sector_IM", "Company_IM"]].round(2)
 
@@ -211,7 +214,8 @@ class StartUpClass:
         return self.triangle_data_list
 
     def get_yoy_data_from_file(self):
-        df = pd.read_excel("YearOverYear.xlsx")
+        df = pd.read_excel(
+            "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/ESGInsights/Pages/YearOverYear.xlsx")
         self.dataset_all = df[["year", "company_name", "exposure_path_name",
                                "exposure_score", "exposure_score_normalized"]].round(2)
 
@@ -235,7 +239,8 @@ class StartUpClass:
         return self.yoy_exposure_list
 
     def get_exposure_vs_control_data_from_file(self):
-        df = pd.read_excel("ExposureVsControl.xlsx")
+        df = pd.read_excel(
+            "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/ESGInsights/Pages/ExposureVsControl.xlsx")
         self.dataset_all = df[["year", "company_name", "exposure_path_name",
                                "exposure_score", "exposure_control_score"]].round(2)
 

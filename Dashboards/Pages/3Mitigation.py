@@ -8,7 +8,7 @@ import altair as alt
 import streamlit.components.v1 as components
 import mpld3
 import streamlit as st
-import mplcursors
+# import mplcursors
 from pylab import *
 import plotly.express as px
 import pandas as pd
@@ -21,7 +21,7 @@ from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
 
 
 
-# internalization_list = DashboardDBManager("Test").get_mitigation_insights()
+# internalization_list = DashboardDBManager("Development").get_mitigation_insights()
 # df = pd.DataFrame([vars(internalization) for internalization in internalization_list])
 
 st.set_page_config(layout="wide")
@@ -36,7 +36,7 @@ class StartUpClass:
         with st.sidebar:
 
             self.dataset_sector_sl, self.dataset_sector_comp_sl, self.dataset_year_sl, self.dataset_doctype_sl = DashboardDBManager(
-                "Test").get_sector_company_year_doctype_list()
+                "Development").get_sector_company_year_doctype_list()
 
             self.sl_sector = st.selectbox(
                 'Sector:', (self.dataset_sector_sl))
@@ -71,10 +71,10 @@ class StartUpClass:
             content_type = 2
 
         if (all_years):
-            internalization_list = DashboardDBManager("Test").get_mitigation_insights(
+            internalization_list = DashboardDBManager("Development").get_mitigation_insights(
                 self.sl_company, 0, content_type)
         else:
-            internalization_list = DashboardDBManager("Test").get_mitigation_insights(
+            internalization_list = DashboardDBManager("Development").get_mitigation_insights(
                 self.sl_company, self.sl_year_start, content_type)
 
         df = pd.DataFrame([vars(internalization)
@@ -209,7 +209,7 @@ class StartUpClass:
 
     def create_sector_analysis(self):
 
-        internalization_list = DashboardDBManager("Test").get_sector_mitigation_insight(
+        internalization_list = DashboardDBManager("Development").get_sector_mitigation_insight(
             self.sl_sector, self.sl_year_start)
 
         df = pd.DataFrame([vars(internalization)
@@ -259,7 +259,7 @@ class StartUpClass:
         elif (self.sl_doctype == 'Financial Report'):
             content_type = 2
 
-        company_internalization_list = DashboardDBManager("Test").get_mitigation_insights(
+        company_internalization_list = DashboardDBManager("Development").get_mitigation_insights(
             self.sl_company, self.sl_year_start, content_type)
         df = pd.DataFrame([vars(internalization)
                           for internalization in company_internalization_list])
@@ -267,7 +267,7 @@ class StartUpClass:
         self.company_chart_header = self.sl_company + \
             ' Year:' + str(self.sl_year_start)
 
-        competitor_internalization_list = DashboardDBManager("Test").get_mitigation_insights(
+        competitor_internalization_list = DashboardDBManager("Development").get_mitigation_insights(
             self.sl_competitor, self.sl_year_start, content_type)
         df = pd.DataFrame([vars(internalization)
                           for internalization in competitor_internalization_list])
@@ -343,7 +343,7 @@ class StartUpClass:
         elif (self.sl_doctype == 'Financial Report'):
             content_type = 2
 
-        company_internalization_list = DashboardDBManager("Test").get_mitigation_insights(
+        company_internalization_list = DashboardDBManager("Development").get_mitigation_insights(
             self.sl_company, self.sl_year_start, content_type)
 
         df = pd.DataFrame([vars(internalization)
@@ -354,7 +354,7 @@ class StartUpClass:
         self.company_chart_header = self.sl_company + \
             ' Year:' + str(self.sl_year_start)
 
-        sector_internalization_list = DashboardDBManager("Test").get_sector_mitigation_insight(
+        sector_internalization_list = DashboardDBManager("Development").get_sector_mitigation_insight(
             self.sl_sector, self.sl_year_start)
 
         df = pd.DataFrame([vars(internalization)

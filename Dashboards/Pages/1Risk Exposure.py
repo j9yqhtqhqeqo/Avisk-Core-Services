@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from pylab import *
-import mplcursors
+# import mplcursors
 import streamlit as st
 import mpld3
 import streamlit.components.v1 as components
@@ -19,7 +19,7 @@ from DBEntities.DashboardDBManager import DashboardDBManager
 
 
 
-exposure_list = DashboardDBManager("Test").get_exposure_insights()
+exposure_list = DashboardDBManager("Development").get_exposure_insights()
 df = pd.DataFrame([vars(exposure) for exposure in exposure_list])
 
 
@@ -36,7 +36,7 @@ class StartUpClass:
         with st.sidebar:
 
             self.dataset_sector_sl, self.dataset_sector_comp_sl, self.dataset_year_sl, self.dataset_doctype_sl = DashboardDBManager(
-                "Test").get_sector_company_year_doctype_list()
+                "Development").get_sector_company_year_doctype_list()
 
             self.sl_sector = st.selectbox(
                 'Sector:', (self.dataset_sector_sl))
@@ -70,7 +70,7 @@ class StartUpClass:
         else:
             content_type = 2
 
-        exposure_list = DashboardDBManager("Test").get_exposure_insights_by_company(
+        exposure_list = DashboardDBManager("Development").get_exposure_insights_by_company(
             self.sl_company, self.sl_year_start, content_type)
 
         df = pd.DataFrame([vars(exposure) for exposure in exposure_list])
@@ -300,7 +300,7 @@ class StartUpClass:
 
     def create_sector_analysis(self):
 
-        exposure_list = DashboardDBManager("Test").get_sector_exposure_insight(
+        exposure_list = DashboardDBManager("Development").get_sector_exposure_insight(
             self.sl_sector, self.sl_year_start)
 
         df = pd.DataFrame([vars(exposure) for exposure in exposure_list])
@@ -348,7 +348,7 @@ class StartUpClass:
         elif (self.sl_doctype == 'Financial Report'):
             content_type = 2
 
-        company_exposure_list = DashboardDBManager("Test").get_exposure_insights_by_company(
+        company_exposure_list = DashboardDBManager("Development").get_exposure_insights_by_company(
             self.sl_company, self.sl_year_start, content_type)
         df = pd.DataFrame([vars(exposure)
                           for exposure in company_exposure_list])
@@ -356,7 +356,7 @@ class StartUpClass:
         self.company_chart_header = self.sl_company + \
             ' Year:' + str(self.sl_year_start)
 
-        competitor_exposure_list = DashboardDBManager("Test").get_exposure_insights_by_company(
+        competitor_exposure_list = DashboardDBManager("Development").get_exposure_insights_by_company(
             self.sl_competitor, self.sl_year_start, content_type)
         df = pd.DataFrame([vars(exposure)
                           for exposure in competitor_exposure_list])
@@ -431,7 +431,7 @@ class StartUpClass:
         elif (self.sl_doctype == 'Financial Report'):
             content_type = 2
 
-        company_exposure_list = DashboardDBManager("Test").get_exposure_insights_by_company(
+        company_exposure_list = DashboardDBManager("Development").get_exposure_insights_by_company(
             self.sl_company, self.sl_year_start, content_type)
 
         df = pd.DataFrame([vars(exposure)
@@ -442,7 +442,7 @@ class StartUpClass:
         self.company_chart_header = self.sl_company + \
             ' Year:' + str(self.sl_year_start)
 
-        sector_exposure_list = DashboardDBManager("Test").get_sector_exposure_insight(
+        sector_exposure_list = DashboardDBManager("Development").get_sector_exposure_insight(
             self.sl_sector, self.sl_year_start)
 
         df = pd.DataFrame([vars(exposure)

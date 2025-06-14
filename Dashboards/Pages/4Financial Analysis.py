@@ -8,7 +8,7 @@ import altair as alt
 import streamlit.components.v1 as components
 import mpld3
 import streamlit as st
-import mplcursors
+# import mplcursors
 from pylab import *
 import plotly.express as px
 import pandas as pd
@@ -28,7 +28,7 @@ class StartUpClass:
         with st.sidebar:
 
             self.dataset_sector_sl, self.dataset_sector_comp_sl, self.dataset_year_sl, self.dataset_doctype_sl = DashboardDBManager(
-                "Test").get_sector_company_year_doctype_list()
+                "Development").get_sector_company_year_doctype_list()
 
             self.sl_sector = st.selectbox(
                 'Sector:', (self.dataset_sector_sl))
@@ -78,7 +78,7 @@ class StartUpClass:
         else:
             content_type = 2
 
-        exposure_list = DashboardDBManager("Test").get_exposure_insights_by_company(
+        exposure_list = DashboardDBManager("Development").get_exposure_insights_by_company(
             self.sl_company, self.sl_year_start, content_type)
 
         df = pd.DataFrame([vars(exposure) for exposure in exposure_list])
@@ -117,7 +117,7 @@ class StartUpClass:
             st.altair_chart(chart_data, use_container_width=True)
 
 
-            financial_data = DashboardDBManager('Test').get_financial_metrics(self.sl_company, self.sl_year_start)
+            financial_data = DashboardDBManager('Development').get_financial_metrics(self.sl_company, self.sl_year_start)
 
             df = pd.DataFrame([vars(metric) for metric in financial_data])
 

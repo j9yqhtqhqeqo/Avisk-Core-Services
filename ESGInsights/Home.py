@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from pylab import *
-import mplcursors
 import streamlit as st
 import mpld3
 import streamlit.components.v1 as components

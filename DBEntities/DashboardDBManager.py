@@ -603,6 +603,6 @@ class DashboardDBManager():
         return self.dashboard_data_list
 
 
-l_start_class = DashboardDBManager("Test")
+l_start_class = DashboardDBManager("Development")
 
-l_start_class.get_exposure_vs_control_measures(2018, 'Chesapeake Energy')
+l_start_class.get_exposure_vs_control_measures(2018, 'SIIC')

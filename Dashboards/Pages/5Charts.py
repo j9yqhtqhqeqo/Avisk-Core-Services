@@ -34,7 +34,7 @@ class StartUpClass:
         with st.sidebar:
 
             self.dataset_sector_sl, self.dataset_sector_comp_sl, self.dataset_year_sl, self.dataset_doctype_sl = DashboardDBManager(
-                "Test").get_sector_company_year_doctype_list()
+                "Development").get_sector_company_year_doctype_list()
 
             self.sl_sector = st.selectbox(
                 'Sector:', (self.dataset_sector_sl))
@@ -66,8 +66,8 @@ class StartUpClass:
             tab_titles)
 
         with top10_exposures:
-            # self.load_data_for_top10_chart()
-            self.load_data_for_top10_chart(from_file=True)
+            self.load_data_for_top10_chart()
+            # self.load_data_for_top10_chart(from_file=True)
             self.draw_top10_exposure_plot()
 
         with triangles:
@@ -103,7 +103,7 @@ class StartUpClass:
             self.dataset = df.round(2)
 
         else:
-            self.exposure_list = DashboardDBManager("Test").get_top10_exposure_control_measures(
+            self.exposure_list = DashboardDBManager("Development").get_top10_exposure_control_measures(
             self.sl_year_start, self.sl_company)
             df = pd.DataFrame([vars(exposure) for exposure in self.exposure_list])
             self.dataset = df.round(2)
@@ -113,7 +113,7 @@ class StartUpClass:
         
     def load_data_for_triangles_chart(self):
 
-        self.exposure_list = DashboardDBManager("Test").get_triangle_measures(
+        self.exposure_list = DashboardDBManager("Development").get_triangle_measures(
         self.sl_year_start, self.sl_company)
 
         df = pd.DataFrame([vars(exposure) for exposure in self.exposure_list])
@@ -127,7 +127,7 @@ class StartUpClass:
 
     def load_data_for_yoy_chart(self):
 
-        self.exposure_list = DashboardDBManager("Test").get_yoy_measures(self.sl_company)
+        self.exposure_list = DashboardDBManager("Development").get_yoy_measures(self.sl_company)
 
         df = pd.DataFrame([vars(exposure) for exposure in self.exposure_list])
 
@@ -152,7 +152,7 @@ class StartUpClass:
     def load_data_for_exposure_control_chart(self):
 
         self.exposure_list = DashboardDBManager(
-            "Test").get_exposure_vs_control_measures(self.sl_year_start,self.sl_company)
+            "Development").get_exposure_vs_control_measures(self.sl_year_start,self.sl_company)
 
         df = pd.DataFrame([vars(exposure) for exposure in self.exposure_list])
 
