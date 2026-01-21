@@ -1,0 +1,6 @@
+# PostgreSQL dependencies for GCC database migration
+psycopg2-binary>=2.9.0
+google-cloud-secret-manager>=2.16.0
+
+# Optional: For connection pooling in production
+psycopg2[pool]>=2.9.0

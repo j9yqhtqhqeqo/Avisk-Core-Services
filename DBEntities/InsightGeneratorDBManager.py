@@ -1,21 +1,20 @@
+from Utilities.Lookups import Lookups, DB_Connection
+from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
+from Utilities.LoggingServices import logGenerator
+from DBEntities.ProximityEntity import DocumentEntity
+from DBEntities.ProximityEntity import ExpIntInsight
+from DBEntities.ProximityEntity import MitigationExpIntInsight
+from DBEntities.ProximityEntity import Insight
+from DBEntities.ProximityEntity import KeyWordLocationsEntity
+from DBEntities.ProximityEntity import ProximityEntity
+from DBEntities.DictionaryEntity import DictionaryEntity
+from DBEntities.DocumentHeaderEntity import DocHeaderEntity
+import datetime as dt
+import psycopg2.extras
+import psycopg2
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
-import pyodbc
-import datetime as dt
-from DBEntities.DocumentHeaderEntity import DocHeaderEntity
-from DBEntities.DictionaryEntity import DictionaryEntity
-from DBEntities.ProximityEntity import ProximityEntity
-from DBEntities.ProximityEntity import KeyWordLocationsEntity
-from DBEntities.ProximityEntity import Insight
-from DBEntities.ProximityEntity import MitigationExpIntInsight
-from DBEntities.ProximityEntity import ExpIntInsight
-from DBEntities.ProximityEntity import DocumentEntity
-from Utilities.Lookups import Lookups,DB_Connection
-from Utilities.LoggingServices import logGenerator
-from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
-
 
 
 INSIGHT_SCORE_THRESHOLD = 0
@@ -43,7 +42,7 @@ class InsightGeneratorDBManager:
         else:
             raise Exception("Database context Undefined")
 
-        self.dbConnection = pyodbc.connect(connection_string)
+        self.dbConnection = psycopg2.connect(connection_string)
 
         self.d_next_seed = 0
         self.batch_id = 0
@@ -61,7 +60,7 @@ class InsightGeneratorDBManager:
         sql = "SELECT sic.sic_code, sic.industry_title,header.conformed_name, header.form_type,header.document_id, header.document_name, header.reporting_year, header.reporting_quarter\
                FROM dbo.t_sic_codes sic INNER JOIN dbo.t_sec_document_header header ON sic.sic_code = header.sic_code_4_digit \
                     and header.reporting_year = 2022\
-                    where sic.industry_title like ? \
+                    where sic.industry_title like %s \
                     and form_type ='10-K' and reporting_quarter =1\
                     order by sic.sic_code"
 
@@ -75,13 +74,20 @@ class InsightGeneratorDBManager:
                 # print(row.sic_code, ' ', row.industry_title, row.conformed_name, row.form_type,
                 #       row.document_id, row.document_name, row.reporting_year, row.reporting_quarter)
                 doc_header_entity = DocHeaderEntity()
-                doc_header_entity.document_id = row.document_id
-                doc_header_entity.document_name = row.document_name
-                doc_header_entity.reporting_year = row.reporting_year
-                doc_header_entity.reporting_quarter = row.reporting_quarter
-                doc_header_entity.conformed_name = row.conformed_name
-                doc_header_entity.sic_code = row.sic_code
-                doc_header_entity.form_type = row.form_type
+                # document_id is 5th column (index 4)
+                doc_header_entity.document_id = row[4]
+                # document_name is 6th column (index 5)
+                doc_header_entity.document_name = row[5]
+                # reporting_year is 7th column (index 6)
+                doc_header_entity.reporting_year = row[6]
+                # reporting_quarter is 8th column (index 7)
+                doc_header_entity.reporting_quarter = row[7]
+                # conformed_name is 3rd column (index 2)
+                doc_header_entity.conformed_name = row[2]
+                # sic_code is 1st column (index 0)
+                doc_header_entity.sic_code = row[0]
+                # form_type is 4th column (index 3)
+                doc_header_entity.form_type = row[3]
                 company_list.append(doc_header_entity)
 
             cursor.close()
@@ -100,8 +106,8 @@ class InsightGeneratorDBManager:
         company_id: int
         sql = "SELECT comp.company_id\
                FROM t_sec_company comp\
-               where comp.conformed_name = ? \
-                     and comp.reporting_year =?"
+               where comp.conformed_name = %s \
+                     and comp.reporting_year = %s"
 
         try:
             # Execute the SQL query
@@ -182,7 +188,7 @@ class InsightGeneratorDBManager:
         keyword_list = []
         sql = 'select key_word_hit_id, key_word, locations, frequency, dictionary_type, dictionary_id, document_id, exposure_path_id, internalization_id \
                from t_key_word_hits \
-               where dictionary_type =? and dictionary_id = ? and document_id =?\
+               where dictionary_type = %s and dictionary_id = %s and document_id = %s\
                order by key_word_hit_id'
         try:
             # Execute the SQL query
@@ -194,14 +200,22 @@ class InsightGeneratorDBManager:
             for row in rows:
 
                 keyword_loc_entity = KeyWordLocationsEntity()
-                keyword_loc_entity.key_word_hit_id = row.key_word_hit_id
-                keyword_loc_entity.key_word = row.key_word
-                keyword_loc_entity.locations = row.locations
-                keyword_loc_entity.frequency = row.frequency
-                keyword_loc_entity.dictionary_id = row.dictionary_id
-                keyword_loc_entity.dictionary_type = row.dictionary_type
-                keyword_loc_entity.exposure_path_id = row.exposure_path_id
-                keyword_loc_entity.internalization_id = row.internalization_id
+                # key_word_hit_id is 1st column (index 0)
+                keyword_loc_entity.key_word_hit_id = row[0]
+                # key_word is 2nd column (index 1)
+                keyword_loc_entity.key_word = row[1]
+                # locations is 3rd column (index 2)
+                keyword_loc_entity.locations = row[2]
+                # frequency is 4th column (index 3)
+                keyword_loc_entity.frequency = row[3]
+                # dictionary_type is 5th column (index 4)
+                keyword_loc_entity.dictionary_type = row[4]
+                # dictionary_id is 6th column (index 5)
+                keyword_loc_entity.dictionary_id = row[5]
+                # exposure_path_id is 8th column (index 7)
+                keyword_loc_entity.exposure_path_id = row[7]
+                # internalization_id is 9th column (index 8)
+                keyword_loc_entity.internalization_id = row[8]
 
                 keyword_list.append(keyword_loc_entity)
 
@@ -255,7 +269,7 @@ class InsightGeneratorDBManager:
 
         sql = f"select distinct hits.document_id, hits.dictionary_id, hits.document_name,hits.dictionary_type \
             from t_key_word_hits hits \
-            where  hits.dictionary_type = ? and hits.document_id = ?"
+            where  hits.dictionary_type = %s and hits.document_id = %s"
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
@@ -285,7 +299,7 @@ class InsightGeneratorDBManager:
 
         cursor = self.dbConnection.cursor()
 
-        cursor.execute(sql,document_id)
+        cursor.execute(sql, document_id)
 
         sector_id = cursor.fetchone()[0]
         if (sector_id):
@@ -434,17 +448,18 @@ class InsightGeneratorDBManager:
         #       str(total_records_added_to_db))
 
     def cleanup_insights_for_document(self, dictionary_type, document_list):
-        
+
         l_str_document_list_for_deletion: str
         first_element = True
         for document_item in document_list:
             # print(str(document_item.document_id))
-            if(first_element):
+            if (first_element):
                 l_str_document_list_for_deletion = '('+str(
                     document_item.document_id)
                 first_element = False
             else:
-                l_str_document_list_for_deletion = l_str_document_list_for_deletion + ','+ str(document_item.document_id)
+                l_str_document_list_for_deletion = l_str_document_list_for_deletion + \
+                    ',' + str(document_item.document_id)
 
         l_str_document_list_for_deletion = l_str_document_list_for_deletion + ')'
 
@@ -455,7 +470,7 @@ class InsightGeneratorDBManager:
         if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
             sql = f"delete dbo.t_exposure_pathway_insights where document_id in " + \
                 l_str_document_list_for_deletion
-            
+
         elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
             sql = f"delete dbo.t_internalization_insights where document_id in" + \
                 l_str_document_list_for_deletion
@@ -467,7 +482,7 @@ class InsightGeneratorDBManager:
         elif (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
             sql = f"delete  dbo.t_mitigation_exp_insights where document_id in" + \
                 l_str_document_list_for_deletion
-            
+
         elif (dictionary_type == Lookups().Mitigation_Int_Insight_Type):
             sql = f"delete t_mitigation_int_insights where document_id in" + \
                 l_str_document_list_for_deletion
@@ -645,7 +660,6 @@ class InsightGeneratorDBManager:
 
 
 # EXPOSURE PATHWAY
-
 
     def get_exp_dictionary_term_list(self):
 
@@ -831,7 +845,6 @@ class InsightGeneratorDBManager:
 
 
 # MITIGATION
-
 
     def get_mitigation_dictionary_term_list(self):
 
@@ -1416,7 +1429,7 @@ class InsightGeneratorDBManager:
                       INNER JOIN  t_key_word_hits int1_hits on int1_hits.key_word_hit_id = expint.int_key_word_hit_id1\
                       INNER JOIN  t_key_word_hits int2_hits on int2_hits.key_word_hit_id = expint.int_key_word_hit_id2\
                 where expint.[year] = ? and expint.document_id = ? and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD}"
-       
+
         # DATE:Jun 10, 2025 - Filtering will not work if Sector Scores are not yet calculated
         # and expint.exposure_path_id in (\
         #                         select  top 10 exposure_path_id\
@@ -1426,7 +1439,7 @@ class InsightGeneratorDBManager:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor()
-            cursor.execute(sql,year, document_id)
+            cursor.execute(sql, year, document_id)
             # cursor.execute(sql,year, document_id, year,sector_id)
             rows = cursor.fetchall()
             for row in rows:
@@ -1548,7 +1561,8 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                sector_list.append(row.sector)
+                # Access by index for PostgreSQL - sector is the second column
+                sector_list.append(row[1])
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1567,7 +1581,8 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                year_list.append(row.year)
+                # Access by index for PostgreSQL - year is the first column
+                year_list.append(row[0])
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1575,7 +1590,7 @@ class InsightGeneratorDBManager:
 
         return year_list
 
-    def get_sector_id_year_list(self, sector_data_update=False, top10_chart_refeshed_ind=False, triangulation_data_refreshed_ind= False, yoy_chart_ind=False):
+    def get_sector_id_year_list(self, sector_data_update=False, top10_chart_refeshed_ind=False, triangulation_data_refreshed_ind=False, yoy_chart_ind=False):
         sector_year_list = []
 
         sector_list = []
@@ -1600,20 +1615,20 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                if(top10_chart_refeshed_ind):
+                if (top10_chart_refeshed_ind):
                     sector_year_list.append(SectorYearDBEntity(
                         SectorId=row.sector_id, Year=row.year, Company_Name=row.company_name))
-                    
+
                 elif (triangulation_data_refreshed_ind):
                     sector_year_list.append(SectorYearDBEntity(
                         SectorId=row.sector_id, Year=row.year, Company_Name=row.company_name))
-                    
+
                 elif (yoy_chart_ind):
                     sector_year_list.append(SectorYearDBEntity(
                         SectorId=row.sector_id, Year=row.year, Company_Name=row.company_name))
-                    
+
                 elif (sector_data_update):
-                        sector_year_list.append(SectorYearDBEntity(
+                    sector_year_list.append(SectorYearDBEntity(
                         SectorId=row.sector_id, Year=row.year, Company_Name='N/A'))
             cursor.close()
 
@@ -1634,7 +1649,8 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                company_list.append(row.company_name)
+                # Access by index for PostgreSQL - company_name is the first column
+                company_list.append(row[0])
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1653,7 +1669,8 @@ class InsightGeneratorDBManager:
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                doc_type_list.append(row.doc_type)
+                # Access by index for PostgreSQL - doc_type is the first column
+                doc_type_list.append(row[0])
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1932,7 +1949,6 @@ class InsightGeneratorDBManager:
                 WHERE insights.year = ? and insights.sector_id = ?\
                 GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, insights.exposure_path_id,exp.exposure_path_name'
 
-
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_insert, 'MOHAN HANUMANTHA',
                        'MOHAN HANUMANTHA', year, sector_id)
@@ -2047,7 +2063,7 @@ class InsightGeneratorDBManager:
                                'Mohan Hanumantha', year, sector_id)
                 self.dbConnection.commit()
                 cursor.close()
-        
+
         # Normalize data
         print('Normalize Rpt Exposure Path Scores')
         sql = 'select distinct document_id from t_rpt_exposure_pathway_insights where score_normalized is null'
@@ -2067,8 +2083,8 @@ class InsightGeneratorDBManager:
             raise exc
         print('Completed Normalizing Rpt Exposure Path Scores')
 
-        #Chat GPT Support
-            # self.update_exposure_rpt_unique_keywordlist(sector_id, year)
+        # Chat GPT Support
+        # self.update_exposure_rpt_unique_keywordlist(sector_id, year)
 
     def update_exposure_rpt_unique_keywordlist(self, sector_id, year):
         print('Updating Unique Keywords for sector id:' +
@@ -2120,14 +2136,13 @@ class InsightGeneratorDBManager:
 
 # Build Chart Tables
 
-    def update_chart_tables(self, generate_top10_exposure_chart_data=False, generate_triangulation_data = False, generate_yoy_chart_data = False):
+    def update_chart_tables(self, generate_top10_exposure_chart_data=False, generate_triangulation_data=False, generate_yoy_chart_data=False):
         if (generate_top10_exposure_chart_data):
             self.update_top10_chart_data()
-        if(generate_triangulation_data):
+        if (generate_triangulation_data):
             self.update_triangulation_chart_data()
-        if(generate_yoy_chart_data):
+        if (generate_yoy_chart_data):
             self.update_yoy_chart_data()
-
 
     def update_top10_chart_data(self):
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
@@ -2140,7 +2155,7 @@ class InsightGeneratorDBManager:
                   str(sector_year.SectorId)+'  Year'+str(sector_year.Year))
             try:
                 cursor.execute("sp_load_top10_exposure_data ?,?,?", sector_year.Company_Name,
-                                            sector_year.SectorId, sector_year.Year)
+                               sector_year.SectorId, sector_year.Year)
                 self.dbConnection.commit()
             except Exception as exc:
                 print(f"Error: {str(exc)}")
@@ -2148,15 +2163,14 @@ class InsightGeneratorDBManager:
 
         for sector_year in sector_year_list:
             try:
-               cursor.execute("update t_sector_year_processing set top10_chart_refeshed_ind = 1,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = ? and year = ?",
+                cursor.execute("update t_sector_year_processing set top10_chart_refeshed_ind = 1,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = ? and year = ?",
                                sector_year.SectorId, sector_year.Year)
-               self.dbConnection.commit()
+                self.dbConnection.commit()
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
         cursor.close()
         print('Completed Processing Top10 Exposure Chart Data')
-
 
     def update_triangulation_chart_data(self):
 
@@ -2200,13 +2214,12 @@ class InsightGeneratorDBManager:
         for sector_year in sector_year_list:
             print('Company:'+sector_year.Company_Name + '  Sector ID:' +
                   str(sector_year.SectorId)+'  Year'+str(sector_year.Year))
-            
-          
+
             try:
 
                 sql = 'delete  t_chart_yoy where sector_id = ? and year = ? and company_name = ?'
                 cursor.execute(sql, sector_year.SectorId,
-                           sector_year.Year, sector_year.Company_Name)
+                               sector_year.Year, sector_year.Company_Name)
 
                 sql = 'INSERT INTO t_chart_yoy(company_name, sector_id, year, exposure_path_name,exposure_score, exposure_score_normalized, added_dt, added_by,modify_dt, modify_by)\
                     SELECT  doc.company_name Company, insights.sector_id,insights.year, exp.exposure_path_name Exposure_Pathway,avg(insights.score) Score, NULL, CURRENT_TIMESTAMP, ?,CURRENT_TIMESTAMP, ?\
@@ -2218,13 +2231,14 @@ class InsightGeneratorDBManager:
                 GROUP BY  doc.company_name ,insights.sector_id,insights.year,  esg.esg_category_name , insights.exposure_path_id, exp.exposure_path_name\
                 ORDER BY doc.company_name ,insights.sector_id,insights.year, Score desc'
 
-                cursor.execute(sql, 'Mohan Hanumantha', 'Mohan Hanumantha',sector_year.Company_Name, sector_year.Year)
+                cursor.execute(sql, 'Mohan Hanumantha', 'Mohan Hanumantha',
+                               sector_year.Company_Name, sector_year.Year)
 
                 sql = 'update t_chart_yoy \
                       set exposure_score_normalized = (exposure_score * 100)/(select max(exposure_score) from t_chart_yoy where sector_id = ? and year =? and company_name = ?)\
                       ,modify_dt = CURRENT_TIMESTAMP\
                        where sector_id = ? and year =? and company_name = ?'
-                
+
                 cursor.execute(sql, sector_year.SectorId,
                                sector_year.Year, sector_year.Company_Name, sector_year.SectorId,
                                sector_year.Year, sector_year.Company_Name)
@@ -2278,4 +2292,3 @@ class InsightGeneratorDBManager:
 
 # l_startup = InsightGeneratorDBManager("Test")
 # l_startup.get_mitigation_exp_int_lists(200, 2018)
-

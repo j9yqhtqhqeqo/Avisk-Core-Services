@@ -1,18 +1,13 @@
+import psycopg2.extras
+import psycopg2
+from DBEntities.DataSourceDBEntity import DataSourceDBEntity
+from Utilities.Lookups import Lookups, Processing_Type, DB_Connection
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from Utilities.Lookups import Lookups, Processing_Type, DB_Connection
-from DBEntities.DataSourceDBEntity import DataSourceDBEntity
-import pyodbc
 
-# Driver = {ODBC Driver 18 for SQL Server};
-# Server = tcp: avisk-dev-server.database.windows.net, 1433;
-# Database = avisk-dev;
-# Uid = aviskdbadmin;
-# Pwd = {}
-# Encrypt = yes
-# TrustServerCertificate = no
+# PostgreSQL connection for GCC environment
 # Connection Timeout = 30
 
 DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
@@ -32,16 +27,16 @@ class LookupsDBManager():
         else:
             raise Exception("Database context Undefined")
 
-        self.dbConnection = pyodbc.connect(connection_string)
+        self.dbConnection = psycopg2.connect(connection_string)
 
     def get_exposure_pathway_search_status(self):
         status: str
         try:
             cursor = self.dbConnection.cursor()
-            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = ?"
-            cursor.execute(sql, 'Exp_Keyword_Search_Mode')
+            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = %s"
+            cursor.execute(sql, ('Exp_Keyword_Search_Mode',))
             rows = cursor.fetchone()
-            status = rows.data_lookups_description
+            status = rows[0]  # Access by index for PostgreSQL
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -53,10 +48,10 @@ class LookupsDBManager():
         status: str
         try:
             cursor = self.dbConnection.cursor()
-            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = ?"
-            cursor.execute(sql, 'Int_Keyword_Search_Mode')
+            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = %s"
+            cursor.execute(sql, ('Int_Keyword_Search_Mode',))
             rows = cursor.fetchone()
-            status = rows.data_lookups_description
+            status = rows[0]  # Access by index for PostgreSQL
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -68,10 +63,10 @@ class LookupsDBManager():
         status: str
         try:
             cursor = self.dbConnection.cursor()
-            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = ?"
-            cursor.execute(sql, 'Mitigation_Keyword_Search_Mode')
+            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = %s"
+            cursor.execute(sql, ('Mitigation_Keyword_Search_Mode',))
             rows = cursor.fetchone()
-            status = rows.data_lookups_description
+            status = rows[0]  # Access by index for PostgreSQL
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -99,10 +94,10 @@ class LookupsDBManager():
         status: str
         try:
             cursor = self.dbConnection.cursor()
-            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = ?"
-            cursor.execute(sql, filter_condition)
+            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = %s"
+            cursor.execute(sql, (filter_condition,))
             rows = cursor.fetchone()
-            status = rows.data_lookups_description
+            status = rows[0]  # Access by index for PostgreSQL
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -144,12 +139,12 @@ class LookupsDBManager():
             cursor = self.dbConnection.cursor()
             cursor.execute(remainsql)
             rows = cursor.fetchone()
-            remaining_documents = rows.remaining_documents
+            remaining_documents = rows[0]  # Access by index for PostgreSQL
 
             if (failedsql != 'EMPTY'):
                 cursor.execute(failedsql)
                 rows = cursor.fetchone()
-                failed_documents = rows.failed_docs
+                failed_documents = rows[0]  # Access by index for PostgreSQL
 
         except Exception as exc:
             print(f"Error: {str(exc)}")

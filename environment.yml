@@ -1,0 +1,78 @@
+name: data-company-gcc
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python
+  - python=3.11
+
+  # Core Data Science & Analytics
+  - pandas>=1.5.0
+  - numpy>=1.24.0
+  - matplotlib>=3.6.0
+  - seaborn
+
+  # Machine Learning & AI
+  - scikit-learn>=1.3.0
+  - tensorflow>=2.13.0
+  - keras>=2.13.0
+  - pytorch>=2.0.0
+  - keras-tuner
+
+  # Visualization
+  - plotly>=5.15.0
+  - altair>=5.0.0
+  - mplcursors
+  - mpld3
+
+  # Web Applications & UI
+  - streamlit>=1.25.0
+
+  # Database & Cloud
+  - psycopg2>=2.9.0
+  - google-cloud-secret-manager>=2.16.0
+
+  # Web Scraping & HTTP
+  - requests>=2.31.0
+  - beautifulsoup4>=4.12.0
+  - urllib3
+
+  # File Processing & Utilities
+  - lxml
+
+  # Development & Jupyter
+  - jupyter
+  - jupyterlab
+  - notebook
+  - ipykernel
+  - ipywidgets
+
+  # System & OS utilities (already included in Python std library)
+  # pathlib, zipfile, os, sys, datetime, time, re, io, shutil, multiprocessing
+
+  # pip dependencies (packages not available via conda)
+  - pip
+  - pip:
+    # PostgreSQL binary (faster installation)
+    - psycopg2-binary>=2.9.0
+    # Additional Google Cloud dependencies
+    - google-cloud-core>=2.4.0
+    # OpenAI (detected in GPTNarratives)
+    - openai>=1.0.0
+    # Additional ML utilities
+    - keras-tuner>=1.4.0
+    # PDF processing (if needed for document processing)
+    - PyMuPDF
+    - pdfplumber
+    # Additional data processing
+    - openpyxl  # Excel file support
+    - xlsxwriter  # Excel writing
+    # Web framework utilities
+    - streamlit-components-community
+
+# Environment variables setup instructions
+# Create a .env file or set these environment variables:
+# export DB_PASSWORD="your-database-password"
+# export ENVIRONMENT="local"  # or "cloud"
+# export OPENAI_API_KEY="your-openai-key"  # if using OpenAI services

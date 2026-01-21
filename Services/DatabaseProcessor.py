@@ -1,48 +1,51 @@
-import pyodbc
+import psycopg2
 from DocumentProcessor import tenKProcessor
 import datetime as dt
 import re
+from Utilities.Lookups import DB_Connection
+
 
 class tenKDatabaseProcessor(tenKProcessor):
 
     def __init__(self) -> None:
         super().__init__()
-        self.d_current_document_seed=0
+        self.d_current_document_seed = 0
         self.b_load_document_seed_from_db = True
-        self.dbConnection = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
-        self.current_count:int
-        
-    def processDocumentHeader(self, current_count:0, last_batch = False):
+        self.dbConnection = psycopg2.connect(
+            DB_Connection().DEV_DB_CONNECTION_STRING)
+        self.current_count: int
+
+    def processDocumentHeader(self, current_count: 0, last_batch=False):
         self.current_count = current_count
         self.b_last_batch = last_batch
         self.preProcessDocumentData()
         self.extractDocumentHeader()
         self.saveResults()
-    
 
     def getCurrentDocumentSeed(self):
-        if(self.b_load_document_seed_from_db):
+        if (self.b_load_document_seed_from_db):
             cursor = self.dbConnection.cursor()
-            cursor.execute("select max(document_id) from dbo.t_sec_document_header") 
+            cursor.execute(
+                "select max(document_id) from dbo.t_sec_document_header")
             current_seed = cursor.fetchone()[0]
-            if(current_seed):
-                self.b_load_document_seed_from_db =False
+            if (current_seed):
+                self.b_load_document_seed_from_db = False
                 self.d_current_document_seed = current_seed+1
                 return self.d_current_document_seed
             else:
                 return 1000
             cursor.close()
         else:
-            self.d_current_document_seed +=1
+            self.d_current_document_seed += 1
             return self.d_current_document_seed
 
     def getWellformedContent(self, orig_content):
         return orig_content.replace("'", "''")
- 
+
     def saveResults(self):
-        if(self.b_process_hader_only):
+        if (self.b_process_hader_only):
             try:
-                if(self.b_bulk_mode):
+                if (self.b_bulk_mode):
                     self.saveDocumentHeaderBulk()
                 else:
                     self.saveDocumentHeader()
@@ -58,31 +61,30 @@ class tenKDatabaseProcessor(tenKProcessor):
                     f_log.flush()
                 raise exc
         else:
-                try:
-                    self.insertData()
-                    return 1
-                except (Exception) as exc:
+            try:
+                self.insertData()
+                return 1
+            except (Exception) as exc:
 
-                    print(f'Error Processing File: = {self.f_input_file_path}\n')
-                    if self.f_failed_log:
-                        f_log = open(self.f_failed_log, 'a')
-                        f_log.write(f'{dt.datetime.now()}\n' +
-                                    f'Error Processing File: {self.f_input_file_path}\n')
-                        f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
-                        f_log.flush()
-                        raise exc           
+                print(f'Error Processing File: = {self.f_input_file_path}\n')
+                if self.f_failed_log:
+                    f_log = open(self.f_failed_log, 'a')
+                    f_log.write(f'{dt.datetime.now()}\n' +
+                                f'Error Processing File: {self.f_input_file_path}\n')
+                    f_log.write(f'Error Details:\n' + f'{exc.args}\n\n')
+                    f_log.flush()
+                    raise exc
 
     def saveDocumentHeader(self):
-        
+
         self.d_current_document_seed = self.getCurrentDocumentSeed()
 
-        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
-    
+        conn = psycopg2.connect(DB_Connection().DEV_DB_CONNECTION_STRING)
+
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()
         # Construct the INSERT INTO statement
 
-  
         sql = f"INSERT INTO dbo.t_sec_document_header( \
             document_id ,  reporting_year, reporting_quarter, document_name,\
             conformed_name ,sic_code, irs_number, state_of_incorporation ,fiscal_year_end ,form_type,street_1,city ,state , zip,\
@@ -113,17 +115,18 @@ class tenKDatabaseProcessor(tenKProcessor):
         return self.d_current_document_seed
 
     def saveDocumentHeaderBulk(self):
-        
+
         self.d_current_document_seed = self.getCurrentDocumentSeed()
 
         # Create a cursor object to execute SQL queries
         cursor = self.dbConnection.cursor()
         # Construct the INSERT INTO statement
 
-        sic_code_4_digit_exp = re.search('\d+', self.standard_industry_classification)
+        sic_code_4_digit_exp = re.search(
+            '\d+', self.standard_industry_classification)
         sic_code_4_digit = 0
-        if(sic_code_4_digit_exp):
-             sic_code_4_digit = int(sic_code_4_digit_exp.group())
+        if (sic_code_4_digit_exp):
+            sic_code_4_digit = int(sic_code_4_digit_exp.group())
 
         sql = f"INSERT INTO dbo.t_sec_document_header( \
             document_id ,  reporting_year, reporting_quarter, document_name,\
@@ -143,8 +146,8 @@ class tenKDatabaseProcessor(tenKProcessor):
             # Rollback the transaction if any error occurs
             print(f"Error: {str(exc)}")
             raise exc
-        
-        if(self.current_count == 100 or self.b_last_batch):
+
+        if (self.current_count == 100 or self.b_last_batch):
             try:
                 self.dbConnection.commit()
             except Exception as exc:
@@ -164,7 +167,7 @@ class tenKDatabaseProcessor(tenKProcessor):
         #         raise exc
 
     def CleanupDBConnection(self):
-        if(self.b_last_batch):
+        if (self.b_last_batch):
             try:
                 self.dbConnection.close()
                 print("Batch Processing Complete!")
@@ -176,12 +179,12 @@ class tenKDatabaseProcessor(tenKProcessor):
 
     def insertData(self):
 
-        # Establish a connection to the SQL Server database
-        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
-    
+        # Establish a connection to the PostgreSQL database
+        conn = psycopg2.connect(DB_Connection().DEV_DB_CONNECTION_STRING)
+
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()
-        conformedName ="TEST NAME"
+        conformedName = "TEST NAME"
         # Construct the INSERT INTO statement
         sql = f"INSERT INTO dbo.t_sec_document( \
             document_id , reporting_year, reporting_quarter, \
@@ -200,16 +203,7 @@ class tenKDatabaseProcessor(tenKProcessor):
                 N'{self.form_item14.item_text}',N'{self.form_item15.item_text}',N'{self.form_item16.item_text}',\
                 CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha')"
 
-
-
-
-
         # N'{self.fiscal_year_end}', N'{self.form_type}', N'{self.street_1}',N'{self.city}', N'{self.state}',N'{self.zip}',N'{self.form_item1}',\
-        
-        
-       
-        
-
 
         try:
             # Execute the SQL query
@@ -228,12 +222,11 @@ class tenKDatabaseProcessor(tenKProcessor):
         cursor.close()
         conn.close()
 
-
     def insertSeedData(self):
 
-        # Establish a connection to the SQL Server database
-        conn = pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-dev')
-    
+        # Establish a connection to the PostgreSQL database
+        conn = psycopg2.connect(DB_Connection().DEV_DB_CONNECTION_STRING)
+
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()
 
