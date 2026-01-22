@@ -1,53 +1,129 @@
+from Utilities.Lookups import Lookups, Processing_Type
+import streamlit as st
+from DBEntities.LookupsDBManager import LookupsDBManager
+from streamlit_autorefresh import st_autorefresh
+import time
 import sys
 from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-from Services.InsightGenerator import file_folder_keyWordSearchManager
-from Services.InsightGenerator import PARM_STAGE1_FOLDER
-from Services.InsightGenerator import Insight_Generator
-from Services.InsightGenerator import triangulation_Insight_Generator
-from Utilities.Lookups import Lookups
-import streamlit as st
-import threading
+
 
 class StartUpClass:
 
+    def __init__(self) -> None:
+        self.ExposurePathwaySelected = True
+        self.InternalizationSelected = True
+        self.MitigationSelected = True
 
+        self.exp_queue_size = 0
+
+        self.counter = 0
 
     def run_online_Mode(self):
 
-        st.set_page_config(
-        page_title="ESG Insights Inc.,",
-        page_icon="🧊",
-        layout="wide",
-        initial_sidebar_state="expanded",
-        )
+        database_context = st.radio(
+            "Database Context", ["Development", "Test"], index=0)
+        if (database_context == 'Development'):
+            self.database_context = 'Development'
+        else:
+            self.database_context = "Test"
+
+        st.subheader('Exposure Pathway Keyword Search', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(
+            self.database_context).get_current_processing_status(processing_type=Processing_Type().KEYWORD_GEN_EXP)
+        if (pending_documents == 0):
+            st.text(
+                'No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+            st.text("Documents in Failed Status - " + str(failed_documents))
+
+        st.subheader('Internalization Keyword Search', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(
+            self.database_context).get_current_processing_status(processing_type=Processing_Type().KEYWORD_GEN_INT)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text(
+                'No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+            st.text("Documents in Failed Status - " + str(failed_documents))
+
+        st.subheader('Mitigation Keyword Search', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(
+            self.database_context).get_current_processing_status(processing_type=Processing_Type().KEYWORD_GEN_MIT)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text(
+                'No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+            st.text(" Documents in Failed Status - " + str(failed_documents))
+
+        st.subheader('Exposure Insight Generation', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(self.database_context).get_current_processing_status(
+            processing_type=Processing_Type().EXPOSURE_INSIGHTS_GEN)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text(
+                'No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+
+        st.subheader('Internalization Insight Generation', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(self.database_context).get_current_processing_status(
+            processing_type=Processing_Type().INTERNALIZATION_INSIGHTS_GEN)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text('No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+
+        st.subheader(
+            'Exposure ->Internalization Insight Generation', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(self.database_context).get_current_processing_status(
+            processing_type=Processing_Type().Exp_Int_Insight_GEN)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text(
+                'No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+
+        st.subheader('Exposure ->Mitigation Insight Generation',
+                     divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(self.database_context).get_current_processing_status(
+            processing_type=Processing_Type().Mitigation_Exp_Insight_GEN)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text(
+                'No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+
+        st.subheader(
+            'Internalization ->Mitigation Insight Generation', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(self.database_context).get_current_processing_status(
+            processing_type=Processing_Type().Mitigation_Int_Insight_GEN)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text('No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
+
+        st.subheader(
+            'Exposure ->Internalization ->Mitigation Insight Generation', divider='blue')
+        failed_documents, pending_documents = LookupsDBManager(self.database_context).get_current_processing_status(
+            processing_type=Processing_Type().Mitigation_Exp_INT_Insight_GEN)
+        if (pending_documents == 0 and failed_documents == 0):
+            st.text('No New Documents to Process:Awaiting Batch Process Scheduling')
+        else:
+            st.text("Documents Pending to be processed - " +
+                    str(pending_documents))
 
 
-
-        st.text("ESG Insights Home")
-        st.text("Use Navigations on the Left Side to access system functions")
-       
+st_autorefresh(interval=20000, key="fizzbuzzcounter")
 startup = StartUpClass()
-
-# startup.run_interact_mode()
 startup.run_online_Mode()
-
-# startup.run_debug_mode()
-
-
-# exp_int_insght_generator = Insight_Generator()
-# print("Generating Insights for Exposure Pathway Dictionary Terms")
-
-# exp_int_insght_generator.generate_insights_with_2_factors(
-#     Lookups().Exposure_Pathway_Dictionary_Type)
-
-# print("Generating Insights for Internalization Dictionary Terms")
-# exp_int_insght_generator.generate_insights_with_2_factors(
-#     Lookups().Internalization_Dictionary_Type)
-
-# mitigation_insight_gen = triangulation_Insight_Generator()
-# mitigation_insight_gen.generate_mitigation_exp_insights()
-# mitigation_insight_gen.generate_mitigation_int_insights()
-# mitigation_insight_gen.generate_exp_int_insights()
-# mitigation_insight_gen.generate_mitigation_exp_int_insights()

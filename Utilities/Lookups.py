@@ -37,6 +37,8 @@ class DB_Connection:
 
         # Get password from Secret Manager or environment variable
         password = self._get_db_password()
+        print("Retrieved database password successfully.")
+        print(password)
 
         # Determine environment and connection method
         if os.getenv('ENVIRONMENT') == 'cloud':
@@ -44,18 +46,10 @@ class DB_Connection:
             self.DEV_DB_CONNECTION_STRING = f'host=/cloudsql/avisk-ai-platform:us-central1:avisk-core-dev dbname=avisk-core-dev-db1 user=avisk-admin password={password}'
         else:
             # Local development via Cloud SQL Auth Proxy
-            self.DEV_DB_CONNECTION_STRING = f'host=localhost port=5432 dbname=avisk-core-dev-db1 user=avisk-admin password={password}'
+            self.DEV_DB_CONNECTION_STRING = f'host=localhost port=5434 dbname=avisk-core-dev-db1 user=avisk-admin password={password}'
 
     def _get_db_password(self):
-        """Retrieve database password from Google Secret Manager or environment variable"""
-        import os
-
-        # First try environment variable for local development
-        password = os.getenv('DB_PASSWORD')
-        if password:
-            return password
-
-        # For cloud environments, retrieve from Secret Manager
+        """Retrieve database password from Google Secret Manager"""
         try:
             from google.cloud import secretmanager
             client = secretmanager.SecretManagerServiceClient()
@@ -63,13 +57,11 @@ class DB_Connection:
             secret_name = "db-password"
             name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})
-            return response.payload.data.decode("UTF-8")
-        except ImportError:
-            raise Exception(
-                "Google Cloud Secret Manager client not available. Install google-cloud-secret-manager or set DB_PASSWORD environment variable.")
+            password = response.payload.data.decode("UTF-8")
+            print("✅ Retrieved database password from Google Secret Manager")
+            return password
         except Exception as e:
-            raise Exception(
-                f"Failed to retrieve password from Secret Manager: {str(e)}")
+            raise Exception("Unable to retrieve password from Secret Manager")
 
     def test_connection(self):
         """Test database connection by reading data from t_lookups table"""
