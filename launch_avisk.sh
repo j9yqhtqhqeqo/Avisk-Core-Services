@@ -36,7 +36,7 @@ echo "Press Ctrl+C to stop the application"
 echo "=================================="
 
 # Run Streamlit with the correct Python interpreter
-/Users/mohanganadal/Library/spyder-6/envs/data-company-gcc/bin/python -m streamlit run Clients/StreamLitClient/Home.py
+/Users/mohanganadal/Library/spyder-6/envs/data-company-gcc/bin/python -m streamlit run Clients/Home.py
 
 echo ""
 echo "👋 Avisk Core Services stopped"
