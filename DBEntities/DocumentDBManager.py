@@ -1,3 +1,5 @@
+import psycopg2.extras
+import psycopg2
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
@@ -6,7 +8,6 @@ import pyodbc
 import datetime as dt
 import re
 from Utilities.Lookups import Lookups,DB_Connection
-
 from DocumentHeaderEntity import DocHeaderEntity
 
 
@@ -21,7 +22,7 @@ class DocumentDBManager():
         
     def getCurrentDocumentSeed(self):
         if(self.b_load_document_seed_from_db):
-            cursor = self.dbConnection.cursor()
+            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute("select max(document_id) from dbo.t_sec_document_header") 
             current_seed = cursor.fetchone()[0]
             if(current_seed):
@@ -87,7 +88,7 @@ class DocumentDBManager():
     #     elif(Dictionary_Type == Lookups().Mitigation_Dictionary_Type):
     #         pass
 
-    #     cursor = self.dbConnection.cursor()
+    #     cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     #     cursor.execute(sql, document_id, document_id)
     #     self.dbConnection.commit()

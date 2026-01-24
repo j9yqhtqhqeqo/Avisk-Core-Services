@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-
 DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 # TEST_DB_CONNECTION_STRING = 'Updated for GCC PostgreSQL when test environment is available'
 
@@ -29,7 +28,7 @@ class DataSourceDBManager():
 
     def get_batch_id(self):
 
-        cursor = self.dbConnection.cursor()
+        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute("select max(batch_id) from t_document")
         last_batch_id = cursor.fetchone()[0]
         if last_batch_id is None:
@@ -44,7 +43,7 @@ class DataSourceDBManager():
     def get_unprocessed_content_list(self):
         document_list = []
         try:
-            cursor = self.dbConnection.cursor()
+            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(" select d.unique_id ,d.company_name ,d.year ,d.content_type,l.data_lookups_description, d.source_type , d.source_url ,d.processed_ind\
                             from t_data_source d INNER join  t_data_lookups l on d.content_type = l.data_lookups_id\
                             where d.processed_ind = 0 order by d.unique_id")
@@ -75,7 +74,7 @@ class DataSourceDBManager():
 
     def add_stage1_processed_files_to_t_document(self, data_source_db_entity: DataSourceDBEntity, flagged_for_review: bool):
         # Create a cursor object to execute SQL queries
-        cursor = self.dbConnection.cursor()
+        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Delete the t_document entry if it already exists
         sql = 'DELETE FROM t_document WHERE document_id = %s'
