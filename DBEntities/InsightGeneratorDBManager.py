@@ -558,8 +558,6 @@ class InsightGeneratorDBManager:
                 # print('################################################################################################')
 
     def update_insights_generated_from_keyword_hits_batch(self, dictionary_type=0, dictionary_id=0, document_id=0):
-        # Create a cursor object to execute SQL queries
-        cursor = self.dbConnection.cursor()
 
         # sql = f"update t_key_word_hits set \
         #         insights_generated = 1 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
@@ -575,8 +573,11 @@ class InsightGeneratorDBManager:
                     where document_id ={document_id}"
         try:
             # Execute the SQL query
+            # Create a cursor object to execute SQL queries
+            cursor = self.dbConnection.cursor()
             cursor.execute(sql)
             self.dbConnection.commit()
+            cursor.close()
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
@@ -584,7 +585,7 @@ class InsightGeneratorDBManager:
             raise exc
 
             # Close the cursor and connection
-            cursor.close()
+      
 
     def update_validation_keywords_generated_status(self, document_list, dictionary_type, status):
         if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
@@ -600,13 +601,14 @@ class InsightGeneratorDBManager:
             try:
                 cursor = self.dbConnection.cursor()
                 cursor.execute(sql, (((status, document.document_id))))
+                self.dbConnection.commit()
+                cursor.close()
 
             except Exception as exc:
                 self.dbConnection.rollback()
                 print(f"Error: {str(exc)}")
                 raise exc
-                self.dbConnection.commit()
-                cursor.close()
+
 
     def update_validation_completed_status(self):
         print("✅ Processed Dictionary Terms Successfully - DEBUG INSIDE DB MGR")
@@ -634,13 +636,14 @@ class InsightGeneratorDBManager:
             cursor.execute(exp_sql)
             cursor.execute(int_sql)
             cursor.execute(mit_sql)
+            self.dbConnection.commit()
+            cursor.close()
 
         except Exception as exc:
             self.dbConnection.rollback()
             print(f"Error: {str(exc)}")
             raise exc
-            self.dbConnection.commit()
-            cursor.close()
+
 
     def update_validation_failed_status(self, document_id, dictionary_type):
 
@@ -769,15 +772,17 @@ class InsightGeneratorDBManager:
             completed_ind = 1
         else:
             completed_ind = 2
-            cursor = self.dbConnection.cursor()
+
 
         sql = f"update t_document set exp_pathway_keyword_search_completed_ind ={completed_ind} \
                 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                 where document_id ={document_id}"
         try:
             # Execute the SQL query
+            cursor = self.dbConnection.cursor()
             cursor.execute(sql)
             self.dbConnection.commit()
+            cursor.close()
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
@@ -785,7 +790,7 @@ class InsightGeneratorDBManager:
             raise exc
 
             # Close the cursor and connection
-        cursor.close()
+  
 
     # INTERNALIZAITON
     def get_int_dictionary_term_list(self):
@@ -1404,7 +1409,7 @@ class InsightGeneratorDBManager:
             #           str(total_records_added_to_db))
 
                 # Close the cursor and connection
-
+        #Commit remaining records
         if (total_records_added_to_db > 0):
             self.dbConnection.commit()
             cursor.close()
