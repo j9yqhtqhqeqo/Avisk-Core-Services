@@ -971,7 +971,7 @@ class InsightGeneratorDBManager:
             completed_ind = 2
 
             # Create a cursor object to execute SQL queries
-            cursor = self.dbConnection.cursor()
+        cursor = self.dbConnection.cursor()
 
         sql = f"update t_document set mitigation_search_completed_ind = {completed_ind} \
                     ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
