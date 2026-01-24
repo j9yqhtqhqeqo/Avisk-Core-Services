@@ -1,14 +1,12 @@
+from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity, Triangle_Chart_DB_Entity, YOY_DB_Entity, Exposure_Control_Chart_DB_Entity
+import pandas as pd
+import pyodbc
+from Utilities.Lookups import Lookups, Processing_Type, DB_Connection
+from DBEntities.DataSourceDBEntity import DataSourceDBEntity
+from DBEntities.FinancialMetricsDBEntities import FinancialMetricsDBEntity
 from pathlib import Path
 import sys
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity, InternalizationDBEntity, MitigationDBEntity, Top10_Chart_DB_Entity, Triangle_Chart_DB_Entity, YOY_DB_Entity,Exposure_Control_Chart_DB_Entity
-from DBEntities.FinancialMetricsDBEntities import FinancialMetricsDBEntity
-from DBEntities.DataSourceDBEntity import DataSourceDBEntity
-from Utilities.Lookups import Lookups, Processing_Type, DB_Connection
-
-import pyodbc
-import pandas as pd
 
 
 DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
@@ -41,10 +39,10 @@ class DashboardDBManager():
             sql = "SELECT insights.esg_category_name ESG_Category,  insights.exposure_path_name Exposure_Pathway,\
                             insights.cluster_count Clusters, insights.score_normalized Score\
                     FROM t_rpt_exposure_pathway_insights insights \
-                    WHERE insights.company_name =? and insights.year = ? and insights.content_type = ?\
+                    WHERE insights.company_name =%s and insights.year = %s and insights.content_type = %s\
                     ORDER BY  insights.score_normalized desc\
                   "
-            cursor.execute(sql, company_name, year, content_type)
+            cursor.execute(sql, (company_name, year, content_type))
 
             rows = cursor.fetchall()
             for row in rows:
@@ -66,7 +64,6 @@ class DashboardDBManager():
 
         print(self.dashboard_data_list)
         return self.dashboard_data_list
-
 
     def get_exposure_insights(self):
 
@@ -109,11 +106,11 @@ class DashboardDBManager():
 
         return self.dashboard_data_list
 
-    def get_internalization_insights(self,company_name: str, year: int, content_type: int):
+    def get_internalization_insights(self, company_name: str, year: int, content_type: int):
 
         try:
             cursor = self.dbConnection.cursor()
-            if(year == 0):
+            if (year == 0):
                 sql = "SELECT  \
                             doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
                             exp.exposure_path_name Exposure_Pathway, int.internalization_name Internalization,\
@@ -123,7 +120,7 @@ class DashboardDBManager():
                                 INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
                                 inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
                                 inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
-                                inner join t_document doc on doc.document_id = insights.document_id and doc.company_name = ? and content_type = ?\
+                                inner join t_document doc on doc.document_id = insights.document_id and doc.company_name = %s and content_type = %s\
                                 inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
                             GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name\
                                     ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name,int.internalization_name"
@@ -139,13 +136,13 @@ class DashboardDBManager():
                                 INNER JOIN t_internalization int on int.internalization_id = insights.internalization_id  and int.exposure_path_id = insights.exposure_path_id\
                                 inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
                                 inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
-                                inner join t_document doc on doc.document_id = insights.document_id and doc.company_name = ? and doc.year = ? and content_type = ?\
+                                inner join t_document doc on doc.document_id = insights.document_id and doc.company_name = %s and doc.year = %s and content_type = %s\
                                 inner join t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
                             GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name\
                                     ORDER BY  doc.company_name,doc.year, lookups.data_lookups_description,esg.esg_category_name, exp.exposure_path_name,int.internalization_name\
-                "                            
+                "
                 cursor.execute(sql, company_name, year, content_type)
-                
+
             rows = cursor.fetchall()
             for row in rows:
                 dashboard_entity = InternalizationDBEntity(
@@ -181,7 +178,7 @@ class DashboardDBManager():
                                 inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
                                 INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
                                 INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
-                                INNER JOIN t_document doc on doc.document_id = insights.document_id and doc.company_name =? and content_type = ?\
+                                INNER JOIN t_document doc on doc.document_id = insights.document_id and doc.company_name =%s and content_type = %s\
                                 INNER JOIN t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
                         GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name, mit.class_name,mit.sub_class_name\
                         ORDER BY   Score desc\
@@ -198,7 +195,7 @@ class DashboardDBManager():
                                 inner join t_esg_category esg on imp.esg_category_id = esg.esg_category_id\
                                 INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
                                 INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id\
-                                INNER JOIN t_document doc on doc.document_id = insights.document_id and doc.company_name = ? and doc.year = ? and content_type = ?\
+                                INNER JOIN t_document doc on doc.document_id = insights.document_id and doc.company_name = %s and doc.year = %s and content_type = %s\
                                 INNER JOIN t_data_lookups lookups on lookups.data_lookups_id = doc.content_type\
                         GROUP by doc.company_name  ,doc.year ,lookups.data_lookups_description,esg.esg_category_name ,  exp.exposure_path_name,int.internalization_name, mit.class_name,mit.sub_class_name\
                         ORDER BY   Score desc\
@@ -231,8 +228,8 @@ class DashboardDBManager():
     def get_sector_exposure_insight(self, sector: str, year: int):
 
         sql = "SELECT insights.esg_category_name ESG_Category, insights.exposure_path_name Exposure_Pathway, insights.cluster_count Clusters, insights.score_normalized  Score\
-                    from t_sector_exp_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and  lookups.data_lookups_description =?\
-                    where insights.[year] =?\
+                    from t_sector_exp_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and lookups.data_lookups_description = %s\
+                    where insights..year = %s\
                   "
         cursor = self.dbConnection.cursor()
         try:
@@ -257,14 +254,13 @@ class DashboardDBManager():
             print(f"Error: {str(exc)}")
             raise exc
 
-
         return self.dashboard_data_list
 
     def get_sector_internalization_insight(self, sector: str, year: int):
 
         sql = "SELECT insights.esg_category_name ESG_Category, insights.exposure_path_name Exposure_Pathway, insights.internalization_name Internalization, insights.cluster_count Clusters, insights.score_normalized  Score\
-                    from t_sector_exp_int_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and  lookups.data_lookups_description =?\
-                    where insights.[year] =?\
+                    from t_sector_exp_int_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and lookups.data_lookups_description = %s\
+                    where insights..year = %s\
                   "
         cursor = self.dbConnection.cursor()
         try:
@@ -294,18 +290,19 @@ class DashboardDBManager():
 
     def get_sector_exposure_company_insight(self, company_name: str, year: int, content_type):
 
-        self.dashboard_data_list = self.get_exposure_insights_by_company(company_name,year,content_type)
+        self.dashboard_data_list = self.get_exposure_insights_by_company(
+            company_name, year, content_type)
 
         sector_id: int
 
         try:
             cursor = self.dbConnection.cursor()
-            sector_sql = "select sector_id from t_sec_company_sector_map where company_name = ?"
+            sector_sql = "select sector_id from t_sec_company_sector_map where company_name = %s"
             cursor.execute(sector_sql, company_name)
 
             sector_id = cursor.fetchone()[0]
 
-            sql = "SELECT esg_category_name ESG_Category, exposure_path_name Exposure_Pathway, cluster_count Clusters, score_normalized  Score from t_sector_exp_insights where sector_id = ? and year = ?"
+            sql = "SELECT esg_category_name ESG_Category, exposure_path_name Exposure_Pathway, cluster_count Clusters, score_normalized  Score from t_sector_exp_insights where sector_id = %s and year = %s"
             cursor.execute(sql, sector_id, year)
 
             rows = cursor.fetchall()
@@ -330,8 +327,8 @@ class DashboardDBManager():
     def get_sector_mitigation_insight(self, sector: str, year: int):
 
         sql = "SELECT insights.esg_category_name ESG_Category, insights.exposure_path_name Exposure_Pathway, insights.internalization_name Internalization,insights.mitigation_class Mitigation_Class, insights.mitigation_sub_class Mitigation_Sub_Class, insights.cluster_count Clusters, insights.score_normalized  Score\
-                    from t_sector_exp_int_mitigation_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and  lookups.data_lookups_description =?\
-                    where insights.[year] =?\
+                    from t_sector_exp_int_mitigation_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and lookups.data_lookups_description = %s\
+                    where insights..year = %s\
               "
         cursor = self.dbConnection.cursor()
         try:
@@ -348,8 +345,8 @@ class DashboardDBManager():
                     ESG_Category=row.ESG_Category,
                     Exposure_Pathway=row.Exposure_Pathway,
                     Internalization=row.Internalization,
-                    Mitigation_Class = row.Mitigation_Class,
-                    Mitigation_Sub_Class = row.Mitigation_Sub_Class,
+                    Mitigation_Class=row.Mitigation_Class,
+                    Mitigation_Sub_Class=row.Mitigation_Sub_Class,
                     Clusters=row.Clusters,
                     Score=row.Score
                 )
@@ -413,10 +410,10 @@ class DashboardDBManager():
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
-                db_entity = InternalizationDBEntity(    
+                db_entity = InternalizationDBEntity(
                     Company=row.company_name,
-                    Sector=row.sector           
-                    )
+                    Sector=row.sector
+                )
                 company_list.append(db_entity)
 
         except Exception as exc:
@@ -455,15 +452,16 @@ class DashboardDBManager():
 
 
 # Financial Metrics
-    def get_financial_metrics(self, company_name:str, year:int):
+
+    def get_financial_metrics(self, company_name: str, year: int):
         metrics_list = []
 
-        sql =   'SELECT  company_name,reporting_year,assets,liabilities,equity,revenue\
+        sql = 'SELECT  company_name,reporting_year,assets,liabilities,equity,revenue\
                         ,operating_expenses,operating_income_ebitda,net_income,eps\
                         ,cash_flow_operations,cash_flow_investing,free_cash_flow,cash_flow_financing\
                         ,stock_price_calender_year_end,pe_ratio,return_on_asset,exchange_ref,beta_calender_year_end\
                         ,sharpe_ratio\
-                FROM t_financial_metrics where company_name = ? and reporting_year =?'
+                FROM t_financial_metrics where company_name = %s and reporting_year =%s'
         try:
             # Execute the SQL query
             cursor = self.dbConnection.cursor()
@@ -471,13 +469,13 @@ class DashboardDBManager():
             rows = cursor.fetchall()
             for row in rows:
                 metric = FinancialMetricsDBEntity(
-                         company_Name=row.company_name,reporting_year=row.reporting_year,
-                         assets=row.assets,liabilities=row.liabilities,equity=row.equity,
-                         revenue=row.revenue,operating_expense=row.operating_expenses,ebitda= row.operating_income_ebitda,net_income=row.net_income,
-                         eps=row.eps,cf_operations=row.cash_flow_operations,cf_investing=row.cash_flow_investing,free_cash_flow= row.free_cash_flow,cf_financing=row.cash_flow_financing, 
-                         stock_price=row.stock_price_calender_year_end,pe_ratio=row.pe_ratio,roa=row.return_on_asset,
-                         exchange_ref=row.exchange_ref,beta_calender_year_end=row.beta_calender_year_end, sharpe_ratio= row.sharpe_ratio
-                        )
+                    company_Name=row.company_name, reporting_year=row.reporting_year,
+                    assets=row.assets, liabilities=row.liabilities, equity=row.equity,
+                    revenue=row.revenue, operating_expense=row.operating_expenses, ebitda=row.operating_income_ebitda, net_income=row.net_income,
+                    eps=row.eps, cf_operations=row.cash_flow_operations, cf_investing=row.cash_flow_investing, free_cash_flow=row.free_cash_flow, cf_financing=row.cash_flow_financing,
+                    stock_price=row.stock_price_calender_year_end, pe_ratio=row.pe_ratio, roa=row.return_on_asset,
+                    exchange_ref=row.exchange_ref, beta_calender_year_end=row.beta_calender_year_end, sharpe_ratio=row.sharpe_ratio
+                )
                 metrics_list.append(metric)
 
         except Exception as exc:
@@ -488,11 +486,10 @@ class DashboardDBManager():
 
 # Charts
 
-
-    def get_top10_exposure_control_measures(self, year: int, company_name:str):
+    def get_top10_exposure_control_measures(self, year: int, company_name: str):
         sql = "select top10_sector_exposure, degree_of_control_sector_normalized, degree_of_control_company_normalized, top10_company_exposure\
               from t_chart_top10_exposures top10\
-              where top10.company_name = ? and top10.[year] = ?\
+              where top10.company_name = %s and top10.[year] = %s\
               order by degree_of_control_sector desc"
         cursor = self.dbConnection.cursor()
         try:
@@ -518,14 +515,14 @@ class DashboardDBManager():
 
         return self.dashboard_data_list
 
-    def get_triangle_measures(self, year: int, company_name:str):
+    def get_triangle_measures(self, year: int, company_name: str):
         sql = "SELECT  sector_exposure_path_name sector_exposure_path_name, round(sector_exposure_internalization_score_normalized, 0)Sector_EI, round(company_exposure_internalization_score_normalized, 0) Compnay_EI\
              , round(sector_exposure_mitigation_score_normalized, 0) Sector_EM, round(company_exposure_mitigation_score_normalized, 0) Company_EM,\
                round(sector_internalization_mitigation_score_normalized, 0) Sector_IM, round(company_internalization_mitigation_score_normalized, 0) Company_IM\
                FROM t_chart_triangulation\
-                WHERE company_name = ? and year =?\
+                WHERE company_name = %s and year =%s\
                 order by sector_exposure_internalization_score_normalized desc"
-        
+
         cursor = self.dbConnection.cursor()
         try:
             cursor.execute(sql, company_name, year)
@@ -533,7 +530,7 @@ class DashboardDBManager():
 
             for row in rows:
                 dashboard_entity = Triangle_Chart_DB_Entity(
-                    sector_exposure_path_name= row.sector_exposure_path_name,
+                    sector_exposure_path_name=row.sector_exposure_path_name,
                     Sector_EI=row.Sector_EI,
                     Compnay_EI=row.Compnay_EI,
                     Sector_EM=row.Sector_EM,
@@ -548,13 +545,13 @@ class DashboardDBManager():
             raise exc
 
         return self.dashboard_data_list
-    
+
     def get_yoy_measures(self, company_name: str):
         sql = 'select chart.year, chart.company_name, chart.exposure_path_name, round(chart.exposure_score_normalized, 0) exposure_score, round(chart.exposure_score_normalized, 0)exposure_score_normalized\
                 from t_chart_yoy chart inner join t_chart_top10_exposures top10 on top10.[year] = chart.year and top10.top10_sector_exposure = chart.exposure_path_name and top10.company_name = chart.company_name\
-                where chart.company_name =?\
+                where chart.company_name = %s\
                 order by chart.company_name,chart.exposure_path_name, chart.exposure_score desc,chart.year'
-        
+
         cursor = self.dbConnection.cursor()
         try:
             cursor.execute(sql, company_name)
@@ -562,11 +559,11 @@ class DashboardDBManager():
 
             for row in rows:
                 dashboard_entity = YOY_DB_Entity(
-                   company_name = row.company_name,
-                   sector_exposure_path_name = row.exposure_path_name,
-                   exposure_score = row.exposure_score,
-                   exposure_score_normalized = row.exposure_score_normalized,
-                   year = row.year
+                    company_name=row.company_name,
+                    sector_exposure_path_name=row.exposure_path_name,
+                    exposure_score=row.exposure_score,
+                    exposure_score_normalized=row.exposure_score_normalized,
+                    year=row.year
                 )
                 self.dashboard_data_list.append(dashboard_entity)
             cursor.close()
@@ -575,24 +572,24 @@ class DashboardDBManager():
             raise exc
 
         return self.dashboard_data_list
-    
-    def get_exposure_vs_control_measures(self, year:int, company_name:str):
+
+    def get_exposure_vs_control_measures(self, year: int, company_name: str):
         sql = 'select control.[year], control.company_name, control.top10_sector_exposure, round(exp.exposure_score,0) exposure_score, round(control.degree_of_control_company_normalized,0) exposure_control_score from [dbo].[t_chart_top10_exposures] control\
-        inner join t_chart_yoy exp on control.[year] = exp.year and control.top10_company_exposure = exp.exposure_path_name and exp.company_name =? and exp.year = ?\
-        where control.company_name =? and control.year = ?'
-        
+        inner join t_chart_yoy exp on control.[year] = exp.year and control.top10_company_exposure = exp.exposure_path_name and exp.company_name =%s and exp.year = %s\
+        where control.company_name =%s and control.year = %s'
+
         cursor = self.dbConnection.cursor()
         try:
-            cursor.execute(sql, company_name,year, company_name,year)
+            cursor.execute(sql, company_name, year, company_name, year)
             rows = cursor.fetchall()
 
             for row in rows:
                 dashboard_entity = Exposure_Control_Chart_DB_Entity(
-                   company_name = row.company_name,
-                   sector_exposure_path_name=row.top10_sector_exposure,
-                   exposure_score = row.exposure_score,
-                   exposure_control_score=row.exposure_control_score,
-                   year = row.year
+                    company_name=row.company_name,
+                    sector_exposure_path_name=row.top10_sector_exposure,
+                    exposure_score=row.exposure_score,
+                    exposure_control_score=row.exposure_control_score,
+                    year=row.year
                 )
                 self.dashboard_data_list.append(dashboard_entity)
             cursor.close()

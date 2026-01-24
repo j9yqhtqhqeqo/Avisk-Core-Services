@@ -79,7 +79,7 @@ class DocumentDBManager():
 
     #     if(Dictionary_Type == Lookups().Exposure_Pathway_Dictionary_Type):
     #         ##
-    #         sql = "update t_exposure_pathway_insights set score_normalized = (score * 100)/(select max(score) from t_exposure_pathway_insights where document_id = ?) where document_id = ?"
+    #         sql = "update t_exposure_pathway_insights set score_normalized = (score * 100)/(select max(score) from t_exposure_pathway_insights where document_id = %s) where document_id = %s"
 
     #     elif(Dictionary_Type == Lookups().Internalization_Dictionary_Type):
     #         ##

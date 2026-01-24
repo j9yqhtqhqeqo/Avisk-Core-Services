@@ -23,7 +23,7 @@ def load_document_cache_for_exposure_pathway(database_context, validation_mode, 
         queue.put(document)
 
     queue_size.put(len(exposure_document_list))
-    print('Documents Loaded for Exposure Pathway Keyword Search')
+    print('Documents Loaded for Exposure Pathway Keyword Search:', len(exposure_document_list))
 
 def process_next_unprocessed_exposure_document_list(batch_size, database_context, queue: Queue, batch_num, validation_mode ):
     Document_List = []
@@ -206,6 +206,8 @@ def process_mitigation_document_list(database_context, validation_mode = False):
     print('All documents processed:Check for documents failed keyword validation')
 
 def update_validation_completed_status(database_context):
+    print("✅ Processed Dictionary Terms Successfully - DEBUG -- SINGLETON")
+
     InsightGeneratorDBManager(
         database_context).update_validation_completed_status()
 
