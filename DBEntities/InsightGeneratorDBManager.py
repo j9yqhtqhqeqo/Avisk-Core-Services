@@ -1,21 +1,20 @@
+import psycopg2
+import psycopg2.extras
+import datetime as dt
+from DBEntities.DocumentHeaderEntity import DocHeaderEntity
+from DBEntities.DictionaryEntity import DictionaryEntity
+from DBEntities.ProximityEntity import ProximityEntity
+from DBEntities.ProximityEntity import KeyWordLocationsEntity
+from DBEntities.ProximityEntity import Insight
+from DBEntities.ProximityEntity import MitigationExpIntInsight
+from DBEntities.ProximityEntity import ExpIntInsight
+from DBEntities.ProximityEntity import DocumentEntity
+from Utilities.LoggingServices import logGenerator
+from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
+from Utilities.Lookups import Lookups, DB_Connection
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-from Utilities.Lookups import Lookups, DB_Connection
-from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
-from Utilities.LoggingServices import logGenerator
-from DBEntities.ProximityEntity import DocumentEntity
-from DBEntities.ProximityEntity import ExpIntInsight
-from DBEntities.ProximityEntity import MitigationExpIntInsight
-from DBEntities.ProximityEntity import Insight
-from DBEntities.ProximityEntity import KeyWordLocationsEntity
-from DBEntities.ProximityEntity import ProximityEntity
-from DBEntities.DictionaryEntity import DictionaryEntity
-from DBEntities.DocumentHeaderEntity import DocHeaderEntity
-import datetime as dt
-import psycopg2.extras
-import psycopg2
-
 
 
 INSIGHT_SCORE_THRESHOLD = 0
@@ -59,7 +58,7 @@ class InsightGeneratorDBManager:
         # company_name = '%'+company_name+'%'
 
         sql = "SELECT sic.sic_code, sic.industry_title,header.conformed_name, header.form_type,header.document_id, header.document_name, header.reporting_year, header.reporting_quarter\
-               FROM dbo.t_sic_codes sic INNER JOIN dbo.t_sec_document_header header ON sic.sic_code = header.sic_code_4_digit \
+               FROM t_sic_codes sic INNER JOIN t_sec_document_header header ON sic.sic_code = header.sic_code_4_digit \
                     and header.reporting_year = 2022\
                     where sic.industry_title like %s \
                     and form_type ='10-K' and reporting_quarter =1\
@@ -141,17 +140,17 @@ class InsightGeneratorDBManager:
             return self.d_next_seed
 
         if (save_type == Lookups().Exposure_Save):
-            sql = "select max(unique_key) from dbo.t_exposure_pathway_insights"
+            sql = "select max(unique_key) from t_exposure_pathway_insights"
         elif (save_type == Lookups().Internalization_Save):
-            sql = "select max(unique_key) from dbo.t_internalization_insights"
+            sql = "select max(unique_key) from t_internalization_insights"
         elif (save_type == Lookups().Mitigation_Exp_Insight_Type):
-            sql = "select max(unique_key) from dbo.t_mitigation_exp_insights"
+            sql = "select max(unique_key) from t_mitigation_exp_insights"
         elif (save_type == Lookups().Mitigation_Int_Insight_Type):
-            sql = "select max(unique_key) from dbo.t_mitigation_int_insights"
+            sql = "select max(unique_key) from t_mitigation_int_insights"
         elif (save_type == Lookups().Exp_Int_Insight_Type):
-            sql = "select max(unique_key) from dbo.t_exp_int_insights"
+            sql = "select max(unique_key) from t_exp_int_insights"
         elif (save_type == Lookups().Mitigation_Exp_INT_Insight_Type):
-            sql = "select max(unique_key) from dbo.t_mitigation_exp_int_insights"
+            sql = "select max(unique_key) from t_mitigation_exp_int_insights"
 
         cursor = self.dbConnection.cursor()
 
@@ -319,7 +318,7 @@ class InsightGeneratorDBManager:
         cursor = self.dbConnection.cursor()
         # Construct the INSERT INTO statement
 
-        sql = f"INSERT INTO dbo.t_key_word_hits( \
+        sql = f"INSERT INTO t_key_word_hits( \
                 dictionary_type, document_id,  document_name, company_id, reporting_year,batch_id,\
                 dictionary_id ,key_word, locations,frequency, insights_generated,exposure_path_id, internalization_id,\
                 impact_category_id, esg_category_id,\
@@ -372,7 +371,7 @@ class InsightGeneratorDBManager:
             # Construct the INSERT INTO statement
 
             if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
-                sql = f"INSERT INTO dbo.t_exposure_pathway_insights( \
+                sql = f"INSERT INTO t_exposure_pathway_insights( \
                         document_id, sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
                     factor1, factor2,exposure_path_id, added_dt,added_by ,modify_dt,modify_by, year\
                     )\
@@ -381,7 +380,7 @@ class InsightGeneratorDBManager:
                         {factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
 
             elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
-                sql = f"INSERT INTO dbo.t_internalization_insights( \
+                sql = f"INSERT INTO t_internalization_insights( \
                     document_id,sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
                     factor1, factor2,internalization_id, added_dt,added_by ,modify_dt,modify_by, year\
                     )\
@@ -394,7 +393,7 @@ class InsightGeneratorDBManager:
                 mitigation_keyword = insight.mitigation_keyword
                 # int_unique_key = self.get_next_surrogate_key(
                 #     Lookups().Mitigation_Exp_Insight_Type)
-                sql = f"INSERT INTO dbo.t_mitigation_exp_insights( \
+                sql = f"INSERT INTO t_mitigation_exp_insights( \
                     document_id, sector_id,document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
                     score,factor1, factor2, exposure_path_id,added_dt,added_by ,modify_dt,modify_by,year\
                     )\
@@ -408,7 +407,7 @@ class InsightGeneratorDBManager:
                 # int_unique_key = self.get_next_surrogate_key(
                 #     Lookups().Mitigation_Int_Insight_Type)
 
-                sql = f"INSERT INTO dbo.t_mitigation_int_insights( \
+                sql = f"INSERT INTO t_mitigation_int_insights( \
                     document_id,sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
                 score,factor1, factor2, internalization_id, added_dt,added_by ,modify_dt,modify_by, year\
                 )\
@@ -472,27 +471,27 @@ class InsightGeneratorDBManager:
 
             cursor = self.dbConnection.cursor()
             if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
-                sql = f"delete dbo.t_exposure_pathway_insights where document_id in " + \
+                sql = f"delete from t_exposure_pathway_insights where document_id in " + \
                     l_str_document_list_for_deletion
 
             elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
-                sql = f"delete dbo.t_internalization_insights where document_id in" + \
+                sql = f"delete from t_internalization_insights where document_id in" + \
                     l_str_document_list_for_deletion
 
             elif (dictionary_type == Lookups().Exp_Int_Insight_Type):
-                sql = f"delete  dbo.t_exp_int_insights where document_id in" + \
+                sql = f"delete from  t_exp_int_insights where document_id in" + \
                     l_str_document_list_for_deletion
 
             elif (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
-                sql = f"delete  dbo.t_mitigation_exp_insights where document_id in" + \
+                sql = f"delete from  t_mitigation_exp_insights where document_id in" + \
                     l_str_document_list_for_deletion
 
             elif (dictionary_type == Lookups().Mitigation_Int_Insight_Type):
-                sql = f"delete t_mitigation_int_insights where document_id in" + \
+                sql = f"delete from t_mitigation_int_insights where document_id in" + \
                     l_str_document_list_for_deletion
 
             elif (dictionary_type == Lookups().Mitigation_Exp_INT_Insight_Type):
-                sql = f"delete t_mitigation_exp_int_insights where document_id in" + \
+                sql = f"delete from t_mitigation_exp_int_insights where document_id in" + \
                     l_str_document_list_for_deletion
 
             try:
@@ -508,13 +507,13 @@ class InsightGeneratorDBManager:
 
     def save_key_word_hits(self, proximity_entity_list, company_id: int, document_id: int, document_name: str, reporting_year: int, dictionary_type: int, batch_id: int):
 
-        # Delete existing records for the same document
+        # delete from existing records for the same document
         try:
-            sql = 'delete t_key_word_hits where document_id = %s and dictionary_type = %s'
+            sql = 'delete from t_key_word_hits where document_id = %s and dictionary_type = %s'
             cursor = self.dbConnection.cursor()
             cursor.execute(sql, (document_id, dictionary_type))
             self.dbConnection.commit()
-            # print("deleted previous search data for document:" + document_name +", dictionary type:" + str(dictionary_type))
+            # print("delete fromd previous search data for document:" + document_name +", dictionary type:" + str(dictionary_type))
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
@@ -528,6 +527,8 @@ class InsightGeneratorDBManager:
         key_word_locations: KeyWordLocationsEntity
 
         total_records_added_to_db = 0
+        # print('Total Proximity Entities to process:' +
+        #       str(len(proximity_entity_list)))
         for proximity in proximity_entity_list:
 
             esg_category_id = proximity.esg_category_id
@@ -547,15 +548,15 @@ class InsightGeneratorDBManager:
                                                 exposure_path_id=exposure_path_id, internalization_id=internalization_id, impact_category_id=impact_category_id, esg_category_id=esg_category_id, batch_id=batch_id)
                 total_records_added_to_db = total_records_added_to_db + 1
                 # Commit current batch
-                self.dbConnection.commit()
-                self.log_generator.log_details(
-                    "Total keyword location lists Added to the Database:" + str(total_records_added_to_db))
-                self.log_generator.log_details(
-                    '################################################################################################')
+            self.dbConnection.commit()
+        self.log_generator.log_details(
+            "Total keyword location lists Added to the Database:" + str(total_records_added_to_db))
+        self.log_generator.log_details(
+            '################################################################################################')
 
-                # print("Total keyword location lists Added to the Database:" +
-                #       str(total_records_added_to_db))
-                # print('################################################################################################')
+        # print("Total keyword location lists Added to the Database:" +
+        #       str(total_records_added_to_db))
+        # print('################################################################################################')
 
     def update_insights_generated_from_keyword_hits_batch(self, dictionary_type=0, dictionary_id=0, document_id=0):
 
@@ -585,7 +586,6 @@ class InsightGeneratorDBManager:
             raise exc
 
             # Close the cursor and connection
-      
 
     def update_validation_keywords_generated_status(self, document_list, dictionary_type, status):
         if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
@@ -609,9 +609,8 @@ class InsightGeneratorDBManager:
                 print(f"Error: {str(exc)}")
                 raise exc
 
-
     def update_validation_completed_status(self):
-        print("✅ Processed Dictionary Terms Successfully - DEBUG INSIDE DB MGR")
+        # print("✅ Processed Dictionary Terms Successfully - DEBUG INSIDE DB MGR")
 
         exp_sql = f"UPDATE t_document set \
                     exp_validation_completed_ind = 1,modify_dt = CURRENT_TIMESTAMP \
@@ -628,8 +627,7 @@ class InsightGeneratorDBManager:
                 where \
                     mit_validation_completed_ind = 2 and mitigation_search_completed_ind = 0"
         try:
-            print(exp_sql)
-            print('DB CONNECTION OBJECT',self.dbConnection)
+            # print(exp_sql)
             # print(int_sql)
             # print(mit_sql)
             cursor = self.dbConnection.cursor()
@@ -643,7 +641,6 @@ class InsightGeneratorDBManager:
             self.dbConnection.rollback()
             print(f"Error: {str(exc)}")
             raise exc
-
 
     def update_validation_failed_status(self, document_id, dictionary_type):
 
@@ -660,13 +657,12 @@ class InsightGeneratorDBManager:
                 cursor.execute(int_sql)
             if (dictionary_type == Lookups().Internalization_Dictionary_Type):
                 cursor.execute(mit_sql)
+            self.dbConnection.commit()
+            cursor.close()
         except Exception as exc:
             self.dbConnection.rollback()
             print(f"Error: {str(exc)}")
             raise exc
-
-            self.dbConnection.commit()
-            cursor.close()
 
             # EXPOSURE PATHWAY
 
@@ -740,11 +736,6 @@ class InsightGeneratorDBManager:
 
             rows = cursor.fetchall()
 
-            # DEBUG: Print available columns to help diagnose the issue
-            if rows:
-                print(f"Available columns: {list(rows[0].keys())}")
-                print(f"First row data: {dict(rows[0])}")
-
             for row in rows:
                 document_entity = DocumentEntity()
                 # Use the actual column names from the database or fallback to index
@@ -773,7 +764,6 @@ class InsightGeneratorDBManager:
         else:
             completed_ind = 2
 
-
         sql = f"update t_document set exp_pathway_keyword_search_completed_ind ={completed_ind} \
                 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                 where document_id ={document_id}"
@@ -790,9 +780,9 @@ class InsightGeneratorDBManager:
             raise exc
 
             # Close the cursor and connection
-  
 
     # INTERNALIZAITON
+
     def get_int_dictionary_term_list(self):
 
         int_dict_terms_list = []
@@ -878,24 +868,22 @@ class InsightGeneratorDBManager:
         else:
             completed_ind = 2
             # Create a cursor object to execute SQL queries
-            cursor = self.dbConnection.cursor()
+        cursor = self.dbConnection.cursor()
 
-            sql = f"update t_document set internalization_keyword_search_completed_ind = {completed_ind} \
-                    ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
-                    where document_id ={document_id}"
+        sql = f"update t_document set internalization_keyword_search_completed_ind = {completed_ind} \
+                ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
+                where document_id ={document_id}"
         try:
             # Execute the SQL query
             cursor.execute(sql)
             self.dbConnection.commit()
+            # Close the cursor and connection
+            cursor.close()
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
             print(f"Error: {str(exc)}")
             raise exc
-
-            # Close the cursor and connection
-            cursor.close()
-
             # MITIGATION
 
     def get_mitigation_dictionary_term_list(self):
@@ -992,15 +980,14 @@ class InsightGeneratorDBManager:
             # Execute the SQL query
             cursor.execute(sql)
             self.dbConnection.commit()
+            # Close the cursor and connection
+            cursor.close()
 
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
             print(f"Error: {str(exc)}")
             raise exc
-
-            # Close the cursor and connection
-        cursor.close()
 
         # TRIANGULATION
 
@@ -1031,16 +1018,16 @@ class InsightGeneratorDBManager:
             # Execute the SQL query
             cursor.execute(sql)
             self.dbConnection.commit()
+            # Close the cursor and connection
+            cursor.close()
         except Exception as exc:
             # Rollback the transaction if any error occurs
             self.dbConnection.rollback()
             print(f"Error: {str(exc)}")
             raise exc
 
-            # Close the cursor and connection
-        cursor.close()
-
         # EXP MITIGATION
+
     def get_exp_mitigation_document_list(self):
         document_list = []
         try:
@@ -1086,7 +1073,7 @@ class InsightGeneratorDBManager:
                 keyword_loc_entity.key_word = row['key_word']
                 keyword_loc_entity.locations = row['locations']
                 mitigation_keyword_list.append(keyword_loc_entity)
-                cursor.close()
+            cursor.close()
 
         # print("Record inserted successfully!")
 
@@ -1380,7 +1367,7 @@ class InsightGeneratorDBManager:
             cursor = self.dbConnection.cursor()
             # Construct the INSERT INTO statement
 
-            sql = f"INSERT INTO dbo.t_exp_int_insights( \
+            sql = f"INSERT INTO t_exp_int_insights( \
                         document_id ,sector_id, document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
                         ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
                         ,added_dt,added_by ,modify_dt,modify_by,year\
@@ -1408,8 +1395,9 @@ class InsightGeneratorDBManager:
             #     print("Insights added to the Database So far...:" +
             #           str(total_records_added_to_db))
 
-                # Close the cursor and connection
-        #Commit remaining records
+        # Commit remaining records
+        # Close the cursor and connection
+
         if (total_records_added_to_db > 0):
             self.dbConnection.commit()
             cursor.close()
@@ -1571,7 +1559,7 @@ class InsightGeneratorDBManager:
 
             # int_unique_key = self.get_next_surrogate_key(
             #     Lookups().Mitigation_Exp_INT_Insight_Type)
-            sql = f"INSERT INTO dbo.t_mitigation_exp_int_insights( \
+            sql = f"INSERT INTO t_mitigation_exp_int_insights( \
                         document_id , sector_id,document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
                         ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
                         ,mitigation_keyword_hit_id,mitigation_keyword\
@@ -1633,6 +1621,7 @@ class InsightGeneratorDBManager:
             for row in rows:
                 # Access by index for PostgreSQL - sector is the second column
                 sector_list.append(row[1])
+            cursor.close()
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1719,6 +1708,7 @@ class InsightGeneratorDBManager:
             for row in rows:
                 # Access by index for PostgreSQL - company_name is the first column
                 company_list.append(row[0])
+            cursor.close()
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1739,6 +1729,7 @@ class InsightGeneratorDBManager:
             for row in rows:
                 # Access by index for PostgreSQL - doc_type is the first column
                 doc_type_list.append(row[0])
+            cursor.close()
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1757,9 +1748,11 @@ class InsightGeneratorDBManager:
             sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = %s'
             cursor = self.dbConnection.cursor()
             cursor.execute(sector_id_sql, (((sector,))))
+
             sector_id = cursor.fetchone()[0]
             sector_year_list.append(SectorYearDBEntity(
                 SectorId=sector_id, Year=year))
+            cursor.close()
 
             # print('Sector ID: '+str(sector_id))
             # print('Year:'+str(year))
@@ -1807,7 +1800,7 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
-        sql_delete = 'delete from t_sector_exp_insights where sector_id =%s and year = %s'
+        sql_delete = 'delete from  t_sector_exp_insights where sector_id =%s and year = %s'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_delete, ((sector_id, year)))
         self.dbConnection.commit()
@@ -1870,7 +1863,7 @@ class InsightGeneratorDBManager:
         # cursor.close()
 
         # print('Purging old data')
-        sql_delete = 'delete from t_sector_exp_int_insights where sector_id =%s and year = %s'
+        sql_delete = 'delete from  t_sector_exp_int_insights where sector_id =%s and year = %s'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_delete, (((sector_id, year))))
         self.dbConnection.commit()
@@ -1934,7 +1927,7 @@ class InsightGeneratorDBManager:
         # self.dbConnection.commit()
         # cursor.close()
 
-        sql_delete = 'delete from t_sector_exp_int_mitigation_insights where sector_id = %s and year = %s'
+        sql_delete = 'delete from  t_sector_exp_int_mitigation_insights where sector_id = %s and year = %s'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_delete, ((sector_id, year)))
         self.dbConnection.commit()
@@ -2004,7 +1997,7 @@ class InsightGeneratorDBManager:
         self.dbConnection.commit()
         cursor.close()
 
-        sql_delete = 'delete from t_sector_exp_mitigation_insights where sector_id = %s and year = %s'
+        sql_delete = 'delete from  t_sector_exp_mitigation_insights where sector_id = %s and year = %s'
         cursor = self.dbConnection.cursor()
         cursor.execute(sql_delete, ((sector_id, year)))
         self.dbConnection.commit()
@@ -2060,7 +2053,7 @@ class InsightGeneratorDBManager:
         cursor = self.dbConnection.cursor()
         cursor.execute(sector_id_sql, ((sector,)))
         sector_id = cursor.fetchone()[0]
-
+        cursor.close()
         if (generate_exp_rpt_insights):
             self.update_exposure_reporting(
                 sector_id=sector_id, year=year, update_all=update_all, keywords_only=keywords_only)
@@ -2113,7 +2106,7 @@ class InsightGeneratorDBManager:
                 print('Updating Exposure Report for Sector:' +
                       str(sector_id)+', Year:'+str(year))
 
-                sql_delete = 'delete from t_rpt_exposure_pathway_insights where sector_id = %s and year = %s'
+                sql_delete = 'delete from  t_rpt_exposure_pathway_insights where sector_id = %s and year = %s'
                 cursor = self.dbConnection.cursor()
                 cursor.execute(sql_delete, ((sector_id, year)))
                 self.dbConnection.commit()
@@ -2187,9 +2180,9 @@ class InsightGeneratorDBManager:
             print(f"Error: {str(exc)}")
             raise exc
 
-        for exp_rpt_line_item in rpt_exp_list:
+        cursor = self.dbConnection.cursor()
 
-            cursor = self.dbConnection.cursor()
+        for exp_rpt_line_item in rpt_exp_list:
             unique_keyword_list = ''
             keyword_sql = 'select distinct key_word1 keyword from t_exposure_pathway_insights where exposure_path_id = %s and document_id = %s\
                             UNION\
@@ -2204,11 +2197,10 @@ class InsightGeneratorDBManager:
                     row['keyword'] + ','
             unique_keyword_list = unique_keyword_list.rstrip(',')
             sql_update = 'update t_rpt_exposure_pathway_insights set unique_key_words = %s where unique_key =%s'
-            cursor = self.dbConnection.cursor()
             cursor.execute(sql_update, ((unique_keyword_list,
                            exp_rpt_line_item.unique_key)))
-            cursor.close()
         self.dbConnection.commit()
+        cursor.close()
 
         # Build Chart Tables
 
@@ -2233,6 +2225,7 @@ class InsightGeneratorDBManager:
                 cursor.execute("sp_load_top10_exposure_data %s, (%s, %s", (sector_year.Company_Name,
                                sector_year.SectorId, sector_year.Year))
                 self.dbConnection.commit()
+                cursor.close()
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
@@ -2242,11 +2235,10 @@ class InsightGeneratorDBManager:
                 cursor.execute("update t_sector_year_processing set top10_chart_refeshed_ind = 1, ((modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = %s and year = %s",
                                sector_year.SectorId, sector_year.Year)
                 self.dbConnection.commit()
+                cursor.close()
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
-
-        cursor.close()
         print('Completed Processing Top10 Exposure Chart Data')
 
     def update_triangulation_chart_data(self):
@@ -2263,10 +2255,10 @@ class InsightGeneratorDBManager:
                 cursor.execute("sp_load_triangulation_chart_data %s, (%s, %s", (sector_year.Company_Name,
                                sector_year.SectorId, sector_year.Year))
                 self.dbConnection.commit()
+                cursor
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
-        cursor.close()
 
         cursor = self.dbConnection.cursor()
         for sector_year in sector_year_list:
@@ -2274,11 +2266,11 @@ class InsightGeneratorDBManager:
                 cursor.execute("update t_sector_year_processing set triangulation_chart_refeshed_ind = 1, ((modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = %s and year = %s",
                                sector_year.SectorId, sector_year.Year)
                 self.dbConnection.commit()
+                cursor.close()
 
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
-            cursor.close()
             print('Completed Processing Triangulation Chart Data')
 
     def update_yoy_chart_data(self):
@@ -2294,7 +2286,7 @@ class InsightGeneratorDBManager:
 
             try:
 
-                sql = 'delete  t_chart_yoy where sector_id = %s and year = %s and company_name = %s'
+                sql = 'delete from  t_chart_yoy where sector_id = %s and year = %s and company_name = %s'
                 cursor.execute(sql, ((sector_year.SectorId,
                                sector_year.Year, sector_year.Company_Name)))
 
@@ -2321,10 +2313,11 @@ class InsightGeneratorDBManager:
                                sector_year.Year, sector_year.Company_Name)))
 
                 self.dbConnection.commit()
+                cursor.close()
+
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
-            cursor.close()
 
         cursor = self.dbConnection.cursor()
         for sector_year in sector_year_list:
@@ -2332,11 +2325,11 @@ class InsightGeneratorDBManager:
                 cursor.execute("update t_sector_year_processing set yoy_chart_refreshed_ind = 1, ((modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = %s and year = %s",
                                sector_year.SectorId, sector_year.Year)
                 self.dbConnection.commit()
+                cursor.close()
 
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
-            cursor.close()
             print('Completed Processing YoY Chart Data')
 
             #
@@ -2347,7 +2340,7 @@ class InsightGeneratorDBManager:
             #             doc_ids = '(29,31)'
 
             #             sql_partial = "select doc.document_name, doc.company_name, doc.year \
-            #                             from dbo.t_document doc \
+            #                             from t_document doc \
             #                             where \
             #                              doc.document_id in \
             #                            "
@@ -2370,6 +2363,5 @@ class InsightGeneratorDBManager:
             # l_startup = InsightGeneratorDBManager("Test")
             # l_startup.get_mitigation_exp_int_lists(200, ((2018,)))
 
-gen = InsightGeneratorDBManager("Development")
-gen.update_validation_completed_status()
-        
+# gen = InsightGeneratorDBManager("Development")
+# gen.update_validation_completed_status()

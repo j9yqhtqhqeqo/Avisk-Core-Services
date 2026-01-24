@@ -35,8 +35,11 @@ echo ""
 echo "Press Ctrl+C to stop the application"
 echo "=================================="
 
+# Suppress Streamlit warnings
+export PYTHONWARNINGS="ignore::UserWarning"
+
 # Run Streamlit with the correct Python interpreter
-/Users/mohanganadal/Library/spyder-6/envs/data-company-gcc/bin/python -m streamlit run Clients/Home.py
+/Users/mohanganadal/Library/spyder-6/envs/data-company-gcc/bin/python -m streamlit run Clients/Home.py --logger.level=error
 
 echo ""
 echo "👋 Avisk Core Services stopped"

@@ -18,7 +18,7 @@ class StartUpClass:
     
     def process_include_exclude_terms(self, DebugMode=False):
         DictionaryManager().update_Dictionary()
-        print("✅ Processed Dictionary Terms Successfully - DEBUG - CLIENT")
+        # print("✅ Processed Dictionary Terms Successfully - DEBUG - CLIENT")
         update_validation_completed_status(database_context=self.database_context)
 
 

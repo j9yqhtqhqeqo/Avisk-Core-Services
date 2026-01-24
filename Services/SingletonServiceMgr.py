@@ -1,5 +1,12 @@
 import sys
 from pathlib import Path
+import warnings
+import logging
+
+# Suppress Streamlit ScriptRunContext warnings
+warnings.filterwarnings('ignore', message='.*ScriptRunContext.*')
+logging.getLogger('streamlit.runtime.scriptrunner.script_runner').setLevel(logging.ERROR)
+
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
@@ -206,7 +213,7 @@ def process_mitigation_document_list(database_context, validation_mode = False):
     print('All documents processed:Check for documents failed keyword validation')
 
 def update_validation_completed_status(database_context):
-    print("✅ Processed Dictionary Terms Successfully - DEBUG -- SINGLETON")
+    # print("✅ Processed Dictionary Terms Successfully - DEBUG -- SINGLETON")
 
     InsightGeneratorDBManager(
         database_context).update_validation_completed_status()

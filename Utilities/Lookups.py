@@ -36,9 +36,7 @@ class DB_Connection:
         import os
 
         # Get password from Secret Manager or environment variable
-        # password = self._get_db_password()
-        password = "Qf8wiegqej8h!"
-
+        password = self._get_db_password()
         # Determine environment and connection method
         if os.getenv('ENVIRONMENT') == 'cloud':
             # Cloud environment using Unix socket

@@ -1,0 +1,9 @@
+[logger]
+level = "error"
+messageFormat = "%(asctime)s %(message)s"
+
+[runner]
+fastReruns = true
+
+[server]
+headless = true

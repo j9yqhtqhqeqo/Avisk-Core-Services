@@ -323,8 +323,12 @@ class keyWordSearchManager:
         self.log_generator.log_details(
             "Document In Progress:" + self.document_name)
         self.log_generator.log_details(
-            "Total keywords found:" + str(total_dictionary_hits))
+            "Total EXP keywords found:" + str(total_dictionary_hits))
 
+        total_keyword_bunches = sum(len(entity.key_word_bunch)
+                                    for entity in self.proximity_entity_list)
+        self.log_generator.log_details(
+            "Total EXP keywords after merging singular/plural keywords:" + str(total_keyword_bunches))
         # print("Total key words found for "+self.document_name +
         #       ':' + str(total_dictionary_hits))
         return self.is_related_keywords_need_to_be_addressed
@@ -499,8 +503,12 @@ class keyWordSearchManager:
         self.log_generator.log_details(
             "Document In Progress:" + self.document_name)
         self.log_generator.log_details(
-            "Total keywords found:" + str(total_dictionary_hits))
+            "Total INT keywords found:" + str(total_dictionary_hits))
 
+        total_keyword_bunches = sum(len(entity.key_word_bunch)
+                                    for entity in self.proximity_entity_list)
+        self.log_generator.log_details(
+            "Total INT keywords after merging singular/plural keywords:" + str(total_keyword_bunches))
         # print("Total key words found for "+self.document_name +
         #       ':' + str(total_dictionary_hits))f
         return self.is_related_keywords_need_to_be_addressed
@@ -725,8 +733,12 @@ class keyWordSearchManager:
         self.log_generator.log_details(
             "Document In Progress:" + self.document_name)
         self.log_generator.log_details(
-            "Total keywords found:" + str(total_dictionary_hits))
+            "Total MIT keywords found:" + str(total_dictionary_hits))
 
+        total_keyword_bunches = sum(len(entity.key_word_bunch)
+                                    for entity in self.proximity_entity_list)
+        self.log_generator.log_details(
+            "Total MIT keywords after merging singular/plural keywords:" + str(total_keyword_bunches))
         # print("Total key words found for "+self.document_name +
         #       ':' + str(total_dictionary_hits))
 
@@ -1020,11 +1032,10 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             print(
                 'No new document available to process Exposure Pathway-Internalization Insights')
             return
-        
-        self.insightDBMgr.cleanup_insights_for_document(
-                Lookups().Exp_Int_Insight_Type, document_list=document_list)
-        print('Completed cleanup data for batch:'+str(batch_num))
 
+        self.insightDBMgr.cleanup_insights_for_document(
+            Lookups().Exp_Int_Insight_Type, document_list=document_list)
+        print('Completed cleanup data for batch:'+str(batch_num))
 
         document_item: KeyWordLocationsEntity
         document_count = 0
@@ -1080,7 +1091,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
             print('Completed EXP->INT INSGHT GEN- Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
-            
+
     def _create_exp_int_insights_for_document(self, exp_insight_keyword_locations: None, int_insight_keyword_locations: None, document_id=0, document_name='', exp_insight_entity=None,   int_insight_entity=None, year=0):
 
         integer_exp_insight_keyword_locations = np.asarray(
@@ -1195,13 +1206,11 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         if (len(document_list) == 0):
             print('No new document available to process Mitigation-Exposure Insights')
             return
-        
+
         self.insightDBMgr.cleanup_insights_for_document(
             Lookups().Mitigation_Exp_Insight_Type, document_list=document_list)
         print('Completed cleanup data for batch:'+str(batch_num))
 
-
- 
         document_item: KeyWordLocationsEntity
         document_count = 0
 
@@ -1242,7 +1251,6 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
             document_count = document_count + 1
 
-
             # self.insightDBMgr.cleanup_insights_for_document(
             #     Lookups().Mitigation_Exp_Insight_Type, document_item.document_id)
 
@@ -1254,7 +1262,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
             self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
             ).Mitigation_Exp_Insight_Type, document_id=document_item.document_id)
-            
+
             print('Completed EXP->MITIGATION INSGHT GEN- Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
 
@@ -1270,11 +1278,11 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             print(
                 'No new document available to process Mitigation-Internalization Insights')
             return
-        
+
         self.insightDBMgr.cleanup_insights_for_document(
             Lookups().Mitigation_Int_Insight_Type, document_list=document_list)
         print('Completed cleanup data for batch:'+str(batch_num))
-            
+
         document_item: KeyWordLocationsEntity
         document_count = 0
 
@@ -1312,7 +1320,6 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                                            ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
             document_count = document_count+1
 
-
             # self.insightDBMgr.cleanup_insights_for_document(
             #     Lookups().Mitigation_Int_Insight_Type, document_item.document_id)
 
@@ -1324,7 +1331,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
             self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
             ).Mitigation_Int_Insight_Type, document_id=document_item.document_id)
-            
+
             print('Completed INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
 
@@ -1393,19 +1400,18 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             print(
                 'No new document available to process Exposure Pathway-Internalization Insights')
             return
-        
+
         self.insightDBMgr.cleanup_insights_for_document(
             Lookups().Mitigation_Exp_INT_Insight_Type, document_list=document_list)
         print('Completed cleanup data for batch:'+str(batch_num))
-
 
         document_item: KeyWordLocationsEntity
         document_count = 0
 
         for document_item in document_list:
             try:
-                print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
-                        str(document_count+1)+' of ' + str(len(document_list)))
+                print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
+                      str(document_count+1)+' of ' + str(len(document_list)))
                 self.log_generator.log_details(
                     "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
                 # print("Document ID:"+str(document_item.document_id) +
@@ -1426,16 +1432,16 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                     #       ' of ' + str(record_count)+'  Insights')
 
                     combined_exp_int_insight_location_list = (exp_int_insight_entity.exp1_locations.strip(']').strip('[')
-                                                            + ',' +
-                                                            exp_int_insight_entity.exp2_locations.strip(
+                                                              + ',' +
+                                                              exp_int_insight_entity.exp2_locations.strip(
                                                                 ']').strip('[')
-                                                            + ',' +
-                                                            exp_int_insight_entity.int1_locations.strip(
+                                                              + ',' +
+                                                              exp_int_insight_entity.int1_locations.strip(
                                                                 ']').strip('[')
-                                                                + ',' +
-                                                            exp_int_insight_entity.int2_locations.strip(
+                                                              + ',' +
+                                                              exp_int_insight_entity.int2_locations.strip(
                                                                 ']').strip('[')
-                                                            ).split(',')
+                                                              ).split(',')
                     # combined_exp_int_insight_location_list = (exp_int_insight_entity.int2_locations.strip(']').strip('[')
                     #                                           ).split(',')
 
@@ -1443,13 +1449,13 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                     mitigation_entity: MitigationExpIntInsight
                     for mitigation_entity in self.mitigation_keyword_list:
                         self._create_combined_exp_int_mitigation_insights_for_document(mitigation_keyword_locations=mitigation_entity.locations,
-                                                                                    doc_location_list=combined_exp_int_insight_location_list, exp_int_insight_entity=exp_int_insight_entity, document_id=document_item.document_id, document_name=document_item.document_name,
-                                                                                    mitigation_keyword_hit_id=mitigation_entity.key_word_hit_id, mitigation_keyword=mitigation_entity.key_word, year=document_item.year
-                                                                                    )
+                                                                                       doc_location_list=combined_exp_int_insight_location_list, exp_int_insight_entity=exp_int_insight_entity, document_id=document_item.document_id, document_name=document_item.document_name,
+                                                                                       mitigation_keyword_hit_id=mitigation_entity.key_word_hit_id, mitigation_keyword=mitigation_entity.key_word, year=document_item.year
+                                                                                       )
                     # current_count = current_count + 1
 
                 self.log_generator.log_details("Dcoument:"+document_item.document_name +
-                                            ", Total Exp Int -> Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
+                                               ", Total Exp Int -> Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
                 document_count = document_count + 1
                 # print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
                 #           str(document_count)+' of ' + str(len(document_list)))
@@ -1457,7 +1463,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 # self.insightDBMgr.cleanup_insights_for_document(
                 #     Lookups().Mitigation_Exp_INT_Insight_Type, document_item.document_id)
                 print('Insights Generated to Save in DB -  EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
-                    str(document_count)+' of ' + str(len(document_list)))
+                      str(document_count)+' of ' + str(len(document_list)))
 
                 self.insightDBMgr.save_Mitigation_Exp_Int_Insights(
                     insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
@@ -1469,14 +1475,13 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
 
                 print('Completed EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
-                    str(document_count)+' of ' + str(len(document_list)))
-                
+                      str(document_count)+' of ' + str(len(document_list)))
+
             except Exception as exc:
                 print('Error Processing' + str(batch_num) + ', Document:' +
                       str(document_count)+' of ' + str(len(document_list)) + ' -- Trying next Document')
                 print(exc)
                 document_count = document_count + 1
-
 
     def _create_combined_exp_int_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, exp_int_insight_entity: MitigationExpIntInsight, document_id=0, document_name='', mitigation_keyword='', mitigation_keyword_hit_id=0, year=0):
 
