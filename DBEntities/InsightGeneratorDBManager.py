@@ -1043,7 +1043,7 @@ class InsightGeneratorDBManager:
         try:
             cursor = self.dbConnection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute("select doc.document_id, ((comp.company_id, doc.document_name, doc.company_name, doc.year \
+            cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                                 from t_document doc, t_sec_company comp \
                                 where \
                                 doc.mitigation_exp_insights_generated = 0 and doc.company_name = comp.conformed_name\
@@ -1075,7 +1075,7 @@ class InsightGeneratorDBManager:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(sql, document_id)
+            cursor.execute(sql, (document_id,))
             rows = cursor.fetchall()
             for row in rows:
                 keyword_loc_entity = KeyWordLocationsEntity()
@@ -1152,7 +1152,7 @@ class InsightGeneratorDBManager:
         try:
             cursor = self.dbConnection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute("select doc.document_id, ((comp.company_id, doc.document_name, doc.company_name, doc.year \
+            cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                                 from t_document doc, t_sec_company comp \
                                 where \
                                 doc.mitigation_int_insights_generated = 0 and doc.company_name = comp.conformed_name\
@@ -1427,7 +1427,7 @@ class InsightGeneratorDBManager:
         try:
             cursor = self.dbConnection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute("select doc.document_id, ((comp.company_id, doc.document_name, doc.company_name, doc.year \
+            cursor.execute("select doc.document_id, comp.company_id, doc.document_name, doc.company_name, doc.year \
                                 from t_document doc, t_sec_company comp \
                                 where \
                                 doc.mitigation_int_exp_insights_generated = 0 and doc.company_name = comp.conformed_name\
@@ -1462,7 +1462,7 @@ class InsightGeneratorDBManager:
             # Execute the SQL query
 
             cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(sql, document_id)
+            cursor.execute(sql, (document_id,))
             rows = cursor.fetchall()
             for row in rows:
 
@@ -1485,15 +1485,15 @@ class InsightGeneratorDBManager:
         sector_id = self.get_sector_id(document_id)
         # sql = 'select document_id, key_word_hit_id, key_word,locations from t_key_word_hits where dictionary_type = 1000 and document_id = %s'
 
-        sql = f"SELECT expint.unique_key,expint.document_id, expint.document_name, expint.exp_keyword_hit_id1,expint.exp_keyword1,expint.exp_keyword_hit_id2,expint.exp_keyword2,\
+        sql = """SELECT expint.unique_key,expint.document_id, expint.document_name, expint.exp_keyword_hit_id1,expint.exp_keyword1,expint.exp_keyword_hit_id2,expint.exp_keyword2,\
                 expint.int_key_word_hit_id1,expint.int_key_word1, int_key_word_hit_id2,expint.int_key_word2,expint.factor1,expint.factor2,expint.score,expint.score_normalized, expint.exposure_path_id,expint.internalization_id,\
-                exp1_hits.locations 'exp1_locations', exp2_hits.locations 'exp2_locations', int1_hits.locations 'int1_locations', int2_hits.locations 'int2_locations'\
+                exp1_hits.locations as exp1_locations, exp2_hits.locations as exp2_locations, int1_hits.locations as int1_locations, int2_hits.locations as int2_locations\
                from t_exp_int_insights expint \
                       INNER JOIN t_key_word_hits exp1_hits on exp1_hits.key_word_hit_id = expint.exp_keyword_hit_id1\
                       INNER JOIN t_key_word_hits exp2_hits on exp2_hits.key_word_hit_id = expint.exp_keyword_hit_id2\
                       INNER JOIN  t_key_word_hits int1_hits on int1_hits.key_word_hit_id = expint.int_key_word_hit_id1\
                       INNER JOIN  t_key_word_hits int2_hits on int2_hits.key_word_hit_id = expint.int_key_word_hit_id2\
-                where expint.[year] = %s and expint.document_id = %s and expint.score_normalized > {EXP_INT_MITIGATION_THRESHOLD}"
+                where expint.year = %s and expint.document_id = %s and expint.score_normalized > %s"""
 
         # DATE:Jun 10, 2025 - Filtering will not work if Sector Scores are not yet calculated
         # and expint.exposure_path_id in (\
@@ -1505,7 +1505,8 @@ class InsightGeneratorDBManager:
 
             cursor = self.dbConnection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(sql, (((year, document_id))))
+            cursor.execute(
+                sql, (year, document_id, EXP_INT_MITIGATION_THRESHOLD))
             # cursor.execute(sql, ((year, document_id, year,sector_id)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1531,6 +1532,7 @@ class InsightGeneratorDBManager:
             cursor.close()
 
         except Exception as exc:
+            print('Failing Here in get_mitigation_exp_int_lists')
             print(f"Error: {str(exc)}")
             raise exc
 
