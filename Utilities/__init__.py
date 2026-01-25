@@ -9,7 +9,7 @@ from .CustomExceptions import *
 
 __all__ = [
     'logGenerator',
-    'TelemetryTracker', 
+    'TelemetryTracker',
     'OperationTimer',
     'create_telemetry_tracker',
     'measure_execution_time',
