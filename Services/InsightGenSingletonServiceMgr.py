@@ -44,7 +44,7 @@ def process_next_unprocessed_exposure_document_list(batch_size, database_context
         doc_list.append(document)
         insight_generator_db_mgr.cleanup_insights_for_document(Lookups().Exposure_Pathway_Dictionary_Type,doc_list)
         exp_int_insght_generator.generate_insights_with_2_factors(
-                Lookups().Exposure_Pathway_Dictionary_Type, document_keyword_list,batch_num=batch_num, year=document.year)
+                Lookups().Exposure_Pathway_Dictionary_Type, document_keyword_list,batch_num=batch_num, year=document.year, document_id=document.document_id )
         print('Completed Insight Generation - Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(batch_size))
                       
@@ -112,7 +112,7 @@ def process_next_unprocessed_internalization_document_list(batch_size, database_
         insight_generator_db_mgr.cleanup_insights_for_document(
             Lookups().Internalization_Dictionary_Type, doc_list)
         exp_int_insght_generator.generate_insights_with_2_factors(
-            Lookups().Internalization_Dictionary_Type, document_keyword_list, batch_num=batch_num, year=document.year)
+            Lookups().Internalization_Dictionary_Type, document_keyword_list, batch_num=batch_num, year=document.year, document_id=document.document_id)
         print('Completed Insight Generation - Batch#:' + str(batch_num) +', Document:' +
                       str(document_count)+' of ' + str(batch_size))
                       

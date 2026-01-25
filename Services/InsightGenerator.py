@@ -18,6 +18,10 @@ from DBEntities.ProximityEntity import Insight
 from Utilities.Lookups import Lookups
 from Dictionary.DictionaryManager import DictionaryManager
 from Dictionary.DictionaryManager import ContextResolver
+
+from Utilities.TelemetryServices import TelemetryTracker, OperationTimer
+import time
+
 import copy
 import numpy as np
 import os
@@ -806,13 +810,20 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
 class Insight_Generator(keyWordSearchManager):
 
     # Generate Insights for two keyword combinations
-    def generate_insights_with_2_factors(self, dictionary_type: int, document_keyword_list=[], batch_num=0, year=0):
+    def generate_insights_with_2_factors(self, dictionary_type: int, document_keyword_list=[], batch_num=0, year=0, document_id=0):
 
         # print('Generating insights for Dictionary Type:' +
         #       str(dictionary_type))
+        telemetry = TelemetryTracker(self.log_generator, "save_insights")
+        telemetry.start_operation()
+        
+        telemetry.add_metric("Dictionary Type", dictionary_type)
+        telemetry.add_metric("Document ID", document_id)
+        telemetry.add_metric("Year", year)
+
 
         document_keyword_list = document_keyword_list
-
+        self.total_insights_generated = 0
         if len(document_keyword_list) < 1:
             print('Document List with Zero Documents:WHY?????:' +
                   str(dictionary_type))
@@ -820,11 +831,14 @@ class Insight_Generator(keyWordSearchManager):
 
         document_item: KeyWordLocationsEntity
         for document_item in document_keyword_list:
-            self.log_generator.log_details("Processing Batch:"+str(batch_num)+", Document ID:"+str(
-                document_item.document_id)+", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
+            # self.log_generator.log_details("Processing Batch:"+str(batch_num)+", Document ID:"+str(
+            #     document_item.document_id)+", dictionary_type:"+str(document_item.dictionary_type)+", Dictionary ID:" + str(document_item.dictionary_id))
 
             self._generate_insights_with_2_factors_by_dictionary_id(dictionary_type=document_item.dictionary_type,
                                                                     dictionary_id=document_item.dictionary_id, document_id=document_item.document_id, document_name=document_item.document_name, year=year)
+        telemetry.set_record_count(self.total_insights_generated)
+        telemetry.stop_operation()
+        telemetry.log_telemetry_summary()
 
     def _generate_insights_with_2_factors_by_dictionary_id(self, dictionary_type=0, dictionary_id=0, document_id=0, document_name='', year=0):
         keyword_location_list = self._load_keyword_location_list(
@@ -887,12 +901,13 @@ class Insight_Generator(keyWordSearchManager):
                                           exposure_path_id=keyword_location.exposure_path_id, internalization_id=keyword_location.internalization_id
                                           )
                         insightList.append(insight)
-        self.log_generator.log_details(
-            "Total Insights generated:" + str(len(insightList)))
-        self.log_generator.log_details(
-            '################################################################################################')
+        # self.log_generator.log_details(
+        #     "Total Insights generated:" + str(len(insightList)))
+        # self.log_generator.log_details(
+        #     '################################################################################################')
 
         insights_genetated = len(insightList)
+        self.total_insights_generated += insights_genetated
         # print("Total Insights generated:" + str(insights_genetated))
 
         if (insights_genetated > 0):
