@@ -873,8 +873,9 @@ class Insight_Generator(keyWordSearchManager):
                             distance = abs(int_master_location - location)
                             try:
                                 if (distance == 0 and IGNORE_ZERO_CALC_WARNING):
-                                    self.log_generator.log_details("Distance 0 - Ignoring Weight Calculation: Keyword:" + keyword_location.key_word +
-                                                                   ", Child Key word:" + child_node.key_word+", Location:"+str(location))
+                                    pass
+                                    # self.log_generator.log_details("Distance 0 - Ignoring Weight Calculation: Keyword:" + keyword_location.key_word +
+                                    #                                ", Child Key word:" + child_node.key_word+", Location:"+str(location))
                                 else:
                                     ratio = 1/distance
                                     factor2_distance_list.append(ratio)
@@ -1047,9 +1048,9 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         return distance_list
 
     # EXP VS. INT
-    def generate_exp_int_insights(self, document_list: [], batch_num=0):
-        self.log_generator.log_details(
-            "Generating Exposure Pathway ->Internalization Insights")
+    def generate_exp_int_insights(self, document_list: [], batch_num=0): 
+        # self.log_generator.log_details(
+        #     "Generating Exposure Pathway ->Internalization Insights")
         # print("###########################################################")
         # print("Generating Exposure Pathway ->Internalization Insights")
         # document_list = self.insightDBMgr.get_exp_int_document_list()
@@ -1061,50 +1062,40 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         self.insightDBMgr.cleanup_insights_for_document(
             Lookups().Exp_Int_Insight_Type, document_list=document_list)
-        print('Completed cleanup data for batch:'+str(batch_num))
+        # print('Completed cleanup data for batch:'+str(batch_num))
 
         document_item: KeyWordLocationsEntity
         document_count = 0
         for document_item in document_list:
-            self.log_generator.log_details(
-                "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
-            # print("Document ID:"+str(document_item.document_id) +
-            #       ", Document Name:"+str(document_item.document_name))
+
+            telemetry = TelemetryTracker(
+                self.log_generator, "Generate_exp_int_insights:Document ID:"+str(document_item.document_id))
+            telemetry.start_operation()
+            telemetry.add_metric(
+                "Insight Type", 'Exposure Pathway ->Internalization')
+            telemetry.add_metric("Document ID", document_item.document_id)
+            telemetry.add_metric("Year", document_item.year)
 
             self.exp_insight_location_list, self.int_insight_location_list = self.insightDBMgr.get_exp_int_lists(
                 document_item.document_id)
-            # print("Exp Insight locations:"+str(len(self.exp_insight_location_list)) +
-            #       ", Int Insight locations:"+str(len(self.int_insight_location_list)))
+
 
             exp_insight_entity: Insight
             self.int_exp_insightList = []
 
-            # record_count = len(self.exp_insight_location_list)
-            # current_count = 1
             for exp_insight_entity in self.exp_insight_location_list:
-                # print('Processing '+str(current_count) +
-                #       ' of ' + str(record_count)+'  Insights')
 
                 combined_exp_insight_location_list = (exp_insight_entity.locations1.strip(
                     ']').strip('[') + ',' + exp_insight_entity.locations2.strip(']').strip('[')).split(',')
-                # print("EXP INSIGHT LOCATIONS for "+exp_insight_entity.keyword1+','+exp_insight_entity.keyword2+':'+str(combined_exp_insight_location_list))
+
                 for int_insight_entity in self.int_insight_location_list:
                     combined_int_insight_location_list = (int_insight_entity.locations1.strip(
                         ']').strip('[') + ',' + int_insight_entity.locations2.strip(']').strip('[')).split(',')
-                    # print("INT INSIGHT LOCATIONS for"+int_insight_entity.keyword1+','+int_insight_entity.keyword2+':'+str(combined_int_insight_location_list))
                     self._create_exp_int_insights_for_document(combined_exp_insight_location_list, combined_int_insight_location_list, document_item.document_id,
                                                                document_item.document_name, exp_insight_entity, int_insight_entity, year=document_item.year)
-                # current_count = current_count + 1
 
-            self.log_generator.log_details("Dcoument:"+document_item.document_name +
-                                           ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
             document_count = document_count + 1
 
-            # print("Dcoument:"+document_item.document_name +
-            #       ", Total Exp Int Insights generated:" + str(len(self.int_exp_insightList)))
-
-            # self.insightDBMgr.cleanup_insights_for_document(
-            #     Lookups().Exp_Int_Insight_Type, document_item.document_id)
             try:
                 self.insightDBMgr.save_Exp_Int_Insights(
                     insightList=self.int_exp_insightList, dictionary_type=Lookups().Exp_Int_Insight_Type, document_id=document_item.document_id)
@@ -1121,10 +1112,10 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 self.log_generator.log_details('Error saving Exp-Int insights for Document ID:' +
                                                str(document_item.document_id))
                 raise exc
-
-
-            print('Completed EXP->INT INSGHT GEN- Batch#:' + str(batch_num) + ', Document:' +
-                  str(document_count)+' of ' + str(len(document_list)))
+            
+            telemetry.set_record_count(len(self.int_exp_insightList))
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
 
     def _create_exp_int_insights_for_document(self, exp_insight_keyword_locations: None, int_insight_keyword_locations: None, document_id=0, document_name='', exp_insight_entity=None,   int_insight_entity=None, year=0):
 
@@ -1243,7 +1234,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         self.insightDBMgr.cleanup_insights_for_document(
             Lookups().Mitigation_Exp_Insight_Type, document_list=document_list)
-        print('Completed cleanup data for batch:'+str(batch_num))
+        # print('Completed cleanup data for batch:'+str(batch_num))
 
         document_item: KeyWordLocationsEntity
         document_count = 0
@@ -1324,7 +1315,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         self.insightDBMgr.cleanup_insights_for_document(
             Lookups().Mitigation_Int_Insight_Type, document_list=document_list)
-        print('Completed cleanup data for batch:'+str(batch_num))
+        # print('Completed cleanup data for batch:'+str(batch_num))
 
         document_item: KeyWordLocationsEntity
         document_count = 0
@@ -1454,7 +1445,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         self.insightDBMgr.cleanup_insights_for_document(
             Lookups().Mitigation_Exp_INT_Insight_Type, document_list=document_list)
-        print('Completed cleanup data for batch:'+str(batch_num))
+        # print('Completed cleanup data for batch:'+str(batch_num))
 
         document_item: KeyWordLocationsEntity
         document_count = 0
