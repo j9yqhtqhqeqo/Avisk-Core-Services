@@ -1,6 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import datetime as dt
+import numpy as np
 from DBEntities.DocumentHeaderEntity import DocHeaderEntity
 from DBEntities.DictionaryEntity import DictionaryEntity
 from DBEntities.ProximityEntity import ProximityEntity
@@ -12,6 +13,8 @@ from DBEntities.ProximityEntity import DocumentEntity
 from Utilities.LoggingServices import logGenerator
 from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
 from Utilities.Lookups import Lookups, DB_Connection
+import time
+
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
@@ -26,11 +29,8 @@ PARM_LOGFILE = (
 DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 DB_LOGGING_ENABLED = True
 
-
 class InsightGeneratorDBManager:
-
-    # COMMON
-
+    
     def __init__(self, database_context: None) -> None:
 
         connection_string = ''
@@ -43,13 +43,41 @@ class InsightGeneratorDBManager:
             raise Exception("Database context Undefined")
 
         self.dbConnection = psycopg2.connect(connection_string)
-
         self.d_next_seed = 0
         self.batch_id = 0
 
         self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
         self.log_generator = logGenerator(self.log_file_path)
 
+    def convert_numpy_types(self, value):
+        """
+        Convert numpy types to Python native types for PostgreSQL compatibility
+        
+        Args:
+            value: Value that might be a numpy type
+        
+        Returns:
+            Python native type
+        """
+        # Handle None values first
+        if value is None:
+            return None
+
+        # Handle numpy types
+        if isinstance(value, np.integer):
+            return int(value)
+        elif isinstance(value, np.floating):
+            return float(value)
+        elif isinstance(value, np.ndarray):
+            return value.tolist()
+        elif isinstance(value, np.str_):
+            return str(value)
+        elif hasattr(np, 'unicode_') and isinstance(value, np.unicode_):
+            # Handle older NumPy versions that still have np.unicode_
+            return str(value)
+        else:
+            return value
+        
     def get_company_list(self, sic_code: None):  # , company_name:None):
 
         company_list = []
@@ -355,11 +383,21 @@ class InsightGeneratorDBManager:
 
             pass
 
-    def save_insights(self, insightList, dictionary_type, document_id, year=0):
+        start_time = time.time()
+
         insight: Insight
         self.d_next_seed = 0
         total_records_added_to_db = 0
         sector_id = self.get_sector_id(document_id)
+
+        # Telemetrics initialization
+        db_operation_time = 0
+        preparation_time = 0
+        if (DB_LOGGING_ENABLED):
+            self.log_generator.log_details(
+                f"🔄 Starting save_insights for {len(insightList)} records...")
+        prep_start = time.time()
+
         for insight in insightList:
             key_word_hit_id1 = insight.keyword_hit_id1
             key_word_hit_id2 = insight.keyword_hit_id2
@@ -433,27 +471,162 @@ class InsightGeneratorDBManager:
             except Exception as exc:
                 # Rollback the transaction if any error occurs
                 self.dbConnection.rollback()
-                print(f"Error: {str(exc)}")
-                raise exc
-
-                # if (total_records_added_to_db % 250 == 0):
-                #     print("Insights added to the Database So far...:" +
-                #           str(total_records_added_to_db))
-
-                # Close the cursor and connection
-                if (total_records_added_to_db > 0):
-                    self.dbConnection.commit()
-                    cursor.close()
-
-                # self.dbConnection.commit()
                 if (DB_LOGGING_ENABLED):
                     self.log_generator.log_details(
-                        "Total Insights added to the Database:" + str(total_records_added_to_db))
-                    self.log_generator.log_details(
-                        '################################################################################################')
+                        f"Error in save_insights: {str(exc)}")
 
-                    # print("Total Insights added to the Database:" +
-                    #       str(total_records_added_to_db))
+                print(f"Error: {str(exc)}")
+                raise exc
+            db_end = time.time()
+            db_operation_time += (db_end - db_start)
+            prep_start = time.time()
+        # if (total_records_added_to_db % 250 == 0):
+        #     print("Insights added to the Database So far...:" +
+        #           str(total_records_added_to_db))
+
+        # Close the cursor and connection
+        if (total_records_added_to_db > 0):
+            self.dbConnection.commit()
+            cursor.close()
+
+        # self.dbConnection.commit()
+        if (DB_LOGGING_ENABLED):
+            self.log_generator.log_details(
+                "Total Insights added to the Database:" + str(total_records_added_to_db))
+            self.log_generator.log_details(
+                '################################################################################################')
+
+            # print("Total Insights added to the Database:" +
+            #       str(total_records_added_to_db))
+
+    def save_insights(self, insightList, dictionary_type, document_id, year=0):
+        """
+        Save insights with telemetrics tracking using centralized method
+        """
+        start_time = time.time()
+        insight: Insight
+        self.d_next_seed = 0
+        total_records_added_to_db = 0
+        sector_id = self.get_sector_id(document_id)
+
+        # Telemetrics initialization
+        db_operation_time = 0
+        preparation_time = 0
+
+        if (DB_LOGGING_ENABLED):
+            self.log_generator.log_details(
+                f"🔄 Starting save_insights for {len(insightList)} records...")
+
+        prep_start = time.time()
+
+        for insight in insightList:
+            key_word_hit_id1 = insight.keyword_hit_id1
+            key_word_hit_id2 = insight.keyword_hit_id2
+            key_word1 = insight.keyword1
+            key_word2 = insight.keyword2
+            factor1 = insight.factor1
+            factor2 = insight.factor2
+            score = insight.score
+            document_name = insight.document_name
+            document_id = insight.document_id
+            exposure_path_id = insight.exposure_path_id
+            internalization_id = insight.internalization_id
+
+            prep_end = time.time()
+            preparation_time += (prep_end - prep_start)
+
+            # Database operation timing
+            db_start = time.time()
+
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
+
+            if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
+                sql = f"INSERT INTO t_exposure_pathway_insights( \
+                        document_id, sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    factor1, factor2,exposure_path_id, added_dt,added_by ,modify_dt,modify_by, year\
+                    )\
+                        VALUES\
+                        ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        {factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
+
+            elif (dictionary_type == Lookups().Internalization_Dictionary_Type):
+                sql = f"INSERT INTO t_internalization_insights( \
+                    document_id,sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,score,\
+                    factor1, factor2,internalization_id, added_dt,added_by ,modify_dt,modify_by, year\
+                    )\
+                        VALUES\
+                        ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{score},\
+                        {factor1}, {factor2},{internalization_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
+
+            elif (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
+                mitigation_keyword_hit_id = insight.mitigation_keyword_hit_id
+                mitigation_keyword = insight.mitigation_keyword
+                sql = f"INSERT INTO t_mitigation_exp_insights( \
+                    document_id, sector_id,document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
+                    score,factor1, factor2, exposure_path_id,added_dt,added_by ,modify_dt,modify_by,year\
+                    )\
+                        VALUES\
+                        ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
+                        {score},{factor1}, {factor2},{exposure_path_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
+
+            elif (dictionary_type == Lookups().Mitigation_Int_Insight_Type):
+                mitigation_keyword_hit_id = insight.mitigation_keyword_hit_id
+                mitigation_keyword = insight.mitigation_keyword
+                sql = f"INSERT INTO t_mitigation_int_insights( \
+                    document_id,sector_id, document_name, key_word_hit_id1, key_word_hit_id2,key_word1, key_word2,mitigation_keyword_hit_id,mitigation_keyword,\
+                score,factor1, factor2, internalization_id, added_dt,added_by ,modify_dt,modify_by, year\
+                )\
+                    VALUES\
+                    ({document_id},{sector_id},N'{document_name}',{key_word_hit_id1},{key_word_hit_id2},N'{key_word1}',N'{key_word2}',{mitigation_keyword_hit_id},N'{mitigation_keyword}',\
+                    {score},{factor1}, {factor2},{internalization_id},CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
+
+            try:
+                cursor.execute(sql)
+                total_records_added_to_db = total_records_added_to_db + 1
+                if (total_records_added_to_db % 50 == 0):
+                    self.dbConnection.commit()
+
+            except Exception as exc:
+                self.dbConnection.rollback()
+                if (DB_LOGGING_ENABLED):
+                    self.log_generator.log_details(
+                        f"Error in save_insights: {str(exc)}")
+                raise exc
+
+            db_end = time.time()
+            db_operation_time += (db_end - db_start)
+            prep_start = time.time()
+
+        # Final commit
+        commit_start = time.time()
+        if (total_records_added_to_db > 0):
+            self.dbConnection.commit()
+            cursor.close()
+        commit_end = time.time()
+
+        # Calculate total time and log telemetrics
+        total_time = time.time() - start_time
+        commit_time = commit_end - commit_start
+
+        # Additional metrics specific to this operation
+        additional_metrics = {
+            "Dictionary Type": dictionary_type,
+            "Document ID": document_id,
+            "Year": year,
+            "Batch Commit Frequency": "Every 50 records"
+        }
+
+        # Use centralized telemetrics method
+        self._log_telemetrics(
+            operation_name="save_insights",
+            total_records=total_records_added_to_db,
+            total_time=total_time,
+            preparation_time=preparation_time,
+            db_operation_time=db_operation_time,
+            commit_time=commit_time,
+            additional_metrics=additional_metrics
+        )
 
     def cleanup_insights_for_document(self, dictionary_type, document_list):
 
@@ -1002,26 +1175,26 @@ class InsightGeneratorDBManager:
 
         # COMMON
 
-    def update_triangulation_insights_generated_batch(self, dictionary_type, document_id, insights_generated_ind=1):
+    def update_triangulation_insights_generated_batch(self, dictionary_type, document_id, insights_generated=1):
 
         cursor = self.dbConnection.cursor(
             cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Create a cursor object to execute SQL queries
         if (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
-            sql = f"update t_document set mitigation_exp_insights_generated = {insights_generated_ind} \
+            sql = f"update t_document set mitigation_exp_insights_generated = {insights_generated} \
                                 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                                 where document_id ={document_id}"
         elif (dictionary_type == Lookups().Mitigation_Int_Insight_Type):
-            sql = f"update t_document set mitigation_int_insights_generated = {insights_generated_ind} \
+            sql = f"update t_document set mitigation_int_insights_generated = {insights_generated} \
                                 ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                                 where document_id ={document_id}"
         elif (dictionary_type == Lookups().Exp_Int_Insight_Type):
-            sql = f"update t_document set int_exp_insights_generated = {insights_generated_ind} \
+            sql = f"update t_document set int_exp_insights_generated = {insights_generated} \
                         ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                         where document_id ={document_id}"
         elif (dictionary_type == Lookups().Mitigation_Exp_INT_Insight_Type):
-            sql = f"update t_document set mitigation_int_exp_insights_generated = {insights_generated_ind} \
+            sql = f"update t_document set mitigation_int_exp_insights_generated = {insights_generated} \
                         ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
                         where document_id ={document_id}"
         try:
@@ -1356,81 +1529,168 @@ class InsightGeneratorDBManager:
 
         return exp_insight_location_list, int_insight_location_list
 
+## CHANGES IN PROGRESS BELOW THIS LINE ##   
     def save_Exp_Int_Insights(self, insightList, dictionary_type, document_id):
+        """
+        OPTIMIZED: Bulk insert for Exposure-Internalization insights using executemany
+        Target: 500+ records/second (20x improvement)
+        """
+        if not insightList:
+            if DB_LOGGING_ENABLED:
+                self.log_generator.log_details("No insights to save")
+            return
 
-        exp_int_insight_entity: ExpIntInsight
-        self.d_next_seed = 0
+        start_time = time.time()
         sector_id = self.get_sector_id(document_id)
-        total_records_added_to_db = 0
+
+        # OPTIMIZATION 1: Pre-validate and batch convert data
+        prep_start = time.time()
+        insert_data = []
+        skipped_records = 0
+
+        if DB_LOGGING_ENABLED:
+            self.log_generator.log_details(
+                f"🔄 Starting OPTIMIZED save_Exp_Int_Insights for {len(insightList)} records...")
+
         for exp_int_insight_entity in insightList:
-            exp_keyword_hit_id1 = exp_int_insight_entity.exp_keyword_hit_id1
-            exp_keyword1 = exp_int_insight_entity.exp_keyword1
-            exp_keyword_hit_id2 = exp_int_insight_entity.exp_keyword_hit_id2
-            exp_keyword2 = exp_int_insight_entity.exp_keyword2
-            int_key_word_hit_id1 = exp_int_insight_entity.int_key_word_hit_id1
-            int_key_word1 = exp_int_insight_entity.int_key_word1
-            int_key_word_hit_id2 = exp_int_insight_entity.int_key_word_hit_id2
-            int_key_word2 = exp_int_insight_entity.int_key_word2
-            factor1 = exp_int_insight_entity.factor1
-            factor2 = exp_int_insight_entity.factor2
-            score = exp_int_insight_entity.score
-            document_name = exp_int_insight_entity.document_name
-            document_id = exp_int_insight_entity.document_id
-            exposure_path_id = exp_int_insight_entity.exposure_path_id
-            internalization_id = exp_int_insight_entity.internalization_id
-            year = exp_int_insight_entity.year
+            # Quick validation first
+            if (exp_int_insight_entity.document_id is None or
+                    exp_int_insight_entity.document_name is None):
+                skipped_records += 1
+                if DB_LOGGING_ENABLED:
+                    self.log_generator.log_details(
+                        f"Skipping insight with missing required fields")
+                continue
 
-            # Create a cursor object to execute SQL queries
-            cursor = self.dbConnection.cursor(
-                cursor_factory=psycopg2.extras.RealDictCursor)
-            # Construct the INSERT INTO statement
-
-            sql = f"INSERT INTO t_exp_int_insights( \
-                        document_id ,sector_id, document_name ,exp_keyword_hit_id1 ,exp_keyword1,exp_keyword_hit_id2 ,exp_keyword2 \
-                        ,int_key_word_hit_id1,int_key_word1,int_key_word_hit_id2, int_key_word2 ,factor1 ,factor2 ,score, exposure_path_id, internalization_id\
-                        ,added_dt,added_by ,modify_dt,modify_by,year\
-                )\
-                    VALUES\
-                    ({document_id},{sector_id},N'{document_name}',{exp_keyword_hit_id1},N'{exp_keyword1}',{exp_keyword_hit_id2},N'{exp_keyword2}'\
-                    ,{int_key_word_hit_id1},N'{int_key_word1}',{int_key_word_hit_id2},N'{int_key_word2}'\
-                    , {factor1}, {factor2},{score},{exposure_path_id},{internalization_id}\
-                    ,CURRENT_TIMESTAMP, N'Mohan Hanumantha',CURRENT_TIMESTAMP, N'Mohan Hanumantha',{year})"
-
+            # Batch convert all fields at once
             try:
-                # Execute the SQL query
-                cursor.execute(sql)
-                total_records_added_to_db = total_records_added_to_db + 1
-                if (total_records_added_to_db % 50 == 0):
-                    self.dbConnection.commit()
+                converted_row = (
+                    self.convert_numpy_types(exp_int_insight_entity.document_id),
+                    self.convert_numpy_types(sector_id),
+                    self.convert_numpy_types(exp_int_insight_entity.document_name),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.exp_keyword_hit_id1),
+                    self.convert_numpy_types(exp_int_insight_entity.exp_keyword1),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.exp_keyword_hit_id2),
+                    self.convert_numpy_types(exp_int_insight_entity.exp_keyword2),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.int_key_word_hit_id1),
+                    self.convert_numpy_types(exp_int_insight_entity.int_key_word1),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.int_key_word_hit_id2),
+                    self.convert_numpy_types(exp_int_insight_entity.int_key_word2),
+                    self.convert_numpy_types(exp_int_insight_entity.factor1),
+                    self.convert_numpy_types(exp_int_insight_entity.factor2),
+                    self.convert_numpy_types(exp_int_insight_entity.score),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.exposure_path_id),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.internalization_id),
+                    self.convert_numpy_types(exp_int_insight_entity.year),
+                    'Mohan Hanumantha',  # added_by
+                    'Mohan Hanumantha'   # modify_by
+                )
 
-            except Exception as exc:
-                # Rollback the transaction if any error occurs
-                self.dbConnection.rollback()
-                print(f"Error: {str(exc)}")
-                raise exc
+                # Final validation after conversion
+                if converted_row[0] is not None and converted_row[2] is not None:
+                    insert_data.append(converted_row)
+                else:
+                    skipped_records += 1
+                    if DB_LOGGING_ENABLED:
+                        self.log_generator.log_details(
+                            f"Skipping insight with None values after conversion")
 
-            # if (total_records_added_to_db % 250 == 0):
-            #     print("Insights added to the Database So far...:" +
-            #           str(total_records_added_to_db))
+            except Exception as e:
+                skipped_records += 1
+                if DB_LOGGING_ENABLED:
+                    self.log_generator.log_details(
+                        f"Conversion error for record: {str(e)}")
+                continue
 
-        # Commit remaining records
-        # Close the cursor and connection
+        prep_time = time.time() - prep_start
 
-        if (total_records_added_to_db > 0):
+        if not insert_data:
+            if DB_LOGGING_ENABLED:
+                self.log_generator.log_details(
+                    "No valid insights to insert after validation")
+            return
+
+        # OPTIMIZATION 2: Use executemany for bulk insert
+        bulk_start = time.time()
+        sql = """INSERT INTO t_exp_int_insights(
+                    document_id, sector_id, document_name, 
+                    exp_keyword_hit_id1, exp_keyword1, exp_keyword_hit_id2, exp_keyword2,
+                    int_key_word_hit_id1, int_key_word1, int_key_word_hit_id2, int_key_word2,
+                    factor1, factor2, score, exposure_path_id, internalization_id, year,
+                    added_dt, added_by, modify_dt, modify_by
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    CURRENT_TIMESTAMP, %s, CURRENT_TIMESTAMP, %s
+                )"""
+
+        try:
+            # OPTIMIZATION 3: Single cursor with explicit transaction control
+            cursor = self.dbConnection.cursor()
+
+            # OPTIMIZATION 4: Use executemany for reliable bulk insert
+            cursor.executemany(sql, insert_data)
+
+            # OPTIMIZATION 5: Single commit at the end
             self.dbConnection.commit()
             cursor.close()
 
-            # self.dbConnection.commit()
-        if (DB_LOGGING_ENABLED):
-            self.log_generator.log_details(
-                "Total Insights added to the Database:" + str(total_records_added_to_db))
-            self.log_generator.log_details(
-                '################################################################################################')
+            bulk_time = time.time() - bulk_start
+            total_time = time.time() - start_time
 
-            # print("Total Insights added to the Database:" +
-            #       str(total_records_added_to_db))
+            # Enhanced telemetry
+            if DB_LOGGING_ENABLED:
+                self.log_generator.log_details(
+                    f"✅ OPTIMIZED bulk insert completed:")
+                self.log_generator.log_details(
+                    f"   📝 Records processed: {len(insightList)}")
+                self.log_generator.log_details(
+                    f"   ✅ Records inserted: {len(insert_data)}")
+                self.log_generator.log_details(
+                    f"   ⚠️  Records skipped: {skipped_records}")
+                self.log_generator.log_details(
+                    f"   🔧 Preparation time: {prep_time:.3f}s ({prep_time/total_time*100:.1f}%)")
+                self.log_generator.log_details(
+                    f"   💾 Bulk insert time: {bulk_time:.3f}s ({bulk_time/total_time*100:.1f}%)")
+                self.log_generator.log_details(
+                    f"   ⏱️  Total time: {total_time:.3f}s")
+                if bulk_time > 0:
+                    self.log_generator.log_details(
+                        f"   📈 Insertion rate: {len(insert_data)/bulk_time:.2f} records/sec")
+                    self.log_generator.log_details(
+                        f"   📊 Avg time/record: {bulk_time/len(insert_data)*1000:.2f}ms")
 
-            # EXP INT MITIGATION
+                # Performance rating
+                records_per_sec = len(insert_data) / \
+                    bulk_time if bulk_time > 0 else 0
+                if records_per_sec >= 1000:
+                    rating = "⚡ Excellent (1000+ records/sec)"
+                elif records_per_sec >= 500:
+                    rating = "🚀 Very Good (500-1000 records/sec)"
+                elif records_per_sec >= 100:
+                    rating = "✅ Good (100-500 records/sec)"
+                elif records_per_sec >= 50:
+                    rating = "⚠️  Fair (50-100 records/sec)"
+                else:
+                    rating = "🐌 Needs Optimization (<50 records/sec)"
+
+                self.log_generator.log_details(
+                    f"   🎯 Performance Rating: {rating}")
+                self.log_generator.log_details(
+                    '################################################################################################')
+
+        except Exception as exc:
+            self.dbConnection.rollback()
+            if DB_LOGGING_ENABLED:
+                self.log_generator.log_details(
+                    f"❌ Error in optimized bulk insert EXP-INT insights: {str(exc)}")
+            raise exc
+## CHANGES IN PROGRESS ABOVE THIS LINE ##
     def get_mitigation_exp_int_document_list(self):
         document_list = []
         try:
@@ -2373,6 +2633,67 @@ class InsightGeneratorDBManager:
                 print(f"Error: {str(exc)}")
                 raise exc
             print('Completed Processing YoY Chart Data')
+
+    # TELEMETRICS LOGGING METHOD
+
+    def _log_telemetrics(self, operation_name, total_records, total_time, preparation_time=0, db_operation_time=0, commit_time=0, additional_metrics=None):
+        """
+        Centralized telemetrics logging method
+
+        Args:
+            operation_name (str): Name of the operation being measured
+            total_records (int): Total number of records processed
+            total_time (float): Total time taken for the operation in seconds
+            preparation_time (float): Time spent preparing data
+            db_operation_time (float): Time spent on database operations
+            commit_time (float): Time spent on commits
+            additional_metrics (dict): Optional additional metrics to log
+        """
+        if not DB_LOGGING_ENABLED:
+            return
+
+        # Calculate percentages
+        prep_percentage = (preparation_time / total_time *
+                           100) if total_time > 0 else 0
+        db_percentage = (db_operation_time / total_time *
+                         100) if total_time > 0 else 0
+        commit_percentage = (commit_time / total_time *
+                             100) if total_time > 0 else 0
+
+        # Calculate performance metrics
+        records_per_second = total_records / total_time if total_time > 0 else 0
+        avg_time_per_record = (
+            total_time / total_records * 1000) if total_records > 0 else 0
+
+        # Log telemetrics
+        self.log_generator.log_details(f"📊 TELEMETRICS - {operation_name}:")
+        self.log_generator.log_details(f"   📝 Total Records: {total_records}")
+        self.log_generator.log_details(f"   ⏱️  Total Time: {total_time:.3f}s")
+
+        if preparation_time > 0:
+            self.log_generator.log_details(
+                f"   🔧 Preparation Time: {preparation_time:.3f}s ({prep_percentage:.1f}%)")
+        if db_operation_time > 0:
+            self.log_generator.log_details(
+                f"   💾 DB Operation Time: {db_operation_time:.3f}s ({db_percentage:.1f}%)")
+        if commit_time > 0:
+            self.log_generator.log_details(
+                f"   ✅ Commit Time: {commit_time:.3f}s ({commit_percentage:.1f}%)")
+
+        self.log_generator.log_details(
+            f"   📈 Records/Second: {records_per_second:.2f}")
+        self.log_generator.log_details(
+            f"   📊 Avg Time/Record: {avg_time_per_record:.2f}ms")
+
+        # Log any additional metrics
+        if additional_metrics:
+            for key, value in additional_metrics.items():
+                self.log_generator.log_details(f"   📌 {key}: {value}")
+
+        self.log_generator.log_details(
+            f"   ✅ Operation completed successfully")
+        self.log_generator.log_details(
+            '################################################################################################')
 
 
 # gen = InsightGeneratorDBManager("Development")
