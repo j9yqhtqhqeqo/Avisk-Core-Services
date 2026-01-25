@@ -115,12 +115,13 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             # , company_name)
             cursor.execute(sql, (((company_name, reporting_year))))
             rows = cursor.fetchone()
 
-            company_id = rows.company_id
+            company_id = rows['company_id']
             cursor.close()
 
             # print("Record inserted successfully!")
@@ -139,24 +140,24 @@ class InsightGeneratorDBManager:
             return self.d_next_seed
 
         if (save_type == Lookups().Exposure_Save):
-            sql = "select max(unique_key) from t_exposure_pathway_insights"
+            sql = "select max(unique_key) unique_key from t_exposure_pathway_insights"
         elif (save_type == Lookups().Internalization_Save):
-            sql = "select max(unique_key) from t_internalization_insights"
+            sql = "select max(unique_key) unique_key from t_internalization_insights"
         elif (save_type == Lookups().Mitigation_Exp_Insight_Type):
-            sql = "select max(unique_key) from t_mitigation_exp_insights"
+            sql = "select max(unique_key) unique_key from t_mitigation_exp_insights"
         elif (save_type == Lookups().Mitigation_Int_Insight_Type):
-            sql = "select max(unique_key) from t_mitigation_int_insights"
+            sql = "select max(unique_key) unique_key from t_mitigation_int_insights"
         elif (save_type == Lookups().Exp_Int_Insight_Type):
-            sql = "select max(unique_key) from t_exp_int_insights"
+            sql = "select max(unique_key) unique_key from t_exp_int_insights"
         elif (save_type == Lookups().Mitigation_Exp_INT_Insight_Type):
-            sql = "select max(unique_key) from t_mitigation_exp_int_insights"
+            sql = "select max(unique_key) unique_key from t_mitigation_exp_int_insights"
 
         cursor = self.dbConnection.cursor(
             cursor_factory=psycopg2.extras.RealDictCursor)
 
         cursor.execute(sql)
 
-        current_db_seed = cursor.fetchone()[0]
+        current_db_seed = cursor.fetchone()['unique_key']
         if (current_db_seed):
             self.d_next_seed = current_db_seed+1
             return self.d_next_seed
@@ -230,7 +231,6 @@ class InsightGeneratorDBManager:
 
         return keyword_list
 
-
     def get_unprocessed_document_items_for_insight_gen(self, dictionary_type=0):
 
         document_list = []
@@ -300,7 +300,8 @@ class InsightGeneratorDBManager:
             inner join t_document doc  on map.company_name = doc.company_name and doc.document_id = %s'
 
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)  # ADD cursor creation
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)  # ADD cursor creation
             cursor.execute(sql, (document_id,))
             result = cursor.fetchone()
             if result:
@@ -309,8 +310,10 @@ class InsightGeneratorDBManager:
                 return sector_id
             else:
                 cursor.close()
-                print('Sector Not Mapped for the Company: Please check t_sec_company_sector_map')
-                raise Exception('Sector Not Mapped for the Company: Please check t_sec_company_sector_map')
+                print(
+                    'Sector Not Mapped for the Company: Please check t_sec_company_sector_map')
+                raise Exception(
+                    'Sector Not Mapped for the Company: Please check t_sec_company_sector_map')
         except Exception as exc:
             print(f"Error: {str(exc)}")
             raise exc
@@ -371,7 +374,8 @@ class InsightGeneratorDBManager:
             internalization_id = insight.internalization_id
 
             # Create a cursor object to execute SQL queries
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             # Construct the INSERT INTO statement
 
             if (dictionary_type == Lookups().Exposure_Pathway_Dictionary_Type):
@@ -462,13 +466,13 @@ class InsightGeneratorDBManager:
                     document_item.document_id)
                 first_element = False
             else:
-                l_str_document_list_for_deletion = l_str_document_list_for_deletion + ','+ str(document_item.document_id)
-
+                l_str_document_list_for_deletion = l_str_document_list_for_deletion + \
+                    ',' + str(document_item.document_id)
 
         l_str_document_list_for_deletion = l_str_document_list_for_deletion + ')'
 
-            # print('Deletion String:')
-            # print(l_str_document_list_for_deletion)
+        # print('Deletion String:')
+        # print(l_str_document_list_for_deletion)
 
         cursor = self.dbConnection.cursor(
             cursor_factory=psycopg2.extras.RealDictCursor)
@@ -694,12 +698,6 @@ class InsightGeneratorDBManager:
                 cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
-
-            # DEBUG: Print available columns if there's an issue
-            # if rows and len(rows) > 0:
-            #     print(
-            #         f"Available columns in get_exp_keywords: {list(rows[0].keys())}")
-            #     print(f"First row sample: {dict(rows[0])}")
 
             for row in rows:
                 try:
@@ -981,7 +979,8 @@ class InsightGeneratorDBManager:
             completed_ind = 2
 
             # Create a cursor object to execute SQL queries
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
         sql = f"update t_document set mitigation_search_completed_ind = {completed_ind} \
                     ,modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha'\
@@ -1005,7 +1004,8 @@ class InsightGeneratorDBManager:
 
     def update_triangulation_insights_generated_batch(self, dictionary_type, document_id, insights_generated_ind=1):
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Create a cursor object to execute SQL queries
         if (dictionary_type == Lookups().Mitigation_Exp_Insight_Type):
@@ -1074,7 +1074,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, (document_id,))
             rows = cursor.fetchall()
             for row in rows:
@@ -1097,7 +1098,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, ((document_id,)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1122,7 +1124,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, ((document_id, INSIGHT_SCORE_THRESHOLD)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1184,7 +1187,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, ((document_id,)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1209,7 +1213,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, ((document_id,)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1234,7 +1239,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, ((document_id, INSIGHT_SCORE_THRESHOLD)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1299,7 +1305,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, ((document_id, INSIGHT_SCORE_THRESHOLD)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1327,7 +1334,8 @@ class InsightGeneratorDBManager:
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, ((document_id, INSIGHT_SCORE_THRESHOLD)))
             rows = cursor.fetchall()
             for row in rows:
@@ -1373,7 +1381,8 @@ class InsightGeneratorDBManager:
             year = exp_int_insight_entity.year
 
             # Create a cursor object to execute SQL queries
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             # Construct the INSERT INTO statement
 
             sql = f"INSERT INTO t_exp_int_insights( \
@@ -1461,7 +1470,8 @@ class InsightGeneratorDBManager:
         try:
             # Execute the SQL query
 
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, (document_id,))
             rows = cursor.fetchall()
             for row in rows:
@@ -1565,7 +1575,8 @@ class InsightGeneratorDBManager:
             year = mitigation_exp_int_insight_entity.year
 
             # Create a cursor object to execute SQL queries
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             # Construct the INSERT INTO statement
 
             # int_unique_key = self.get_next_surrogate_key(
@@ -1621,7 +1632,7 @@ class InsightGeneratorDBManager:
 
         sector_list = []
 
-        sql = 'select l.data_lookups_id sector_id, ((l.data_lookups_description  sector from t_data_lookups l where data_lookups_group_id = 5 order by l.data_lookups_description'
+        sql = 'select l.data_lookups_id sector_id, l.data_lookups_description  sector from t_data_lookups l where data_lookups_group_id = 5 order by l.data_lookups_description'
 
         try:
             # Execute the SQL query
@@ -1631,7 +1642,7 @@ class InsightGeneratorDBManager:
             rows = cursor.fetchall()
             for row in rows:
                 # Access by index for PostgreSQL - sector is the second column
-                sector_list.append(row[1])
+                sector_list.append(row['sector'])
             cursor.close()
 
         except Exception as exc:
@@ -1647,12 +1658,13 @@ class InsightGeneratorDBManager:
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 # Access by index for PostgreSQL - year is the first column
-                year_list.append(row[0])
+                year_list.append(row['year'])
 
         except Exception as exc:
             print(f"Error: {str(exc)}")
@@ -1713,12 +1725,13 @@ class InsightGeneratorDBManager:
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 # Access by index for PostgreSQL - company_name is the first column
-                company_list.append(row[0])
+                company_list.append(row['company_name'])
             cursor.close()
 
         except Exception as exc:
@@ -1734,12 +1747,13 @@ class InsightGeneratorDBManager:
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 # Access by index for PostgreSQL - doc_type is the first column
-                doc_type_list.append(row[0])
+                doc_type_list.append(row['doc_type'])
             cursor.close()
 
         except Exception as exc:
@@ -1757,10 +1771,11 @@ class InsightGeneratorDBManager:
 
             print('Sector Selected: '+sector)
             sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = %s'
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sector_id_sql, (((sector,))))
 
-            sector_id = cursor.fetchone()[0]
+            sector_id = cursor.fetchone()['data_lookups_id']
             sector_year_list.append(SectorYearDBEntity(
                 SectorId=sector_id, Year=year))
             cursor.close()
@@ -1784,7 +1799,8 @@ class InsightGeneratorDBManager:
                         sector_year.SectorId, sector_year.Year)
 
             sql_update = 'update t_sector_year_processing set  sector_data_processed_ind = 1 where sector_id = %s and year = %s'
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(
                 sql_update, ((sector_year.SectorId, sector_year.Year)))
             self.dbConnection.commit()
@@ -1806,13 +1822,15 @@ class InsightGeneratorDBManager:
                       set score_normalized_sector = (score * 100)/(select max(score) from t_exposure_pathway_insights where sector_id = %s and year =%s)\
                          ,modify_dt = CURRENT_TIMESTAMP\
                       where sector_id = %s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update, (((sector_id, year, sector_id, year))))
         self.dbConnection.commit()
         cursor.close()
 
         sql_delete = 'delete from  t_sector_exp_insights where sector_id =%s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_delete, ((sector_id, year)))
         self.dbConnection.commit()
         cursor.close()
@@ -1828,7 +1846,8 @@ class InsightGeneratorDBManager:
                     WHERE insights.year = %s and insights.sector_id = %s\
                     GROUP BY insights.sector_id,insights.year,  esg.esg_category_name , insights.exposure_path_id, exp.exposure_path_name'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_insert, (('MOHAN HANUMANTHA',
                                      'MOHAN HANUMANTHA', year, sector_id)))
         self.dbConnection.commit()
@@ -1838,7 +1857,8 @@ class InsightGeneratorDBManager:
                                ,modify_dt = CURRENT_TIMESTAMP\
                              where  sector_id = %s and year = %s'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_cluster,
                        ((sector_id, year, sector_id, year)))
         self.dbConnection.commit()
@@ -1848,7 +1868,8 @@ class InsightGeneratorDBManager:
                                    set score_normalized = (score * 100)/(select max(score) from t_sector_exp_insights where sector_id = %s and year =%s)\
                                        ,modify_dt = CURRENT_TIMESTAMP\
                                    where sector_id = %s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_normalize_score,
                        ((sector_id, year, sector_id, year)))
         self.dbConnection.commit()
@@ -1858,24 +1879,9 @@ class InsightGeneratorDBManager:
         print('Updating Internalization STATS for Sector:' +
               str(sector_id)+', Year:'+str(year))
 
-        # sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = %s'
-        # cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        # cursor.execute(sector_id_sql, ((sector,)))
-        # sector_id = cursor.fetchone()[0]
-
-        # Exposure Internalization Pathway Sector STATS
-        # sql_update = 'update t_exp_int_insights\
-        #               set score_normalized_sector = (score * 100)/(select max(score) from t_exp_int_insights where sector_id = %s and year = %s)\
-        #                   ,modify_dt = CURRENT_TIMESTAMP\
-        #               where sector_id = %s and year = %s'
-        # cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        # cursor.execute(sql_update, ((sector_id, year, sector_id, year)))
-        # self.dbConnection.commit()
-        # cursor.close()
-
-        # print('Purging old data')
         sql_delete = 'delete from  t_sector_exp_int_insights where sector_id =%s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_delete, (((sector_id, year))))
         self.dbConnection.commit()
         cursor.close()
@@ -1893,7 +1899,8 @@ class InsightGeneratorDBManager:
                 WHERE insights.year = %s and insights.sector_id = %s\
                 GROUP BY insights.sector_id,insights.year,  esg.esg_category_name , insights.exposure_path_id, exp.exposure_path_name, int.internalization_name'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_insert, (('MOHAN HANUMANTHA',
                                      'MOHAN HANUMANTHA', year, sector_id)))
         self.dbConnection.commit()
@@ -1905,7 +1912,8 @@ class InsightGeneratorDBManager:
                                    ,modify_dt = CURRENT_TIMESTAMP\
                               where  sector_id = %s and year = %s'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_cluster,
                        ((sector_id, year, sector_id, year)))
         self.dbConnection.commit()
@@ -1917,7 +1925,8 @@ class InsightGeneratorDBManager:
                                    set score_normalized = (score * 100)/(select max(score) from t_sector_exp_int_insights where sector_id = %s and year = %s)\
                                       ,modify_dt = CURRENT_TIMESTAMP\
                                    where sector_id = %s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_normalize_score,
                        ((sector_id, year, sector_id, year)))
         self.dbConnection.commit()
@@ -1939,7 +1948,8 @@ class InsightGeneratorDBManager:
         # cursor.close()
 
         sql_delete = 'delete from  t_sector_exp_int_mitigation_insights where sector_id = %s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_delete, ((sector_id, year)))
         self.dbConnection.commit()
         cursor.close()
@@ -1960,7 +1970,8 @@ class InsightGeneratorDBManager:
         # INNER JOIN t_key_word_hits hits on insights.mitigation_keyword_hit_id = hits.key_word_hit_id\
         # INNER JOIN t_mitigation mit on hits.dictionary_id = mit.dictionary_id
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_insert, (('MOHAN HANUMANTHA',
                                      'MOHAN HANUMANTHA', year, sector_id)))
         self.dbConnection.commit()
@@ -1974,7 +1985,8 @@ class InsightGeneratorDBManager:
                                  ,modify_dt = CURRENT_TIMESTAMP\
                                 where  sector_id = %s and year = %s'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_cluster,
                        ((sector_id, year, sector_id, year)))
         self.dbConnection.commit()
@@ -1987,7 +1999,8 @@ class InsightGeneratorDBManager:
                                         set score_normalized = (score * 100)/(select max(score) from t_sector_exp_int_mitigation_insights where sector_id = %s and year = %s)\
                                         ,modify_dt = CURRENT_TIMESTAMP\
                                         where sector_id = %s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_normalize_score,
                        ((sector_id, year, sector_id, year)))
         self.dbConnection.commit()
@@ -2003,21 +2016,23 @@ class InsightGeneratorDBManager:
                          ,modify_dt = CURRENT_TIMESTAMP\
                       where sector_id = %s and year = %s'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cursor.execute(sql_update, ((sector_id, year, sector_id, year)))
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql_update, (sector_id, year, sector_id, year))
         self.dbConnection.commit()
         cursor.close()
 
         sql_delete = 'delete from  t_sector_exp_mitigation_insights where sector_id = %s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cursor.execute(sql_delete, ((sector_id, year)))
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql_delete, (sector_id, year))
         self.dbConnection.commit()
         cursor.close()
 
         sql_insert = 'INSERT into t_sector_exp_mitigation_insights(sector_id,year,esg_category_name,exposure_path_id,exposure_path_name,\
                              cluster_count_all,score,score_normalized,added_dt,added_by,modify_dt,modify_by)\
-                    SELECT   insights.sector_id,insights.year Year,esg.esg_category_name ESG_Category,insights.exposure_path_id exposure_path_id,  exp.exposure_path_name Exposure_Pathway,\
-                             count(*) Pathways, avg(insights.score) Score, NULL, CURRENT_TIMESTAMP, %s,CURRENT_TIMESTAMP, %s\
+                    SELECT   insights.sector_id,insights.year,esg.esg_category_name,insights.exposure_path_id ,  exp.exposure_path_name ,\
+                             count(*), avg(insights.score), NULL, CURRENT_TIMESTAMP, %s,CURRENT_TIMESTAMP, %s\
                     FROM t_mitigation_exp_insights insights\
                         INNER JOIN t_exposure_pathway exp on exp.exposure_path_id = insights.exposure_path_id\
                         inner join t_impact_category imp on exp.impact_category_id = imp.impact_category_id\
@@ -2027,9 +2042,10 @@ class InsightGeneratorDBManager:
                 WHERE insights.year = %s and insights.sector_id = %s\
                 GROUP by insights.sector_id,  insights.year,  esg.esg_category_name, insights.exposure_path_id,exp.exposure_path_name'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cursor.execute(sql_insert, (('MOHAN HANUMANTHA',
-                                     'MOHAN HANUMANTHA', year, sector_id)))
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql_insert, ('MOHAN HANUMANTHA',
+                                    'MOHAN HANUMANTHA', year, sector_id))
         self.dbConnection.commit()
         cursor.close()
 
@@ -2039,9 +2055,10 @@ class InsightGeneratorDBManager:
                               ,modify_dt = CURRENT_TIMESTAMP\
                                 where  sector_id = %s and year = %s'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_cluster,
-                       ((sector_id, year, sector_id, year)))
+                       (sector_id, year, sector_id, year))
         self.dbConnection.commit()
         cursor.close()
 
@@ -2050,9 +2067,10 @@ class InsightGeneratorDBManager:
                                    set score_normalized = (score * 100)/(select max(score) from t_sector_exp_mitigation_insights where sector_id = %s and year = %s)\
                                      ,modify_dt = CURRENT_TIMESTAMP\
                                     where sector_id = %s and year = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql_update_normalize_score,
-                       ((sector_id, year, sector_id, year)))
+                       (sector_id, year, sector_id, year))
         self.dbConnection.commit()
         cursor.close()
 
@@ -2061,9 +2079,10 @@ class InsightGeneratorDBManager:
     def update_reporting_tables(self, sector, year, generate_exp_rpt_insights: bool, generate_int_rpt_insights: bool, generate_mit_rpt_insights: bool, update_all: bool, keywords_only=True):
 
         sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = %s'
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cursor.execute(sector_id_sql, ((sector,)))
-        sector_id = cursor.fetchone()[0]
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sector_id_sql, (sector,))
+        sector_id = cursor.fetchone()['data_lookups_id']
         cursor.close()
         if (generate_exp_rpt_insights):
             self.update_exposure_reporting(
@@ -2075,7 +2094,8 @@ class InsightGeneratorDBManager:
                 print('Update Exposure Report for All Sectors and years')
 
                 sql_delete = 'truncate table t_rpt_exposure_pathway_insights'
-                cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor = self.dbConnection.cursor(
+                    cursor_factory=psycopg2.extras.RealDictCursor)
                 cursor.execute(sql_delete)
                 self.dbConnection.commit()
                 cursor.close()
@@ -2095,9 +2115,10 @@ class InsightGeneratorDBManager:
                                 GROUP by comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
                                 ORDER BY comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
                                 '
-                cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                cursor.execute(sql_insert, (('Mohan Hanumantha',
-                                             'Mohan Hanumantha')))
+                cursor = self.dbConnection.cursor(
+                    cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor.execute(sql_insert, ('Mohan Hanumantha',
+                                            'Mohan Hanumantha'))
                 self.dbConnection.commit()
                 cursor.close()
 
@@ -2118,8 +2139,9 @@ class InsightGeneratorDBManager:
                       str(sector_id)+', Year:'+str(year))
 
                 sql_delete = 'delete from  t_rpt_exposure_pathway_insights where sector_id = %s and year = %s'
-                cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                cursor.execute(sql_delete, ((sector_id, year)))
+                cursor = self.dbConnection.cursor(
+                    cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor.execute(sql_delete, (sector_id, year))
                 self.dbConnection.commit()
                 cursor.close()
                 sql_insert = 'INSERT INTO t_rpt_exposure_pathway_insights( sector_id,company_name,year,document_id, content_type ,document_type,exposure_path_id, esg_category_name,exposure_path_name, cluster_count,score,score_normalized,\
@@ -2137,9 +2159,10 @@ class InsightGeneratorDBManager:
                             GROUP by comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
                             ORDER BY comp.sector_id, doc.company_name,doc.year,doc.document_id,doc.content_type,lookups.data_lookups_description,esg.esg_category_name,exp.exposure_path_id,exp.exposure_path_name\
                             '
-                cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                cursor.execute(sql_insert, (('Mohan Hanumantha',
-                               'Mohan Hanumantha', year, sector_id)))
+                cursor = self.dbConnection.cursor(
+                    cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor.execute(sql_insert, ('Mohan Hanumantha',
+                               'Mohan Hanumantha', year, sector_id))
                 self.dbConnection.commit()
                 cursor.close()
 
@@ -2148,14 +2171,15 @@ class InsightGeneratorDBManager:
         sql = 'select distinct document_id from t_rpt_exposure_pathway_insights where score_normalized is null'
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 print(row['document_id'])
                 sql_update = 'update t_rpt_exposure_pathway_insights set score_normalized = (score * 100)/(select max(score) from t_rpt_exposure_pathway_insights where document_id = %s) where document_id = %s'
                 cursor.execute(
-                    sql_update, (((row['document_id'], row['document_id']))))
+                    sql_update, (row['document_id'], row['document_id']))
                 self.dbConnection.commit()
             cursor.close()
         except Exception as exc:
@@ -2176,8 +2200,9 @@ class InsightGeneratorDBManager:
         exp_rpt_sql = 'select unique_key, document_id, exposure_path_id from t_rpt_exposure_pathway_insights where sector_id = %s and year = %s'
 
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(exp_rpt_sql, ((sector_id, year)))
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor.execute(exp_rpt_sql, (sector_id, year))
             rows = cursor.fetchall()
             for row in rows:
                 rpt_exp_list.append(
@@ -2191,7 +2216,8 @@ class InsightGeneratorDBManager:
             print(f"Error: {str(exc)}")
             raise exc
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
         for exp_rpt_line_item in rpt_exp_list:
             unique_keyword_list = ''
@@ -2200,7 +2226,7 @@ class InsightGeneratorDBManager:
                             select distinct key_word2 keyword from t_exposure_pathway_insights where exposure_path_id = %s and document_id = %s\
                             '
             cursor.execute(
-                keyword_sql, ((exp_rpt_line_item.ExposurePathId, exp_rpt_line_item.DocumentId, exp_rpt_line_item.ExposurePathId, exp_rpt_line_item.DocumentId)))
+                keyword_sql, (exp_rpt_line_item.ExposurePathId, exp_rpt_line_item.DocumentId, exp_rpt_line_item.ExposurePathId, exp_rpt_line_item.DocumentId))
 
             rows = cursor.fetchall()
             for row in rows:
@@ -2208,8 +2234,8 @@ class InsightGeneratorDBManager:
                     row['keyword'] + ','
             unique_keyword_list = unique_keyword_list.rstrip(',')
             sql_update = 'update t_rpt_exposure_pathway_insights set unique_key_words = %s where unique_key =%s'
-            cursor.execute(sql_update, ((unique_keyword_list,
-                           exp_rpt_line_item.unique_key)))
+            cursor.execute(sql_update, (unique_keyword_list,
+                           exp_rpt_line_item.unique_key))
         self.dbConnection.commit()
         cursor.close()
 
@@ -2227,7 +2253,8 @@ class InsightGeneratorDBManager:
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
             top10_chart_refeshed_ind=True)
         print('Started Processing Top10 Exposure Chart Data')
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
         for sector_year in sector_year_list:
             print('Company:'+sector_year.Company_Name + '  Sector ID:' +
@@ -2257,7 +2284,8 @@ class InsightGeneratorDBManager:
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
             triangulation_data_refreshed_ind=True)
         print('Started Processing Triangulation Chart Data')
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
         for sector_year in sector_year_list:
             print('Company:'+sector_year.Company_Name + '  Sector ID:' +
@@ -2271,7 +2299,8 @@ class InsightGeneratorDBManager:
                 print(f"Error: {str(exc)}")
                 raise exc
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         for sector_year in sector_year_list:
             try:
                 cursor.execute("update t_sector_year_processing set triangulation_chart_refeshed_ind = 1, ((modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = %s and year = %s",
@@ -2289,7 +2318,8 @@ class InsightGeneratorDBManager:
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
             yoy_chart_ind=True)
         print('Started Processing YOY Chart Data')
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
         for sector_year in sector_year_list:
             print('Company:'+sector_year.Company_Name + '  Sector ID:' +
@@ -2298,8 +2328,8 @@ class InsightGeneratorDBManager:
             try:
 
                 sql = 'delete from  t_chart_yoy where sector_id = %s and year = %s and company_name = %s'
-                cursor.execute(sql, ((sector_year.SectorId,
-                               sector_year.Year, sector_year.Company_Name)))
+                cursor.execute(sql, (sector_year.SectorId,
+                               sector_year.Year, sector_year.Company_Name))
 
                 sql = 'INSERT INTO t_chart_yoy(company_name, sector_id, year, exposure_path_name,exposure_score, exposure_score_normalized, added_dt, added_by,modify_dt, modify_by)\
                     SELECT  doc.company_name Company, insights.sector_id,insights.year, exp.exposure_path_name Exposure_Pathway,avg(insights.score) Score,  NULL, CURRENT_TIMESTAMP, %s,CURRENT_TIMESTAMP, %s\
@@ -2311,17 +2341,17 @@ class InsightGeneratorDBManager:
                 GROUP BY  doc.company_name ,insights.sector_id,insights.year,  esg.esg_category_name , insights.exposure_path_id, exp.exposure_path_name\
                 ORDER BY doc.company_name ,insights.sector_id,insights.year, Score desc'
 
-                cursor.execute(sql, (('Mohan Hanumantha', 'Mohan Hanumantha',
-                               sector_year.Company_Name, sector_year.Year)))
+                cursor.execute(sql, ('Mohan Hanumantha', 'Mohan Hanumantha',
+                               sector_year.Company_Name, sector_year.Year))
 
                 sql = 'update t_chart_yoy \
                       set exposure_score_normalized = (exposure_score * 100)/(select max(exposure_score) from t_chart_yoy where sector_id = %s and year = %s and company_name = %s)\
                       ,modify_dt = CURRENT_TIMESTAMP\
                        where sector_id = %s and year =%s and company_name = %s'
 
-                cursor.execute(sql, ((sector_year.SectorId,
+                cursor.execute(sql, (sector_year.SectorId,
                                sector_year.Year, sector_year.Company_Name, sector_year.SectorId,
-                               sector_year.Year, sector_year.Company_Name)))
+                               sector_year.Year, sector_year.Company_Name))
 
                 self.dbConnection.commit()
                 cursor.close()
