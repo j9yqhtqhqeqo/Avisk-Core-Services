@@ -1,0 +1,43 @@
+# Production Environment Configuration
+environment: production
+
+# Google Cloud Project
+gcp_project: "your-production-project-id"
+
+# App Engine Configuration
+app_engine:
+  service: avisk-core-services
+  version: auto
+  promote: true
+  
+# Environment Variables
+env_variables:
+  DEPLOYMENT_ENV: production
+  GCS_BUCKET_DEVELOPMENT: avisk-app-data-eb7773c8
+  GCS_BUCKET_TEST: avisk-app-data-eb7773c8
+  GCS_BUCKET_PRODUCTION: avisk-app-data-eb7773c8
+  USE_GCS: "true"
+  LOG_LEVEL: INFO
+
+# Scaling Configuration
+scaling:
+  min_instances: 2
+  max_instances: 20
+  target_cpu_utilization: 0.5
+
+# Resources
+resources:
+  cpu: 2
+  memory_gb: 4
+  disk_size_gb: 20
+
+# Feature Flags
+features:
+  enable_debug: false
+  enable_metrics: true
+  enable_tracing: true
+
+# Security
+security:
+  require_https: true
+  enable_firewall: true

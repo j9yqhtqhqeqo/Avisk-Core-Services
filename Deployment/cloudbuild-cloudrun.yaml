@@ -1,0 +1,75 @@
+# Cloud Build configuration for Cloud Run deployment
+steps:
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/avisk-core-services:${SHORT_SHA}'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/avisk-core-services:latest'
+      - '.'
+
+  # Push Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/${PROJECT_ID}/avisk-core-services'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'avisk-core-services'
+      - '--image'
+      - 'gcr.io/${PROJECT_ID}/avisk-core-services:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '1'
+      - '--timeout'
+      - '3600'
+      - '--set-env-vars'
+      - 'DEPLOYMENT_ENV=${_ENVIRONMENT},GCS_BUCKET_DEVELOPMENT=avisk-app-data-eb7773c8,GCS_BUCKET_TEST=avisk-app-data-eb7773c8,GCS_BUCKET_PRODUCTION=avisk-app-data-eb7773c8,USE_GCS=true'
+
+  # Test deployment health
+  - name: 'gcr.io/cloud-builders/curl'
+    args: 
+      - '--fail'
+      - '--retry'
+      - '5'
+      - '--retry-delay'
+      - '10'
+      - '--max-time'
+      - '30'
+      - 'https://avisk-core-services-${_REGION_HASH}-uc.a.run.app/health'
+
+# Build substitutions
+substitutions:
+  _ENVIRONMENT: 'production'
+  _REGION: 'us-central1'
+  _REGION_HASH: 'uc'  # us-central1 hash for Cloud Run URL
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+  
+timeout: '2400s'
+
+images:
+  - 'gcr.io/${PROJECT_ID}/avisk-core-services:${SHORT_SHA}'
+  - 'gcr.io/${PROJECT_ID}/avisk-core-services:latest'

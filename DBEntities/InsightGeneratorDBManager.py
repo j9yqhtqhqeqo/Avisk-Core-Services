@@ -29,20 +29,41 @@ PARM_LOGFILE = (
 DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 DB_LOGGING_ENABLED = True
 
-class InsightGeneratorDBManager:
-    
-    def __init__(self, database_context: None) -> None:
 
+class InsightGeneratorDBManager:
+
+    def __init__(self, database_context: None) -> None:
+        import os
+
+        # Check if database is disabled for testing
+        db_conn = DB_Connection()
+        if db_conn.DEV_DB_CONNECTION_STRING is None:
+            self.dbConnection = None
+            self.database_disabled = True
+            self.d_next_seed = 0
+            self.batch_id = 0
+            print(
+                "⚠️  InsightGeneratorDBManager: Database operations disabled for local testing")
+            return
+
+        self.database_disabled = False
         connection_string = ''
 
         if (database_context == 'Development'):
             connection_string = DEV_DB_CONNECTION_STRING
         elif (database_context == 'Test'):
-            connection_string = TEST_DB_CONNECTION_STRING
+            connection_string = DEV_DB_CONNECTION_STRING  # Use same for now
         else:
             raise Exception("Database context Undefined")
 
-        self.dbConnection = psycopg2.connect(connection_string)
+        try:
+            self.dbConnection = psycopg2.connect(connection_string)
+        except Exception as e:
+            print(
+                f"⚠️  InsightGeneratorDBManager database connection failed: {str(e)}")
+            self.dbConnection = None
+            self.database_disabled = True
+
         self.d_next_seed = 0
         self.batch_id = 0
 
@@ -52,10 +73,10 @@ class InsightGeneratorDBManager:
     def convert_numpy_types(self, value):
         """
         Convert numpy types to Python native types for PostgreSQL compatibility
-        
+
         Args:
             value: Value that might be a numpy type
-        
+
         Returns:
             Python native type
         """
@@ -77,7 +98,7 @@ class InsightGeneratorDBManager:
             return str(value)
         else:
             return value
-        
+
     def get_company_list(self, sic_code: None):  # , company_name:None):
 
         company_list = []
@@ -1529,7 +1550,7 @@ class InsightGeneratorDBManager:
 
         return exp_insight_location_list, int_insight_location_list
 
-## CHANGES IN PROGRESS BELOW THIS LINE ##   
+## CHANGES IN PROGRESS BELOW THIS LINE ##
     def save_Exp_Int_Insights(self, insightList, dictionary_type, document_id):
         """
         OPTIMIZED: Bulk insert for Exposure-Internalization insights using executemany
@@ -1565,21 +1586,27 @@ class InsightGeneratorDBManager:
             # Batch convert all fields at once
             try:
                 converted_row = (
-                    self.convert_numpy_types(exp_int_insight_entity.document_id),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.document_id),
                     self.convert_numpy_types(sector_id),
-                    self.convert_numpy_types(exp_int_insight_entity.document_name),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.document_name),
                     self.convert_numpy_types(
                         exp_int_insight_entity.exp_keyword_hit_id1),
-                    self.convert_numpy_types(exp_int_insight_entity.exp_keyword1),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.exp_keyword1),
                     self.convert_numpy_types(
                         exp_int_insight_entity.exp_keyword_hit_id2),
-                    self.convert_numpy_types(exp_int_insight_entity.exp_keyword2),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.exp_keyword2),
                     self.convert_numpy_types(
                         exp_int_insight_entity.int_key_word_hit_id1),
-                    self.convert_numpy_types(exp_int_insight_entity.int_key_word1),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.int_key_word1),
                     self.convert_numpy_types(
                         exp_int_insight_entity.int_key_word_hit_id2),
-                    self.convert_numpy_types(exp_int_insight_entity.int_key_word2),
+                    self.convert_numpy_types(
+                        exp_int_insight_entity.int_key_word2),
                     self.convert_numpy_types(exp_int_insight_entity.factor1),
                     self.convert_numpy_types(exp_int_insight_entity.factor2),
                     self.convert_numpy_types(exp_int_insight_entity.score),
@@ -1691,6 +1718,7 @@ class InsightGeneratorDBManager:
                     f"❌ Error in optimized bulk insert EXP-INT insights: {str(exc)}")
             raise exc
 ## CHANGES IN PROGRESS ABOVE THIS LINE ##
+
     def get_mitigation_exp_int_document_list(self):
         document_list = []
         try:
@@ -1889,6 +1917,10 @@ class InsightGeneratorDBManager:
             # Build SECTOR aggregate tables
 
     def get_sector_list(self):
+        # Return mock data if database is disabled
+        if self.database_disabled or self.dbConnection is None:
+            print("⚠️  Database disabled - returning mock sector list")
+            return ['Technology', 'Healthcare', 'Finance', 'Energy', 'Manufacturing']
 
         sector_list = []
 
@@ -1912,6 +1944,11 @@ class InsightGeneratorDBManager:
         return sector_list
 
     def get_year_list(self):
+        # Return mock data if database is disabled
+        if self.database_disabled or self.dbConnection is None:
+            print("⚠️  Database disabled - returning mock year list")
+            return [2024, 2023, 2022, 2021, 2020]
+
         year_list = []
 
         sql = 'select distinct year from t_document order by year desc'

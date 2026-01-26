@@ -1,0 +1,45 @@
+runtime: python39
+service: avisk-core-services
+
+# Environment variables
+env_variables:
+  DEPLOYMENT_ENV: "production"
+  GCS_BUCKET_DEVELOPMENT: "avisk-app-data-eb7773c8"
+  GCS_BUCKET_TEST: "avisk-app-data-eb7773c8"
+  GCS_BUCKET_PRODUCTION: "avisk-app-data-eb7773c8"
+  USE_GCS: "true"
+
+# Automatic scaling
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+# Resources
+resources:
+  cpu: 1
+  memory_gb: 1
+  disk_size_gb: 10
+
+# Health check
+health_check:
+  enable_health_check: true
+
+# Handlers
+handlers:
+- url: /.*
+  script: auto
+  secure: always
+
+# Skip files during deployment
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- ^(.*/)?.*\.bak$
+- ^(.*/)?test.*\.py$
+- ^(.*/)?tests/.*$
+- ^Storage\ Setup/.*$
+- ^Deployment/.*$

@@ -1,0 +1,98 @@
+# Docker ignore file for Avisk Core Services
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Development and testing
+Storage Setup/
+tests/
+test_*.py
+*_test.py
+
+# Git
+.git/
+.gitignore
+
+# Environment files (use secrets in Cloud Run)
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Documentation
+*.md
+README*
+CONDA_SETUP.md
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Model files (these should be in GCS)
+*.h5
+*.pkl
+*.joblib
+*.model
+
+# Large data files
+*.csv
+*.xlsx
+*.json
+FormDownloads/
+
+# Development scripts
+launch_avisk.sh
+start_cloud_sql_proxy.sh
+
+# Deployment configs (except what we need)
+Deployment/app.yaml
+Deployment/environments/

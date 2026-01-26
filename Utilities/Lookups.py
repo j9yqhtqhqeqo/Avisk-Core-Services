@@ -37,8 +37,17 @@ class DB_Connection:
 
         # Get password from Secret Manager or environment variable
         password = self._get_db_password()
+
+        # Check if we should skip database connection for testing
+        use_gcs = os.getenv('USE_GCS', 'true').lower()
+        deployment_env = os.getenv('DEPLOYMENT_ENV', 'unknown')
+
+        # For local testing without database, provide dummy connection string
+        if deployment_env in ['test', 'local'] and use_gcs == 'false':
+            self.DEV_DB_CONNECTION_STRING = None  # Will skip database operations
+            print("⚠️  Database disabled for local testing")
         # Determine environment and connection method
-        if os.getenv('ENVIRONMENT') == 'cloud':
+        elif os.getenv('ENVIRONMENT') == 'cloud':
             # Cloud environment using Unix socket
             self.DEV_DB_CONNECTION_STRING = f'host=/cloudsql/avisk-ai-platform:us-central1:avisk-core-dev dbname=avisk-core-dev-db1 user=avisk-admin password={password}'
         else:
@@ -46,7 +55,16 @@ class DB_Connection:
             self.DEV_DB_CONNECTION_STRING = f'host=localhost port=5434 dbname=avisk-core-dev-db1 user=avisk-admin password={password}'
 
     def _get_db_password(self):
-        """Retrieve database password from Google Secret Manager"""
+        """Retrieve database password from Google Secret Manager or environment variable"""
+        import os
+
+        # First, try to get password from environment variable (for local development)
+        env_password = os.getenv('DB_PASSWORD')
+        if env_password:
+            print("✅ Using database password from environment variable")
+            return env_password
+
+        # If no environment variable, try Secret Manager (for production)
         try:
             from google.cloud import secretmanager
             client = secretmanager.SecretManagerServiceClient()
@@ -55,10 +73,19 @@ class DB_Connection:
             name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})
             password = response.payload.data.decode("UTF-8")
-            # print("✅ Retrieved database password from Google Secret Manager")
+            print("✅ Retrieved database password from Google Secret Manager")
             return password
         except Exception as e:
-            raise Exception("Unable to retrieve password from Secret Manager")
+            # For local development without Secret Manager access, provide a default
+            deployment_env = os.getenv('DEPLOYMENT_ENV', 'unknown')
+            if deployment_env in ['test', 'local', 'development']:
+                print(
+                    f"⚠️  Secret Manager unavailable in {deployment_env} environment, using default password")
+                return "Qf8wiegqej8h!"  # Default password for development
+            else:
+                print(f"❌ Secret Manager error: {str(e)}")
+                raise Exception(
+                    f"Unable to retrieve password from Secret Manager: {str(e)}")
 
     def test_connection(self):
         """Test database connection by reading data from t_lookups table"""

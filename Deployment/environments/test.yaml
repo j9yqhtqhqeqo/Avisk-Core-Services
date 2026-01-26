@@ -1,0 +1,38 @@
+# Test Environment Configuration
+environment: test
+
+# Google Cloud Project
+gcp_project: "your-test-project-id"
+
+# App Engine Configuration
+app_engine:
+  service: avisk-core-services-test
+  version: auto
+  promote: false
+  
+# Environment Variables
+env_variables:
+  DEPLOYMENT_ENV: test
+  GCS_BUCKET_DEVELOPMENT: avisk-app-data-eb7773c8
+  GCS_BUCKET_TEST: avisk-app-data-eb7773c8
+  GCS_BUCKET_PRODUCTION: avisk-app-data-eb7773c8
+  USE_GCS: "true"
+  LOG_LEVEL: INFO
+
+# Scaling Configuration
+scaling:
+  min_instances: 1
+  max_instances: 5
+  target_cpu_utilization: 0.6
+
+# Resources
+resources:
+  cpu: 1
+  memory_gb: 2
+  disk_size_gb: 10
+
+# Feature Flags
+features:
+  enable_debug: false
+  enable_metrics: true
+  enable_tracing: true

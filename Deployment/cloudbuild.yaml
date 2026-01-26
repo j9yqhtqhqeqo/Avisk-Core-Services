@@ -1,0 +1,46 @@
+steps:
+  # Install dependencies
+  - name: 'python:3.9'
+    entrypoint: pip
+    args: ['install', '-r', 'requirements.txt']
+
+  # Run tests
+  - name: 'python:3.9'
+    entrypoint: python
+    args: ['-m', 'pytest', 'tests/', '-v']
+    env:
+      - 'DEPLOYMENT_ENV=test'
+      - 'USE_GCS=false'  # Use local storage for testing
+
+  # Validate configuration
+  - name: 'python:3.9'
+    entrypoint: python
+    args: ['-c', 'from Utilities.PathConfiguration import PathConfiguration; print("Configuration valid")']
+    env:
+      - 'DEPLOYMENT_ENV=${_ENVIRONMENT}'
+
+  # Deploy to App Engine
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: 
+      - 'app'
+      - 'deploy'
+      - 'Deployment/app.yaml'
+      - '--project=${PROJECT_ID}'
+      - '--version=${_VERSION}'
+      - '--promote'
+    env:
+      - 'DEPLOYMENT_ENV=${_ENVIRONMENT}'
+
+  # Post-deployment health check
+  - name: 'gcr.io/cloud-builders/curl'
+    args: ['--fail', '--retry', '3', '--retry-delay', '10', 'https://${PROJECT_ID}.appspot.com/health']
+
+# Build substitutions
+substitutions:
+  _ENVIRONMENT: 'production'
+  _VERSION: 'v${BUILD_ID}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  
+timeout: '1200s'

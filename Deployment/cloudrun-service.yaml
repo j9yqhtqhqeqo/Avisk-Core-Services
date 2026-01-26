@@ -1,0 +1,62 @@
+# Cloud Run deployment configuration
+# Use with: gcloud run services replace cloudrun-service.yaml
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: avisk-core-services
+  labels:
+    app: avisk-core-services
+  annotations:
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Allocate 1 CPU and 1Gi memory
+        run.googleapis.com/cpu: "1"
+        run.googleapis.com/memory: "1Gi"
+        # Set max instances for scaling
+        run.googleapis.com/execution-environment: gen2
+        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/minScale: "1"
+        # Set timeout for requests (max 60 minutes for Cloud Run)
+        run.googleapis.com/timeout: "3600s"
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: gcr.io/PROJECT_ID/avisk-core-services:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DEPLOYMENT_ENV
+          value: "production"
+        - name: GCS_BUCKET_DEVELOPMENT
+          value: "avisk-app-data-eb7773c8"
+        - name: GCS_BUCKET_TEST
+          value: "avisk-app-data-eb7773c8"
+        - name: GCS_BUCKET_PRODUCTION
+          value: "avisk-app-data-eb7773c8"
+        - name: USE_GCS
+          value: "true"
+        - name: PORT
+          value: "8080"
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        # Health and readiness probes
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          periodSeconds: 10

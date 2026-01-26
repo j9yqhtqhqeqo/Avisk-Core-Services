@@ -1,0 +1,47 @@
+# Production dependencies for Avisk Core Services
+# Updated: 2026-01-26
+
+# Core web framework
+streamlit>=1.28.0
+streamlit-autorefresh>=0.0.1
+flask>=2.3.0
+fastapi>=0.104.0
+
+# Google Cloud dependencies
+google-cloud-storage>=2.10.0
+google-cloud-logging>=3.8.0
+google-cloud-secret-manager>=2.16.0
+google-auth>=2.23.0
+
+# Data processing
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Database connectivity
+sqlalchemy>=2.0.0
+pymssql>=2.2.0
+psycopg2-binary>=2.9.0
+
+# Configuration management
+python-dotenv>=1.0.0
+pyyaml>=6.0
+
+# Utilities
+requests>=2.31.0
+python-dateutil>=2.8.0
+pathlib2>=2.3.0
+pdfkit>=1.0.0
+PyMuPDF>=1.23.0
+
+# Monitoring and logging
+structlog>=23.1.0
+
+# Security
+cryptography>=41.0.0
+
+# Performance
+gunicorn>=21.2.0
+
+# Testing (for build process)
+pytest>=7.4.0
+pytest-cov>=4.1.0
