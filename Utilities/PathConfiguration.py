@@ -49,8 +49,8 @@ class PathConfiguration:
                 'temp_path': '/tmp/avisk',
                 'log_base': '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log',
                 'project_root': '/Users/mohanganadal/Avisk/Avisk-Core-Services',
-                'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-development-data'),
-                'gcs_prefix': 'development/',
+                'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
+                'gcs_prefix': 'Development/',
                 'use_gcs': os.getenv('USE_GCS', 'true').lower() == 'true'
             }
         elif self.environment == Environment.TEST:
@@ -59,8 +59,8 @@ class PathConfiguration:
                 'temp_path': '/tmp/avisk_test',
                 'log_base': '/tmp/avisk_test/logs',
                 'project_root': '/tmp/avisk_test/app',
-                'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-test-data'),
-                'gcs_prefix': 'test/',
+                'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-app-data-eb7773c8'),
+                'gcs_prefix': 'Test/',
                 'use_gcs': True
             }
         elif self.environment == Environment.PRODUCTION:
@@ -69,8 +69,8 @@ class PathConfiguration:
                 'temp_path': '/tmp/avisk',
                 'log_base': '/var/log/avisk',
                 'project_root': '/opt/avisk/app',
-                'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-production-data'),
-                'gcs_prefix': 'production/',
+                'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
+                'gcs_prefix': 'Production/',
                 'use_gcs': True
             }
         else:  # CLOUD (legacy)
@@ -79,8 +79,8 @@ class PathConfiguration:
                 'temp_path': '/tmp/avisk',
                 'log_base': '/var/log/avisk',
                 'project_root': '/opt/avisk/app',
-                'gcs_bucket': os.getenv('GCS_BUCKET_CLOUD', 'avisk-cloud-data'),
-                'gcs_prefix': 'cloud/',
+                'gcs_bucket': os.getenv('GCS_BUCKET_CLOUD', 'avisk-app-data-eb7773c8'),
+                'gcs_prefix': 'Cloud/',
                 'use_gcs': True
             }
 

@@ -5,18 +5,18 @@ This document outlines the Google Cloud Storage setup for the Avisk Core Service
 ## Environment Setup
 
 ### Development Environment
-- **Bucket Name**: `avisk-development-data`
-- **Prefix**: `development/`
+- **Bucket Name**: `avisk-app-data-eb7773c8`
+- **Prefix**: `Development/`
 - **GCS Usage**: Enabled by default (can be disabled by setting `USE_GCS=false`)
 
 ### Test Environment  
-- **Bucket Name**: `avisk-test-data`
-- **Prefix**: `test/`
+- **Bucket Name**: `avisk-app-data-eb7773c8`
+- **Prefix**: `Test/`
 - **GCS Usage**: Enabled by default
 
 ### Production Environment
-- **Bucket Name**: `avisk-production-data`
-- **Prefix**: `production/`
+- **Bucket Name**: `avisk-app-data-eb7773c8`
+- **Prefix**: `Production/`
 - **GCS Usage**: Enabled by default
 
 ## Environment Variables
@@ -28,9 +28,9 @@ Set these environment variables to configure Google Cloud Storage:
 export DEPLOYMENT_ENV="development"  # or "test" or "production"
 
 # Google Cloud Storage buckets (optional, defaults provided)
-export GCS_BUCKET_DEVELOPMENT="avisk-development-data"
-export GCS_BUCKET_TEST="avisk-test-data"  
-export GCS_BUCKET_PRODUCTION="avisk-production-data"
+export GCS_BUCKET_DEVELOPMENT="avisk-app-data-eb7773c8"
+export GCS_BUCKET_TEST="avisk-app-data-eb7773c8"  
+export GCS_BUCKET_PRODUCTION="avisk-app-data-eb7773c8"
 
 # For development, disable GCS usage if needed (enabled by default)
 export USE_GCS="false"  # Set to "false" to use local storage in development instead
@@ -41,11 +41,11 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-key.json"
 
 ## Bucket Structure
 
-Each environment bucket follows this structure:
+Each environment uses the same bucket with different prefixes (using existing folders):
 
 ```
-gs://avisk-{environment}-data/
-├── {environment}/
+gs://avisk-app-data-eb7773c8/
+├── Development/
 │   ├── documents/
 │   │   ├── 10k/                    # Original 10K forms
 │   │   ├── processed/              # Processed documents
@@ -60,6 +60,10 @@ gs://avisk-{environment}-data/
 │   │   └── validation/            # Validation files
 │   ├── temp/                      # Temporary files
 │   └── backup/                    # Backup files
+├── Test/
+│   └── [same structure as Development]
+└── Production/
+    └── [same structure as Development]
 ```
 
 ## Code Usage
