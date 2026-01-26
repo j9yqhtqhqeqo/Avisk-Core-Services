@@ -20,16 +20,16 @@ class PathConfiguration:
     Centralized path configuration for all file operations
     Automatically detects environment and provides appropriate paths
     """
-    
+
     def __init__(self):
         # Detect environment
         self.environment = self._detect_environment()
         self.base_config = self._get_base_configuration()
-        
+
     def _detect_environment(self) -> Environment:
         """Auto-detect environment based on system characteristics"""
         env_var = os.getenv('DEPLOYMENT_ENV', '').lower()
-        
+
         if env_var == 'production':
             return Environment.PRODUCTION
         elif env_var == 'cloud':
@@ -40,7 +40,7 @@ class PathConfiguration:
             return Environment.DEVELOPMENT
         else:
             return Environment.PRODUCTION  # Default to production for cloud deployments
-    
+
     def _get_base_configuration(self) -> dict:
         """Get base configuration based on environment"""
         if self.environment == Environment.DEVELOPMENT:
@@ -76,14 +76,14 @@ class PathConfiguration:
         else:  # CLOUD (legacy)
             return {
                 'base_data_path': '/opt/avisk/data',
-                'temp_path': '/tmp/avisk', 
+                'temp_path': '/tmp/avisk',
                 'log_base': '/var/log/avisk',
                 'project_root': '/opt/avisk/app',
                 'gcs_bucket': os.getenv('GCS_BUCKET_CLOUD', 'avisk-cloud-data'),
                 'gcs_prefix': 'cloud/',
                 'use_gcs': True
             }
-    
+
     def _ensure_directory_exists(self, path: str) -> str:
         """Ensure directory exists, create if necessary"""
         try:
@@ -93,10 +93,12 @@ class PathConfiguration:
             # In case of permission error (like /var/log on development machine),
             # fall back to temp directory
             if self.environment == Environment.CLOUD and '/var/log' in path:
-                fallback_path = path.replace('/var/log/avisk', '/tmp/avisk/logs')
+                fallback_path = path.replace(
+                    '/var/log/avisk', '/tmp/avisk/logs')
                 try:
                     Path(fallback_path).mkdir(parents=True, exist_ok=True)
-                    print(f"⚠️  Permission denied for {path}, using fallback: {fallback_path}")
+                    print(
+                        f"⚠️  Permission denied for {path}, using fallback: {fallback_path}")
                     return fallback_path
                 except Exception:
                     return path
@@ -104,13 +106,13 @@ class PathConfiguration:
         except Exception as e:
             print(f"⚠️  Could not create directory {path}: {e}")
             return path
-    
+
     # InsightGenerator.py paths
     def get_insight_log_file_path(self) -> str:
         """Get path for insight generation log files"""
         path = f"{self.base_config['log_base']}/InsightGenLog/InsightLog"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
-    
+
     def get_new_include_dict_term_path(self) -> str:
         """Get path for new include dictionary terms"""
         if self.environment == Environment.DEVELOPMENT:
@@ -118,7 +120,7 @@ class PathConfiguration:
         else:
             path = f"{self.base_config['base_data_path']}/Dictionary/new_include_list.txt"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
-    
+
     def get_new_exclude_dict_term_path(self) -> str:
         """Get path for new exclude dictionary terms"""
         if self.environment == Environment.DEVELOPMENT:
@@ -126,7 +128,7 @@ class PathConfiguration:
         else:
             path = f"{self.base_config['base_data_path']}/Dictionary/new_exclude_list.txt"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
-    
+
     def get_validation_list_path(self) -> str:
         """Get path for validation dictionary files"""
         if self.environment == Environment.DEVELOPMENT:
@@ -134,33 +136,33 @@ class PathConfiguration:
         else:
             path = f"{self.base_config['base_data_path']}/Validation/Dictionary/"
         return self._ensure_directory_exists(path)
-    
+
     def get_tenk_output_path(self) -> str:
         """Get path for extracted 10K files"""
         path = f"{self.base_config['base_data_path']}/Extracted10K/"
         return self._ensure_directory_exists(path)
-    
+
     def get_stage1_folder_path(self) -> str:
         """Get path for Stage1 clean text files"""
         path = f"{self.base_config['base_data_path']}/Stage1CleanTextFiles/"
         return self._ensure_directory_exists(path)
-    
+
     # InsightGenDocumentLoader.py paths
     def get_document_loader_log_path(self) -> str:
         """Get path for document loader log files"""
         path = f"{self.base_config['log_base']}/InsightGenLog/"
         return self._ensure_directory_exists(path)
-    
+
     def get_source_input_path(self) -> str:
         """Get path for source input 10K forms"""
         path = f"{self.base_config['base_data_path']}/FormDownloads/10K/"
         return self._ensure_directory_exists(path)
-    
+
     def get_reprocess_path(self) -> str:
         """Get path for reprocess document headers"""
         path = f"{self.base_config['base_data_path']}/ReProcessDocHeaders/"
         return self._ensure_directory_exists(path)
-    
+
     def get_processed_path(self) -> str:
         """Get path for processed 10K forms"""
         if self.environment == Environment.DEVELOPMENT:
@@ -168,37 +170,38 @@ class PathConfiguration:
         else:
             path = f"{self.base_config['base_data_path']}/FormDownloads/10KProcessed/"
         return self._ensure_directory_exists(path)
-    
+
     # Google Cloud Storage methods
     def get_gcs_bucket_name(self) -> str:
         """Get Google Cloud Storage bucket name for current environment"""
         return self.base_config['gcs_bucket']
-    
+
     def get_gcs_prefix(self) -> str:
         """Get Google Cloud Storage prefix for current environment"""
         return self.base_config['gcs_prefix']
-    
+
     def should_use_gcs(self) -> bool:
         """Check if Google Cloud Storage should be used"""
         return self.base_config.get('use_gcs', False)
-    
+
     def get_gcs_path(self, relative_path: str) -> str:
         """Get full GCS path for a relative path"""
         prefix = self.get_gcs_prefix().rstrip('/')
         relative = relative_path.lstrip('/')
         return f"gs://{self.get_gcs_bucket_name()}/{prefix}/{relative}"
-    
+
     def get_gcs_credentials_path(self) -> str:
         """Get path to Google Cloud credentials file"""
         # Check environment variables first
         creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
         if creds_path and os.path.exists(creds_path):
             return creds_path
-        
+
         # Look for credentials in common locations
         if self.environment == Environment.DEVELOPMENT:
             possible_paths = [
-                os.path.expanduser('~/.config/gcloud/application_default_credentials.json'),
+                os.path.expanduser(
+                    '~/.config/gcloud/application_default_credentials.json'),
                 f"{self.base_config['project_root']}/credentials/gcp-credentials.json",
                 '/Users/mohanganadal/.gcp/credentials.json'
             ]
@@ -207,38 +210,38 @@ class PathConfiguration:
                 '/opt/avisk/credentials/gcp-credentials.json',
                 '/etc/gcp/credentials.json'
             ]
-        
+
         for path in possible_paths:
             if os.path.exists(path):
                 return path
-        
+
         return None
-    
+
     # Utility methods
     def get_temp_path(self) -> str:
         """Get temporary file path"""
         return self._ensure_directory_exists(self.base_config['temp_path'])
-    
+
     def get_environment_name(self) -> str:
         """Get current environment name"""
         return self.environment.value
-    
+
     def is_development(self) -> bool:
         """Check if running in development environment"""
         return self.environment == Environment.DEVELOPMENT
-    
+
     def is_test(self) -> bool:
         """Check if running in test environment"""
         return self.environment == Environment.TEST
-    
+
     def is_production(self) -> bool:
         """Check if running in production environment"""
         return self.environment == Environment.PRODUCTION
-    
+
     def is_cloud(self) -> bool:
         """Check if running in cloud environment (legacy)"""
         return self.environment == Environment.CLOUD
-    
+
     def get_all_paths(self) -> dict:
         """Get all configured paths for debugging"""
         paths = {
@@ -261,7 +264,7 @@ class PathConfiguration:
             'use_gcs': self.should_use_gcs(),
             'gcs_credentials_path': self.get_gcs_credentials_path()
         }
-        
+
         # Add sample GCS paths
         if self.should_use_gcs():
             paths['gcs_sample_paths'] = {
@@ -270,7 +273,7 @@ class PathConfiguration:
                 'processed': self.get_gcs_path('processed/'),
                 'temp': self.get_gcs_path('temp/')
             }
-        
+
         return paths
 
 
@@ -282,29 +285,38 @@ path_config = PathConfiguration()
 def get_insight_log_file_path():
     return path_config.get_insight_log_file_path()
 
+
 def get_new_include_dict_term_path():
     return path_config.get_new_include_dict_term_path()
+
 
 def get_new_exclude_dict_term_path():
     return path_config.get_new_exclude_dict_term_path()
 
+
 def get_validation_list_path():
     return path_config.get_validation_list_path()
+
 
 def get_tenk_output_path():
     return path_config.get_tenk_output_path()
 
+
 def get_stage1_folder_path():
     return path_config.get_stage1_folder_path()
+
 
 def get_document_loader_log_path():
     return path_config.get_document_loader_log_path()
 
+
 def get_source_input_path():
     return path_config.get_source_input_path()
 
+
 def get_reprocess_path():
     return path_config.get_reprocess_path()
+
 
 def get_processed_path():
     return path_config.get_processed_path()

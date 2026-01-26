@@ -1,3 +1,4 @@
+from DocumentProcessor import tenKXMLProcessor
 from Utilities.PathConfiguration import path_config
 
 # Configuration-based paths (environment-aware)
@@ -14,21 +15,16 @@ PARM_BGNQTR = 1  # Beginning quarter of each year
 PARM_ENDQTR = 4  # Ending quarter of each year
 
 
-from DocumentProcessor import tenKXMLProcessor
-
-
-
 class InsightGenDocumentLoader:
     def __init__(self) -> None:
         pass
 
-    def get_Document_content(self, document_path:str):
-        
+    def get_Document_content(self, document_path: str):
+
         document_path = self._find_fully_qualified_path()
         full_document_path = document_path
         ten_k_XMLProcessor = tenKXMLProcessor()
         # ten_k_XMLProcessor.initProcessorParams(f_input_file_path=document_path,)
-        
-    
+
     def _find_fully_qualified_path():
         pass

@@ -810,11 +810,10 @@ class Insight_Generator(keyWordSearchManager):
         #       str(dictionary_type))
         telemetry = TelemetryTracker(self.log_generator, "save_insights")
         telemetry.start_operation()
-        
+
         telemetry.add_metric("Dictionary Type", dictionary_type)
         telemetry.add_metric("Document ID", document_id)
         telemetry.add_metric("Year", year)
-
 
         document_keyword_list = document_keyword_list
         self.total_insights_generated = 0
@@ -910,13 +909,13 @@ class Insight_Generator(keyWordSearchManager):
             try:
                 self.insightDBMgr.save_insights(
                     insightList=insightList, dictionary_type=dictionary_type, document_id=document_id, year=year)
-                
+
                 self.insightDBMgr.normalize_document_score(
                     dictionary_type=dictionary_type, document_id=document_id)
 
                 self.insightDBMgr.update_insights_generated_from_keyword_hits_batch(
                     dictionary_type=dictionary_type, dictionary_id=dictionary_id, document_id=document_id)
-    
+
             except Exception as exc:
                 self.insightDBMgr.update_insights_generated_from_keyword_hits_batch(
                     dictionary_type=dictionary_type, dictionary_id=dictionary_id, document_id=document_id, insights_generated=0)
@@ -924,7 +923,6 @@ class Insight_Generator(keyWordSearchManager):
                 self.log_generator.log_details('Error saving insights for Document ID:' +
                                                str(document_id)+', Dictionary Type:'+str(dictionary_type)+', Dictionary ID:'+str(dictionary_id))
                 raise exc
-            
 
     def _load_keyword_location_list(self, dictionary_type=0, dictionary_id=0, document_id=0):
         return (self.insightDBMgr.get_keyword_location_list(dictionary_type, dictionary_id, document_id))
@@ -1042,7 +1040,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         return distance_list
 
     # EXP VS. INT
-    def generate_exp_int_insights(self, document_list: [], batch_num=0): 
+    def generate_exp_int_insights(self, document_list: [], batch_num=0):
         # self.log_generator.log_details(
         #     "Generating Exposure Pathway ->Internalization Insights")
         # print("###########################################################")
@@ -1073,7 +1071,6 @@ class triangulation_Insight_Generator(keyWordSearchManager):
             self.exp_insight_location_list, self.int_insight_location_list = self.insightDBMgr.get_exp_int_lists(
                 document_item.document_id)
 
-
             exp_insight_entity: Insight
             self.int_exp_insightList = []
 
@@ -1096,7 +1093,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
                 self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
                 ).Exp_Int_Insight_Type, document_id=document_item.document_id)
-                
+
                 self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
                 ).Exp_Int_Insight_Type, document_id=document_item.document_id)
             except Exception as exc:
@@ -1106,7 +1103,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 self.log_generator.log_details('Error saving Exp-Int insights for Document ID:' +
                                                str(document_item.document_id))
                 raise exc
-            
+
             telemetry.set_record_count(len(self.int_exp_insightList))
             telemetry.stop_operation()
             telemetry.log_telemetry_summary()
@@ -1276,7 +1273,6 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 self.insightDBMgr.save_insights(
                     insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Exp_Insight_Type, document_id=document_item.document_id, year=document_item.year)
 
-
                 self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
                 ).Mitigation_Exp_Insight_Type, document_id=document_item.document_id)
 
@@ -1366,7 +1362,6 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 self.log_generator.log_details('Error saving Mitigation-Int insights for Document ID:' +
                                                str(document_item.document_id))
                 raise exc
-
 
             print('Completed INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
@@ -1505,18 +1500,17 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                         insightList=self.mitigation_comon_insightList, dictionary_type=Lookups().Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
 
                     self.insightDBMgr.normalize_document_score(dictionary_type=Lookups(
-                                ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
-                    
+                    ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
+
                     self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
-                                ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
+                    ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id)
                 except Exception as exc:
                     self.insightDBMgr.update_triangulation_insights_generated_batch(dictionary_type=Lookups(
-                                ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id, insights_generated=0)
+                    ).Mitigation_Exp_INT_Insight_Type, document_id=document_item.document_id, insights_generated=0)
                     print(f"Error: {str(exc)}")
                     self.log_generator.log_details('Error saving EXP-INT-Mitigation insights for Document ID:' +
                                                    str(document_item.document_id))
                     raise exc
- 
 
                 print('Completed EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
                       str(document_count)+' of ' + str(len(document_list)))
