@@ -20,6 +20,7 @@ from Dictionary.DictionaryManager import DictionaryManager
 from Dictionary.DictionaryManager import ContextResolver
 
 from Utilities.TelemetryServices import TelemetryTracker, OperationTimer
+from Utilities.PathConfiguration import path_config
 import time
 
 import copy
@@ -35,23 +36,16 @@ EXP_INT_MITIGATION_THRESHOLD = 50
 
 # from DocumentProcessor import tenKXMLProcessor
 
-PARM_LOGFILE = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsightLog')
+# Configuration-based paths (environment-aware)
+PARM_LOGFILE = path_config.get_insight_log_file_path()
+PARM_NEW_INCLUDE_DICT_TERM_PATH = path_config.get_new_include_dict_term_path()
+PARM_NEW_EXCLUDE_DICT_TERM_PATH = path_config.get_new_exclude_dict_term_path()
+PARM_VALIDATION_LIST_PATH = path_config.get_validation_list_path()
+PARM_TENK_OUTPUT_PATH = path_config.get_tenk_output_path()
+PARM_STAGE1_FOLDER = path_config.get_stage1_folder_path()
 
-PARM_NEW_INCLUDE_DICT_TERM_PATH = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/Dictionary/new_include_list.txt')
-PARM_NEW_EXCLUDE_DICT_TERM_PATH = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Company/Dictionary/new_exclude_list.txt')
-
-PARM_VALIDATION_LIST_PATH = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Testing/Dictionary/')
-
-
-PARM_TENK_OUTPUT_PATH = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Extracted10K/')
+# Constants that don't change by environment
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
-PARM_STAGE1_FOLDER = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles/')
 WORD_RADIUS = 25
 IGNORE_ZERO_CALC_WARNING = True
 

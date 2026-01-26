@@ -1,8 +1,12 @@
-PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/')
-PARM_SOURCE_INPUT_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10K/')
-PARM_REPROCESS_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/ReProcessDocHeaders/')
-PARM_PROCESSED_PATH = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/FormDownloads/10KProcessed/')
+from Utilities.PathConfiguration import path_config
 
+# Configuration-based paths (environment-aware)
+PARM_LOGFILE = path_config.get_document_loader_log_path()
+PARM_SOURCE_INPUT_PATH = path_config.get_source_input_path()
+PARM_REPROCESS_PATH = path_config.get_reprocess_path()
+PARM_PROCESSED_PATH = path_config.get_processed_path()
+
+# Constants that don't change by environment
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
 PARM_BGNYEAR = 2022  # User selected bgn period.  Earliest available is 1993
 PARM_ENDYEAR = 2022  # User selected end period.
