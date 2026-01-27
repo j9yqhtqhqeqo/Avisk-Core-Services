@@ -1,6 +1,10 @@
 # Use Python 3.9 slim image for better performance
 FROM python:3.9-slim
 
+# Build arguments for version info
+ARG BUILD_ID=local
+ARG BUILD_DATE=unknown
+
 # Set working directory
 WORKDIR /app
 
@@ -10,6 +14,8 @@ ENV STREAMLIT_SERVER_PORT=8080
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+ENV BUILD_ID=${BUILD_ID}
+ENV BUILD_DATE=${BUILD_DATE}
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \

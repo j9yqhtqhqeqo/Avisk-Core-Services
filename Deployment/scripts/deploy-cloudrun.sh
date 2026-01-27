@@ -51,11 +51,14 @@ gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable containerregistry.googleapis.com
 
+# Get current date for build info
+BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
 # Build and deploy using Cloud Build
 echo "🏗️  Starting Cloud Build deployment..."
 gcloud builds submit \
     --config=Deployment/cloudbuild-cloudrun.yaml \
-    --substitutions=_REGION=${REGION},_ENVIRONMENT=${ENVIRONMENT} \
+    --substitutions=_REGION=${REGION},_ENVIRONMENT=${ENVIRONMENT},_BUILD_DATE="${BUILD_DATE}" \
     .
 
 # Get service URL

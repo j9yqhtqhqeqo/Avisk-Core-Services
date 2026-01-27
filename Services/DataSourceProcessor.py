@@ -11,11 +11,11 @@ import urllib
 import fitz
 import pdfkit
 from Utilities.PathConfiguration import PathConfiguration
+from Utilities.GCSFileManager import gcs_manager
 from DBEntities.DataSourceDBManager import DataSourceDBManager
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import sys
 from pathlib import Path
-from google.cloud import storage
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 
@@ -37,89 +37,22 @@ class DataSourceProcessor:
         self.logfile = f'{log_path} {dt.datetime.now().strftime("%c")}.txt'
         self.flagged_for_review = False
 
-        # Initialize GCS client if in cloud environment
-        self.gcs_client = None
-        if self.path_config.should_use_gcs():
-            try:
-                self.gcs_client = storage.Client()
-                self.gcs_bucket_name = self.path_config.get_gcs_bucket_name()
-                print(f"GCS initialized: bucket={self.gcs_bucket_name}")
-            except Exception as e:
-                print(f"Warning: Could not initialize GCS client: {e}")
+        # Use centralized GCS manager
+        self.gcs_manager = gcs_manager
 
     def _download_from_gcs_if_needed(self, local_file_path: str, gcs_relative_path: str) -> bool:
         """
         Download file from GCS to local path if it doesn't exist locally
         Returns True if file is available locally, False otherwise
         """
-        # Check if file already exists locally
-        if os.path.exists(local_file_path):
-            print(f"File exists locally: {local_file_path}")
-            return True
-
-        # If GCS is not available, return False
-        if not self.gcs_client:
-            print("GCS client not available")
-            return False
-
-        try:
-            # Construct GCS path
-            bucket = self.gcs_client.bucket(self.gcs_bucket_name)
-
-            # Get the GCS prefix from path configuration (already includes environment)
-            gcs_prefix = self.path_config.get_gcs_prefix().rstrip('/')
-            gcs_path = f"{gcs_prefix}/data/{gcs_relative_path}"
-            blob = bucket.blob(gcs_path)
-
-            # Check if blob exists
-            if not blob.exists():
-                print(
-                    f"File not found in GCS: gs://{self.gcs_bucket_name}/{gcs_path}")
-                return False
-
-            # Ensure local directory exists
-            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-
-            # Download file
-            print(
-                f"Downloading from GCS: gs://{self.gcs_bucket_name}/{gcs_path} -> {local_file_path}")
-            blob.download_to_filename(local_file_path)
-
-            print(f"Successfully downloaded file from GCS: {local_file_path}")
-            return True
-
-        except Exception as e:
-            print(f"Error downloading from GCS: {e}")
-            return False
+        return self.gcs_manager.download_file(gcs_relative_path, local_file_path)
 
     def _upload_to_gcs_if_available(self, local_file_path: str, gcs_relative_path: str) -> bool:
         """
         Upload file from local path to GCS
         Returns True if upload successful, False otherwise
         """
-        # If GCS is not available, return False
-        if not self.gcs_client:
-            print("GCS client not available for upload")
-            return False
-
-        try:
-            # Construct GCS path
-            bucket = self.gcs_client.bucket(self.gcs_bucket_name)
-            gcs_prefix = self.path_config.get_gcs_prefix().rstrip('/')
-            gcs_path = f"{gcs_prefix}/data/{gcs_relative_path}"
-            blob = bucket.blob(gcs_path)
-
-            # Upload file
-            print(
-                f"Uploading to GCS: {local_file_path} -> gs://{self.gcs_bucket_name}/{gcs_path}")
-            blob.upload_from_filename(local_file_path)
-            print(
-                f"Successfully uploaded file to GCS: gs://{self.gcs_bucket_name}/{gcs_path}")
-            return True
-
-        except Exception as e:
-            print(f"Error uploading to GCS: {e}")
-            return False
+        return self.gcs_manager.upload_file(local_file_path, gcs_relative_path)
 
     def download_webpage_as_pdf_file(self, url: str, f_name=None, f_log=None):
         try:

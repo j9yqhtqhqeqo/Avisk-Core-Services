@@ -4,6 +4,10 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'build'
+      - '--build-arg'
+      - 'BUILD_ID=${BUILD_ID}'
+      - '--build-arg'
+      - 'BUILD_DATE=${_BUILD_DATE}'
       - '-t'
       - 'gcr.io/${PROJECT_ID}/avisk-core-services:${BUILD_ID}'
       - '-t'
@@ -46,12 +50,13 @@ steps:
       - '--add-cloudsql-instances'
       - 'avisk-ai-platform:us-central1:avisk-core-dev'
       - '--set-env-vars'
-      - 'ENVIRONMENT=cloud,DEPLOYMENT_ENV=${_ENVIRONMENT},GCS_BUCKET_DEVELOPMENT=avisk-app-data-eb7773c8,GCS_BUCKET_TEST=avisk-app-data-eb7773c8,GCS_BUCKET_PRODUCTION=avisk-app-data-eb7773c8,USE_GCS=true'
+      - 'ENVIRONMENT=cloud,DEPLOYMENT_ENV=${_ENVIRONMENT},GCS_BUCKET_DEVELOPMENT=avisk-app-data-eb7773c8,GCS_BUCKET_TEST=avisk-app-data-eb7773c8,GCS_BUCKET_PRODUCTION=avisk-app-data-eb7773c8,USE_GCS=true,BUILD_ID=${BUILD_ID},BUILD_DATE=${_BUILD_DATE}'
 
 # Build substitutions
 substitutions:
   _ENVIRONMENT: 'development'
   _REGION: 'us-central1'
+  _BUILD_DATE: '${_BUILD_DATE}'
 
 options:
   logging: CLOUD_LOGGING_ONLY

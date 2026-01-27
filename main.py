@@ -1,3 +1,4 @@
+from version import get_version_string, get_build_string, ENVIRONMENT
 from Utilities.Lookups import Lookups, Processing_Type
 from DBEntities.LookupsDBManager import LookupsDBManager
 import streamlit as st
@@ -9,7 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 # Configure page
 st.set_page_config(
-    page_title="Avisk Core Services",
+    page_title="Dashboard",
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -165,6 +166,16 @@ def main():
     st.markdown("---")
     st.markdown(
         "**💡 Tip:** Use the sidebar to navigate between sections and toggle auto-refresh")
+
+    # Status bar at the bottom
+    st.markdown("---")
+    footer_col1, footer_col2, footer_col3 = st.columns([1, 1, 1])
+    with footer_col1:
+        st.caption(f"🏷️ {get_version_string()}")
+    with footer_col2:
+        st.caption(f"🔨 {get_build_string()}")
+    with footer_col3:
+        st.caption(f"🌍 Environment: {ENVIRONMENT.title()}")
 
 
 if __name__ == "__main__":

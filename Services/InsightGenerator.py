@@ -21,6 +21,7 @@ from Dictionary.DictionaryManager import ContextResolver
 
 from Utilities.TelemetryServices import TelemetryTracker, OperationTimer
 from Utilities.PathConfiguration import path_config
+from Utilities.GCSFileManager import gcs_manager
 import time
 
 import copy
@@ -146,7 +147,6 @@ class keyWordSearchManager:
 
 
 # Search all exposure pathway dictionary terms in the document and save locations
-
 
     def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0, validation_mode=False):
 
@@ -753,6 +753,7 @@ class keyWordSearchManager:
 class db_Insight_keyWordSearchManager(keyWordSearchManager):
     def __init__(self) -> None:
         super().__init__()
+        self.gcs_manager = gcs_manager
 
     def _load_content(self, document_name: str, document_id: int, year: int, qtr: int):
 
@@ -760,6 +761,12 @@ class db_Insight_keyWordSearchManager(keyWordSearchManager):
         document_name = document_name.replace('.txt', '.xml')
 
         f_input_file_path = f'{PARM_TENK_OUTPUT_PATH}Year{year}Q{qtr}/{document_name}'
+
+        # Try to download from GCS if file doesn't exist locally
+        if not os.path.exists(f_input_file_path):
+            gcs_relative_path = f"Extracted10K/Year{year}Q{qtr}/{document_name}"
+            self.gcs_manager.download_file(
+                gcs_relative_path, f_input_file_path)
 
         with open(f_input_file_path, 'r') as fin:
             # self.current_data = fin.read()
@@ -773,6 +780,7 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
     def __init__(self, folder_path: str, database_context: None) -> None:
         super().__init__(database_context)
         self.folder_path = folder_path
+        self.gcs_manager = gcs_manager
 
     def _load_content(self, document_name: str, document_id: int, year: int):
 
@@ -780,6 +788,12 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
         self.document_name = document_name
 
         f_input_file_path = f'{self.folder_path}/{year}/{document_name}'
+
+        # Try to download from GCS if file doesn't exist locally
+        if not os.path.exists(f_input_file_path):
+            gcs_relative_path = f"Stage1CleanTextFiles/{year}/{document_name}"
+            self.gcs_manager.download_file(
+                gcs_relative_path, f_input_file_path)
 
         with open(f_input_file_path, 'r') as fin:
           # self.current_data = fin.read()
@@ -944,7 +958,6 @@ class Insight_Generator(keyWordSearchManager):
 
 
 # Generate Aggregate Insights
-
 
     def generate_aggregate_insights_from_keyword_location_details(self):
 
