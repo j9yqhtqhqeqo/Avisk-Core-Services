@@ -123,20 +123,20 @@ class InsightGeneratorDBManager:
             rows = cursor.fetchall()
             for row in rows:
                 doc_header_entity = DocHeaderEntity()
-                # document_id is 5th column (index 4)
-                doc_header_entity.document_id = row[4]
-                # document_name is 6th column (index 5)
-                doc_header_entity.document_name = row[5]
-                # reporting_year is 7th column (index 6)
-                doc_header_entity.reporting_year = row[6]
-                # reporting_quarter is 8th column (index 7)
-                doc_header_entity.reporting_quarter = row[7]
-                # conformed_name is 3rd column (index 2)
-                doc_header_entity.conformed_name = row[2]
-                # sic_code is 1st column (index 0)
-                doc_header_entity.sic_code = row[0]
-                # form_type is 4th column (index 3)
-                doc_header_entity.form_type = row[3]
+                # document_id
+                doc_header_entity.document_id = row['document_id']
+                # document_name
+                doc_header_entity.document_name = row['document_name']
+                # reporting_year
+                doc_header_entity.reporting_year = row['reporting_year']
+                # reporting_quarter
+                doc_header_entity.reporting_quarter = row['reporting_quarter']
+                # conformed_name
+                doc_header_entity.conformed_name = row['conformed_name']
+                # sic_code
+                doc_header_entity.sic_code = row['sic_code']
+                # form_type
+                doc_header_entity.form_type = row['form_type']
                 # pyright: ignore[reportUnknownMemberType]
                 company_list.append(doc_header_entity)
 

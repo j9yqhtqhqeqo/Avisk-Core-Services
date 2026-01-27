@@ -10,7 +10,6 @@ from enum import Enum
 
 class Environment(Enum):
     DEVELOPMENT = "development"
-    CLOUD = "cloud"
     TEST = "test"
     PRODUCTION = "production"
 
@@ -30,29 +29,49 @@ class PathConfiguration:
         """Auto-detect environment based on system characteristics"""
         env_var = os.getenv('DEPLOYMENT_ENV', '').lower()
 
-        if env_var == 'production':
+        # Check if running in actual cloud environment (not local)
+        is_local = os.path.exists('/Users/mohanganadal')
+
+        if is_local:
+            # Local development
+            return Environment.DEVELOPMENT
+        elif env_var == 'production':
             return Environment.PRODUCTION
-        elif env_var == 'cloud':
-            return Environment.CLOUD
         elif env_var == 'test':
             return Environment.TEST
-        elif os.path.exists('/Users/mohanganadal'):
+        elif env_var == 'development':
+            # Cloud deployment with development data
             return Environment.DEVELOPMENT
         else:
             return Environment.PRODUCTION  # Default to production for cloud deployments
 
     def _get_base_configuration(self) -> dict:
         """Get base configuration based on environment"""
+        is_local = os.path.exists('/Users/mohanganadal')
+
         if self.environment == Environment.DEVELOPMENT:
-            return {
-                'base_data_path': '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor',
-                'temp_path': '/tmp/avisk',
-                'log_base': '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log',
-                'project_root': '/Users/mohanganadal/Avisk/Avisk-Core-Services',
-                'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
-                'gcs_prefix': 'Development/',
-                'use_gcs': os.getenv('USE_GCS', 'true').lower() == 'true'
-            }
+            if is_local:
+                # Local development
+                return {
+                    'base_data_path': '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor',
+                    'temp_path': '/tmp/avisk',
+                    'log_base': '/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log',
+                    'project_root': '/Users/mohanganadal/Avisk/Avisk-Core-Services',
+                    'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
+                    'gcs_prefix': 'Development/',
+                    'use_gcs': os.getenv('USE_GCS', 'true').lower() == 'true'
+                }
+            else:
+                # Cloud deployment with development data
+                return {
+                    'base_data_path': '/opt/avisk/data',
+                    'temp_path': '/tmp/avisk',
+                    'log_base': '/var/log/avisk',
+                    'project_root': '/opt/avisk/app',
+                    'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
+                    'gcs_prefix': 'Development/',
+                    'use_gcs': True
+                }
         elif self.environment == Environment.TEST:
             return {
                 'base_data_path': '/tmp/avisk_test/data',
@@ -71,16 +90,6 @@ class PathConfiguration:
                 'project_root': '/opt/avisk/app',
                 'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
                 'gcs_prefix': 'Production/',
-                'use_gcs': True
-            }
-        else:  # CLOUD (legacy)
-            return {
-                'base_data_path': '/opt/avisk/data',
-                'temp_path': '/tmp/avisk',
-                'log_base': '/var/log/avisk',
-                'project_root': '/opt/avisk/app',
-                'gcs_bucket': os.getenv('GCS_BUCKET_CLOUD', 'avisk-app-data-eb7773c8'),
-                'gcs_prefix': 'Cloud/',
                 'use_gcs': True
             }
 
@@ -171,6 +180,22 @@ class PathConfiguration:
             path = f"{self.base_config['base_data_path']}/FormDownloads/10KProcessed/"
         return self._ensure_directory_exists(path)
 
+    def get_stage0_input_path(self) -> str:
+        """Get path for Stage0 source PDF files (DataSourceProcessor input)"""
+        path = f"{self.base_config['base_data_path']}/Stage0SourcePDFFiles/"
+        return self._ensure_directory_exists(path)
+
+    def get_stage1_output_path(self) -> str:
+        """Get path for Stage1 clean text files (DataSourceProcessor output)"""
+        path = f"{self.base_config['base_data_path']}/Stage1CleanTextFiles/"
+        return self._ensure_directory_exists(path)
+
+    def get_log_path(self, log_name: str) -> str:
+        """Get path for a specific log file"""
+        log_dir = f"{self.base_config['log_base']}/"
+        self._ensure_directory_exists(log_dir)
+        return f"{log_dir}{log_name}"
+
     # Google Cloud Storage methods
     def get_gcs_bucket_name(self) -> str:
         """Get Google Cloud Storage bucket name for current environment"""
@@ -239,8 +264,9 @@ class PathConfiguration:
         return self.environment == Environment.PRODUCTION
 
     def is_cloud(self) -> bool:
-        """Check if running in cloud environment (legacy)"""
-        return self.environment == Environment.CLOUD
+        """Check if running in cloud environment (legacy compatibility)"""
+        # For backward compatibility, return True for non-development environments
+        return not self.is_development() or not os.path.exists('/Users/mohanganadal')
 
     def get_all_paths(self) -> dict:
         """Get all configured paths for debugging"""

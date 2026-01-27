@@ -30,14 +30,17 @@ Deployment/
 
 ### Quick Deploy
 ```bash
-# Deploy to development
-./scripts/deploy.sh development
+# Deploy to development (default)
+./scripts/deploy-cloudrun.sh [PROJECT_ID] [REGION]
 
-# Deploy to test
-./scripts/deploy.sh test
+# Deploy to specific environment
+./scripts/deploy-cloudrun.sh [PROJECT_ID] [REGION] development
+./scripts/deploy-cloudrun.sh [PROJECT_ID] [REGION] test
+./scripts/deploy-cloudrun.sh [PROJECT_ID] [REGION] production
 
-# Deploy to production
-./scripts/deploy.sh production
+# Examples:
+./scripts/deploy-cloudrun.sh my-dev-project us-central1 development
+./scripts/deploy-cloudrun.sh my-prod-project us-central1 production
 ```
 
 ### Manual Deploy Steps

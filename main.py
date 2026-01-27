@@ -39,7 +39,7 @@ def main():
         # Only import autorefresh if enabled
         try:
             from streamlit_autorefresh import st_autorefresh
-            st_autorefresh(interval=20000, key="dashboard_refresh")
+            st_autorefresh(interval=5000, key="dashboard_refresh")
         except ImportError:
             st.sidebar.warning("Auto-refresh not available")
 

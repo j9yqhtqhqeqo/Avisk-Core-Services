@@ -1,30 +1,22 @@
+import datetime as dt
+import io
+import os
+import requests
+import time
+import urllib.request as request
+from urllib.request import urlopen
+import certifi
+import ssl
+import urllib
+import fitz
+import pdfkit
+from Utilities.PathConfiguration import PathConfiguration
+from DBEntities.DataSourceDBManager import DataSourceDBManager
+from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import sys
 from pathlib import Path
+from google.cloud import storage
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
-from DBEntities.DataSourceDBEntity import DataSourceDBEntity
-from DBEntities.DataSourceDBManager import DataSourceDBManager
-import pdfkit
-import fitz
-import urllib
-import ssl
-import certifi
-from urllib.request import urlopen
-import urllib.request as request
-import time
-import requests
-import os
-import io
-import datetime as dt
-
-
-
-PARM_PDF_IN_FOLDER = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage0SourcePDFFiles')
-PARM_PDF_OUT_FOLDER = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Stage1CleanTextFiles')
-PARM_LOGFILE = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/DataSourceLog')
 
 
 class DataSourceProcessor:
@@ -32,8 +24,102 @@ class DataSourceProcessor:
     def __init__(self, databse_context: None) -> None:
         self.document_list = []
         self.datasourceDBMgr = DataSourceDBManager(databse_context)
-        self.logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
+
+        # Use PathConfiguration for environment-aware paths
+        self.path_config = PathConfiguration()
+
+        # Get proper paths based on environment
+        self.pdf_in_folder = self.path_config.get_stage0_input_path()
+        self.pdf_out_folder = self.path_config.get_stage1_output_path()
+
+        # Set up logging
+        log_path = self.path_config.get_log_path("DataSourceLog")
+        self.logfile = f'{log_path} {dt.datetime.now().strftime("%c")}.txt'
         self.flagged_for_review = False
+
+        # Initialize GCS client if in cloud environment
+        self.gcs_client = None
+        if self.path_config.should_use_gcs():
+            try:
+                self.gcs_client = storage.Client()
+                self.gcs_bucket_name = self.path_config.get_gcs_bucket_name()
+                print(f"GCS initialized: bucket={self.gcs_bucket_name}")
+            except Exception as e:
+                print(f"Warning: Could not initialize GCS client: {e}")
+
+    def _download_from_gcs_if_needed(self, local_file_path: str, gcs_relative_path: str) -> bool:
+        """
+        Download file from GCS to local path if it doesn't exist locally
+        Returns True if file is available locally, False otherwise
+        """
+        # Check if file already exists locally
+        if os.path.exists(local_file_path):
+            print(f"File exists locally: {local_file_path}")
+            return True
+
+        # If GCS is not available, return False
+        if not self.gcs_client:
+            print("GCS client not available")
+            return False
+
+        try:
+            # Construct GCS path
+            bucket = self.gcs_client.bucket(self.gcs_bucket_name)
+
+            # Get the GCS prefix from path configuration (already includes environment)
+            gcs_prefix = self.path_config.get_gcs_prefix().rstrip('/')
+            gcs_path = f"{gcs_prefix}/data/{gcs_relative_path}"
+            blob = bucket.blob(gcs_path)
+
+            # Check if blob exists
+            if not blob.exists():
+                print(
+                    f"File not found in GCS: gs://{self.gcs_bucket_name}/{gcs_path}")
+                return False
+
+            # Ensure local directory exists
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+            # Download file
+            print(
+                f"Downloading from GCS: gs://{self.gcs_bucket_name}/{gcs_path} -> {local_file_path}")
+            blob.download_to_filename(local_file_path)
+
+            print(f"Successfully downloaded file from GCS: {local_file_path}")
+            return True
+
+        except Exception as e:
+            print(f"Error downloading from GCS: {e}")
+            return False
+
+    def _upload_to_gcs_if_available(self, local_file_path: str, gcs_relative_path: str) -> bool:
+        """
+        Upload file from local path to GCS
+        Returns True if upload successful, False otherwise
+        """
+        # If GCS is not available, return False
+        if not self.gcs_client:
+            print("GCS client not available for upload")
+            return False
+
+        try:
+            # Construct GCS path
+            bucket = self.gcs_client.bucket(self.gcs_bucket_name)
+            gcs_prefix = self.path_config.get_gcs_prefix().rstrip('/')
+            gcs_path = f"{gcs_prefix}/data/{gcs_relative_path}"
+            blob = bucket.blob(gcs_path)
+
+            # Upload file
+            print(
+                f"Uploading to GCS: {local_file_path} -> gs://{self.gcs_bucket_name}/{gcs_path}")
+            blob.upload_from_filename(local_file_path)
+            print(
+                f"Successfully uploaded file to GCS: gs://{self.gcs_bucket_name}/{gcs_path}")
+            return True
+
+        except Exception as e:
+            print(f"Error uploading to GCS: {e}")
+            return False
 
     def download_webpage_as_pdf_file(self, url: str, f_name=None, f_log=None):
         try:
@@ -133,10 +219,18 @@ class DataSourceProcessor:
             # Download file to the folder -- Year
             file_name = company_name + ' ' + \
                 str(year)+' '+content_type_desc+'.'+source_type_ext
-            l_file_location = PARM_PDF_IN_FOLDER + \
-                '/' + str(year) + '/'+file_name
+            l_file_location = os.path.join(
+                self.pdf_in_folder, str(year), file_name)
+
             try:
-                # Down load file to Stage 0 -- same format as provided by source url
+                # Ensure the directory exists
+                os.makedirs(os.path.dirname(l_file_location), exist_ok=True)
+
+                print(f'Processing document: {file_name}')
+                print(f'Source type: {source_type}')
+                print(f'Target location: {l_file_location}')
+
+                # Download file to Stage 0 -- same format as provided by source url
                 if (source_type == 'pdf'):
                     self.download_single_file(
                         url=source_url, f_name=l_file_location, f_log=self.logfile)
@@ -144,48 +238,81 @@ class DataSourceProcessor:
                     self.download_webpage_as_pdf_file(
                         url=source_url, f_name=l_file_location, f_log=self.logfile)
                 elif (source_type == 'file'):
-                    print('Processing Manually dowloaded file:')
-                    l_file_location = PARM_PDF_IN_FOLDER + \
-                        '/' + 'Manual Downloads' + '/'+source_url
+                    print('Processing Manually downloaded file:')
+                    l_file_location = os.path.join(
+                        self.pdf_in_folder, 'Manual Downloads', source_url)
                     print(l_file_location)
 
+                    # For manually downloaded files, try to get from GCS first
+                    gcs_relative_path = f"Stage0SourcePDFFiles/Manual Downloads/{source_url}"
+                    if not self._download_from_gcs_if_needed(l_file_location, gcs_relative_path):
+                        # If file doesn't exist locally or in GCS
+                        if not os.path.exists(l_file_location):
+                            print(f'Manual file not found: {l_file_location}')
+                            raise FileNotFoundError(
+                                f'Manual file not found: {l_file_location}')
 
-                # Convert the downloaded file to Text Format
-                ouput_folder = f'{PARM_PDF_OUT_FOLDER}/{year}'
-                if not os.path.exists(ouput_folder):
-                    os.makedirs(ouput_folder)
+                # Verify file was downloaded/exists before processing
+                if not os.path.exists(l_file_location):
+                    print(
+                        f'File not found after download: {l_file_location}')
+                    raise FileNotFoundError(
+                        f'File not found: {l_file_location}')
+
+                print(f'File downloaded successfully: {l_file_location}')
+            except Exception as download_exc:
+                print(
+                    f'Download failed for {source_url}: {str(download_exc)}')
+                continue  # Skip to next document
+
+            # Convert the downloaded file to Text Format
+            try:
+                output_folder = os.path.join(
+                    self.pdf_out_folder, str(year))
+                os.makedirs(output_folder, exist_ok=True)
 
                 output_file_name = company_name + ' ' + \
                     str(year)+' '+content_type_desc+'.txt'
-                output_path = f'{ouput_folder}/{output_file_name}'
+                output_path = os.path.join(output_folder, output_file_name)
+
+                print(
+                    f'Converting PDF to text: {l_file_location} -> {output_path}')
 
                 doc = fitz.open(l_file_location)  # open a document
-                out = open(output_path, "wb")  # create a text output
-                for page in doc:  # iterate the document pages
-                    text = page.get_text().encode("utf8")  # get plain text (is in UTF-8)
-                    out.write(text)  # write text of page
-                    # write page delimiter (form feed 0x0C)
-                    out.write(bytes((12,)))
-                out.close()
+                with open(output_path, "wb") as out:  # create a text output
+                    for page in doc:  # iterate the document pages
+                        text = page.get_text().encode("utf8")  # get plain text (is in UTF-8)
+                        out.write(text)  # write text of page
+                        # write page delimiter (form feed 0x0C)
+                        out.write(bytes((12,)))
+                doc.close()
 
-                # Create list of succeffully processed Files
+                # Create list of successfully processed Files
                 document.document_name = output_file_name
-                # processed_documents.append(document)
-                print("Successfully downloaded and processed file:"+output_file_name)
-                # Add rows to t_document for all the files downloaded and successfully processed, and mark processed urls as complete
+                print(
+                    "Successfully downloaded and processed file: " + output_file_name)
 
-                # get file size
+                # Check file size and flag for review if too small
                 self.flagged_for_review = False
                 file_stats = os.stat(output_path)
                 if (file_stats.st_size < 10000):
                     print(
-                        f'File Size is:{file_stats.st_size} Bytes, '+'Flagged for review')
+                        f'File Size is:{file_stats.st_size} Bytes, Flagged for review')
                     self.flagged_for_review = True
+
+                # Upload processed file to GCS
+                gcs_stage1_path = f"Stage1CleanTextFiles/{year}/{output_file_name}"
+                self._upload_to_gcs_if_available(output_path, gcs_stage1_path)
+
+                # Add to database
                 self.datasourceDBMgr.add_stage1_processed_files_to_t_document(
                     document, self.flagged_for_review)
 
-            except Exception as Exc:
-                print('Failed to download file - check source url:' + source_url)
+            except Exception as process_exc:
+                print(
+                    f'PDF processing failed for {l_file_location}: {str(process_exc)}')
+                continue
+
         print('Document processing complete')
 
     def get_unprocessed_source_document_list(self):

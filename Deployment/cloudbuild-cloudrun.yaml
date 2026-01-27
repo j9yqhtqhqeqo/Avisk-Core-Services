@@ -5,7 +5,7 @@ steps:
     args: 
       - 'build'
       - '-t'
-      - 'gcr.io/${PROJECT_ID}/avisk-core-services:${SHORT_SHA}'
+      - 'gcr.io/${PROJECT_ID}/avisk-core-services:${BUILD_ID}'
       - '-t'
       - 'gcr.io/${PROJECT_ID}/avisk-core-services:latest'
       - '.'
@@ -23,9 +23,9 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'avisk-core-services'
+      - 'avisk-core-services-${_ENVIRONMENT}'
       - '--image'
-      - 'gcr.io/${PROJECT_ID}/avisk-core-services:${SHORT_SHA}'
+      - 'gcr.io/${PROJECT_ID}/avisk-core-services:${BUILD_ID}'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -43,26 +43,15 @@ steps:
       - '1'
       - '--timeout'
       - '3600'
+      - '--add-cloudsql-instances'
+      - 'avisk-ai-platform:us-central1:avisk-core-dev'
       - '--set-env-vars'
-      - 'DEPLOYMENT_ENV=${_ENVIRONMENT},GCS_BUCKET_DEVELOPMENT=avisk-app-data-eb7773c8,GCS_BUCKET_TEST=avisk-app-data-eb7773c8,GCS_BUCKET_PRODUCTION=avisk-app-data-eb7773c8,USE_GCS=true'
-
-  # Test deployment health
-  - name: 'gcr.io/cloud-builders/curl'
-    args: 
-      - '--fail'
-      - '--retry'
-      - '5'
-      - '--retry-delay'
-      - '10'
-      - '--max-time'
-      - '30'
-      - 'https://avisk-core-services-${_REGION_HASH}-uc.a.run.app/health'
+      - 'ENVIRONMENT=cloud,DEPLOYMENT_ENV=${_ENVIRONMENT},GCS_BUCKET_DEVELOPMENT=avisk-app-data-eb7773c8,GCS_BUCKET_TEST=avisk-app-data-eb7773c8,GCS_BUCKET_PRODUCTION=avisk-app-data-eb7773c8,USE_GCS=true'
 
 # Build substitutions
 substitutions:
-  _ENVIRONMENT: 'production'
+  _ENVIRONMENT: 'development'
   _REGION: 'us-central1'
-  _REGION_HASH: 'uc'  # us-central1 hash for Cloud Run URL
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -71,5 +60,5 @@ options:
 timeout: '2400s'
 
 images:
-  - 'gcr.io/${PROJECT_ID}/avisk-core-services:${SHORT_SHA}'
+  - 'gcr.io/${PROJECT_ID}/avisk-core-services:${BUILD_ID}'
   - 'gcr.io/${PROJECT_ID}/avisk-core-services:latest'

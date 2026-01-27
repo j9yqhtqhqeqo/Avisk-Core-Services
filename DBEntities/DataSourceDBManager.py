@@ -28,9 +28,11 @@ class DataSourceDBManager():
 
     def get_batch_id(self):
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute("select max(batch_id) from t_document")
-        last_batch_id = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        last_batch_id = result['max'] if result else None
         if last_batch_id is None:
             new_batch_id = 1
         else:
@@ -43,25 +45,26 @@ class DataSourceDBManager():
     def get_unprocessed_content_list(self):
         document_list = []
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(" select d.unique_id ,d.company_name ,d.year ,d.content_type,l.data_lookups_description, d.source_type , d.source_url ,d.processed_ind\
                             from t_data_source d INNER join  t_data_lookups l on d.content_type = l.data_lookups_id\
                             where d.processed_ind = 0 order by d.unique_id")
             rows = cursor.fetchall()
             for row in rows:
 
-                file_name = row[1] + ' ' + \
-                    str(row[2])+' '+row[4] + \
+                file_name = row['company_name'] + ' ' + \
+                    str(row['year'])+' '+row['data_lookups_description'] + \
                     '.txt'
                 document_entity = DataSourceDBEntity(
-                    unique_id=row[0],
-                    company_name=row[1],
-                    year=row[2],
-                    content_type=row[3],
-                    content_type_desc=row[4],
-                    source_type=row[5],
-                    source_url=row[6],
-                    processed_ind=row[7],
+                    unique_id=row['unique_id'],
+                    company_name=row['company_name'],
+                    year=row['year'],
+                    content_type=row['content_type'],
+                    content_type_desc=row['data_lookups_description'],
+                    source_type=row['source_type'],
+                    source_url=row['source_url'],
+                    processed_ind=row['processed_ind'],
                     document_name=file_name
                 )
                 document_list.append(document_entity)
@@ -74,7 +77,8 @@ class DataSourceDBManager():
 
     def add_stage1_processed_files_to_t_document(self, data_source_db_entity: DataSourceDBEntity, flagged_for_review: bool):
         # Create a cursor object to execute SQL queries
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Delete the t_document entry if it already exists
         sql = 'DELETE FROM t_document WHERE document_id = %s'

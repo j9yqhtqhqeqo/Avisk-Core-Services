@@ -1,22 +1,31 @@
 #!/bin/bash
 
 # Cloud Run Deployment Script for Avisk Core Services
-# Usage: ./deploy-cloudrun.sh [PROJECT_ID] [REGION]
+# Usage: ./deploy-cloudrun.sh [PROJECT_ID] [REGION] [ENVIRONMENT]
 
 set -e  # Exit on any error
 
 # Configuration
 PROJECT_ID=${1:-"your-project-id"}
 REGION=${2:-"us-central1"}
-SERVICE_NAME="avisk-core-services"
-IMAGE_NAME="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
+ENVIRONMENT=${3:-"development"}
+SERVICE_NAME="avisk-core-services-${ENVIRONMENT}"
+IMAGE_NAME="gcr.io/${PROJECT_ID}/avisk-core-services"
 
 echo "🚀 Deploying Avisk Core Services to Cloud Run"
 echo "=============================================="
 echo "📋 Project ID: ${PROJECT_ID}"
 echo "🌍 Region: ${REGION}"
+echo "🏗️ Environment: ${ENVIRONMENT}"
 echo "🐳 Image: ${IMAGE_NAME}"
 echo ""
+
+# Validate environment
+if [[ ! "${ENVIRONMENT}" =~ ^(development|test|production)$ ]]; then
+    echo "❌ Error: Invalid environment '${ENVIRONMENT}'"
+    echo "✅ Valid environments: development, test, production"
+    exit 1
+fi
 
 # Check if gcloud is installed
 if ! command -v gcloud &> /dev/null; then
@@ -46,7 +55,7 @@ gcloud services enable containerregistry.googleapis.com
 echo "🏗️  Starting Cloud Build deployment..."
 gcloud builds submit \
     --config=Deployment/cloudbuild-cloudrun.yaml \
-    --substitutions=_REGION=${REGION},_ENVIRONMENT=production \
+    --substitutions=_REGION=${REGION},_ENVIRONMENT=${ENVIRONMENT} \
     .
 
 # Get service URL
