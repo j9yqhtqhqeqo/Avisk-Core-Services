@@ -17,6 +17,24 @@ import altair as alt
 import math as Math
 from DBEntities.DashboardDBManager import DashboardDBManager
 
+# Professional compact styling
+st.markdown("""
+<style>
+    .stApp { padding-top: 0rem !important; margin-top: 0rem !important; }
+    .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-top: 0rem !important; max-width: 100% !important; }
+    .main { padding-top: 0rem !important; }
+    .main .block-container { padding-top: 0rem !important; margin-top: 0rem !important; }
+    header { padding-top: 0rem !important; margin-top: 0rem !important; }
+    [data-testid="stAppViewContainer"] { padding-top: 0rem !important; margin-top: 0rem !important; }
+    [data-testid="stHeader"] { display: none !important; }
+    section.main { padding-top: 0rem !important; }
+    section.main > div { padding-top: 0rem !important; margin-top: 0rem !important; }
+    h1 { color: #0068C9; font-weight: 700; font-size: 1.8rem; margin-top: 0rem !important; padding-top: 0rem !important; }
+    h2 { color: #262730; font-weight: 600; font-size: 1.2rem; }
+    h3 { color: #4A4A4A; font-weight: 500; font-size: 1rem; }
+</style>
+""", unsafe_allow_html=True)
+
 
 
 exposure_list = DashboardDBManager("Development").get_exposure_insights()

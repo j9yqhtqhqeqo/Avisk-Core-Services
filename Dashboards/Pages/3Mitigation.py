@@ -1,30 +1,45 @@
+from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
+from DBEntities.DashboardDBEntitties import InternalizationDBEntity
+from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
+from st_aggrid import GridOptionsBuilder, AgGrid, ColumnsAutoSizeMode
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import plotly.express as px
+from pylab import *
+import streamlit as st
+import mpld3
+import streamlit.components.v1 as components
+import altair as alt
+import math as Math
+from DBEntities.DashboardDBManager import DashboardDBManager
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from DBEntities.DashboardDBManager import DashboardDBManager
-import math as Math
-import altair as alt
-import streamlit.components.v1 as components
-import mpld3
-import streamlit as st
 # import mplcursors
-from pylab import *
-import plotly.express as px
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from st_aggrid import GridOptionsBuilder, AgGrid, ColumnsAutoSizeMode
-from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
-from DBEntities.DashboardDBEntitties import InternalizationDBEntity
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
 
+# Professional compact styling
+st.markdown("""
+<style>
+    .stApp { padding-top: 0rem !important; margin-top: 0rem !important; }
+    .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; padding-left: 1rem !important; padding-right: 1rem !important; margin-top: 0rem !important; max-width: 100% !important; }
+    .main { padding-top: 0rem !important; }
+    .main .block-container { padding-top: 0rem !important; margin-top: 0rem !important; }
+    header { padding-top: 0rem !important; margin-top: 0rem !important; }
+    [data-testid="stAppViewContainer"] { padding-top: 0rem !important; margin-top: 0rem !important; }
+    [data-testid="stHeader"] { display: none !important; }
+    section.main { padding-top: 0rem !important; }
+    section.main > div { padding-top: 0rem !important; margin-top: 0rem !important; }
+    h1 { color: #0068C9; font-weight: 700; font-size: 1.8rem; margin-top: 0rem !important; padding-top: 0rem !important; }
+    h2 { color: #262730; font-weight: 600; font-size: 1.2rem; }
+    h3 { color: #4A4A4A; font-weight: 500; font-size: 1rem; }
+</style>
+""", unsafe_allow_html=True)
 
 
 # internalization_list = DashboardDBManager("Development").get_mitigation_insights()
 # df = pd.DataFrame([vars(internalization) for internalization in internalization_list])
-
-st.set_page_config(layout="wide")
 
 
 class StartUpClass:
@@ -200,7 +215,7 @@ class StartUpClass:
             st.altair_chart(chart_data, use_container_width=True)
 
             source1 = self.dataset[["ESG_Category", "Exposure_Pathway",
-                                    "Internalization",  "Mitigation_Class", "Mitigation_Sub_Class","Score"]].round(2)
+                                    "Internalization",  "Mitigation_Class", "Mitigation_Sub_Class", "Score"]].round(2)
             source = source1.sort_values(by='Score', ascending=False)
 
             self.draw_AG_Grid(source, key='int_summary1')
@@ -287,7 +302,7 @@ class StartUpClass:
                                           color=alt.Color(
                                               'ESG_Category', scale=alt.Scale(scheme="set1")),
                                           size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Internalization", "Mitigation_Class", "Mitigation_Sub_Class", "Clusters", "Score"])).properties(width=300, height=300,
-                                                                                                                                              title=alt.Title(self.company_chart_header, fontSize=12, anchor='middle'))
+                                                                                                                                                                                                      title=alt.Title(self.company_chart_header, fontSize=12, anchor='middle'))
         if (not self.competitor_dataset.empty):
             competitor_chart_data = (alt.Chart(self.competitor_dataset)
                                      .mark_circle()
@@ -375,7 +390,7 @@ class StartUpClass:
                                           color=alt.Color(
                                               'ESG_Category', scale=alt.Scale(scheme="set1")),
                                           size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Internalization", "Mitigation_Class", "Mitigation_Sub_Class", "Score"])).properties(width=300, height=300,
-                                                                                                                                              title=alt.Title(self.company_chart_header, fontSize=12, anchor='middle'))
+                                                                                                                                                                                          title=alt.Title(self.company_chart_header, fontSize=12, anchor='middle'))
         print('Sector Data==========================')
         print(self.sector_dataset)
         if (not self.sector_dataset.empty):
@@ -387,8 +402,6 @@ class StartUpClass:
                                          color=alt.Color(
                                              'ESG_Category', scale=alt.Scale(scheme="set1")),
                                          size="Score", tooltip=["ESG_Category", "Exposure_Pathway", "Internalization", "Mitigation_Class", "Mitigation_Sub_Class", "Score"])).properties(width=300, height=300, title=alt.Title(self.sector_chart_header, fontSize=12, anchor='middle'))
-
-
 
         if (not self.company_dataset.empty):
             st.altair_chart((sector_chart_data |
@@ -404,7 +417,7 @@ class StartUpClass:
             sector_table_header = 'Sector Ranking: ' + self.sl_sector
             st.subheader(sector_table_header)
 
-            ds = self.sector_dataset[["ESG_Category", "Exposure_Pathway", "Internalization", "Mitigation_Class", "Mitigation_Sub_Class" ,"Score"]].sort_values(
+            ds = self.sector_dataset[["ESG_Category", "Exposure_Pathway", "Internalization", "Mitigation_Class", "Mitigation_Sub_Class", "Score"]].sort_values(
                 'Score', ascending=False).head(10)
             ds["Rank"] = ds["Score"].rank(ascending=False, method='first')
             self.draw_AG_Grid(
@@ -412,7 +425,7 @@ class StartUpClass:
 
             copmany_table_header = 'Company Ranking: ' + self.sl_company
             st.subheader(copmany_table_header)
-            ds2 = self.company_dataset[["ESG_Category", "Exposure_Pathway", "Internalization","Mitigation_Class", "Mitigation_Sub_Class", "Score"]].sort_values(
+            ds2 = self.company_dataset[["ESG_Category", "Exposure_Pathway", "Internalization", "Mitigation_Class", "Mitigation_Sub_Class", "Score"]].sort_values(
                 'Score', ascending=False).head(10)
             ds2["Rank"] = ds2["Score"].rank(ascending=False, method='first')
             self.draw_AG_Grid(
