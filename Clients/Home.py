@@ -331,11 +331,11 @@ class StartUpClass:
         else:
             self.database_context = "Test"
 
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("### 📊 Quick Stats")
-        st.sidebar.info("Monitor your pipeline status in real-time")
+        # st.sidebar.markdown("---")
+        # st.sidebar.markdown("### 📊 Quick Stats")
+        # st.sidebar.info("Monitor your pipeline status in real-time")
 
-        st.markdown("---")
+        # st.markdown("---")
 
         # 2x2 Grid for main processes with enhanced cards
         col1, col2 = st.columns(2, gap="medium")
@@ -445,7 +445,19 @@ class StartUpClass:
         st.markdown("---")
         st.info("**Pro Tip:** Use the sidebar to switch environments and navigate between sections. Enable auto-refresh for real-time monitoring.", icon="💡")
 
+        # Build information footer
+        st.markdown("<br>", unsafe_allow_html=True)
+        footer_col1, footer_col2, footer_col3 = st.columns(3)
+        with footer_col1:
+            st.markdown(f"**Build Version:** 1.0.0")
+        with footer_col2:
+            from datetime import datetime
+            st.markdown(
+                f"**Build Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        with footer_col3:
+            st.markdown(f"**Environment:** {self.database_context}")
 
-st_autorefresh(interval=20000, key="fizzbuzzcounter")
+
+st_autorefresh(interval=10000, key="fizzbuzzcounter")
 startup = StartUpClass()
 startup.run_online_Mode()
