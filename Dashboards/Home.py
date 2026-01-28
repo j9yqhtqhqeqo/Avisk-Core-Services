@@ -111,10 +111,11 @@ def st_altair_chart():
     # Professional dashboard header with icons
     st.markdown('<h1>🌍 ESG Insights Dashboard</h1>', unsafe_allow_html=True)
     st.markdown('<div class="info-banner"><h3>🌱 Environmental, Social & Governance Analytics</h3><p>📊 Comprehensive ESG risk analysis and insights powered by AI 🤖</p></div>', unsafe_allow_html=True)
-    
+
     # Add tabs for better organization
-    tab1, tab2, tab3 = st.tabs(["📈 Overview", "🎯 Risk Analysis", "📑 Detailed Reports"])
-    
+    tab1, tab2, tab3 = st.tabs(
+        ["📈 Overview", "🎯 Risk Analysis", "📑 Detailed Reports"])
+
     with tab1:
         df = pd.read_excel(
             "/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Source Code/Data-Testing/Data Extracts/Exposure Pathway Extract Dec 13.xlsx")

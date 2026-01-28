@@ -1,21 +1,21 @@
+from DBEntities.DashboardDBManager import DashboardDBManager
+import math as Math
+import altair as alt
+import streamlit.components.v1 as components
+import mpld3
+import streamlit as st
+from pylab import *
+import plotly.express as px
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from st_aggrid import GridOptionsBuilder, AgGrid, ColumnsAutoSizeMode, GridUpdateMode
+from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
 import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-from DBEntities.DashboardDBEntitties import ExposurePathwayDBEntity
-from st_aggrid import GridOptionsBuilder, AgGrid, ColumnsAutoSizeMode, GridUpdateMode
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import plotly.express as px
-from pylab import *
 # import mplcursors
-import streamlit as st
-import mpld3
-import streamlit.components.v1 as components
-import altair as alt
-import math as Math
-from DBEntities.DashboardDBManager import DashboardDBManager
 
 # Professional compact styling
 st.markdown("""
@@ -34,7 +34,6 @@ st.markdown("""
     h3 { color: #4A4A4A; font-weight: 500; font-size: 1rem; }
 </style>
 """, unsafe_allow_html=True)
-
 
 
 exposure_list = DashboardDBManager("Development").get_exposure_insights()

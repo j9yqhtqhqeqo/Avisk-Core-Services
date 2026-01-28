@@ -1,13 +1,13 @@
+from Utilities.Lookups import Lookups, Processing_Type
+import streamlit as st
+from DBEntities.LookupsDBManager import LookupsDBManager
+from streamlit_autorefresh import st_autorefresh
+import time
 import sys
 from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-import time
-from streamlit_autorefresh import st_autorefresh
-from DBEntities.LookupsDBManager import LookupsDBManager
-import streamlit as st
-from Utilities.Lookups import Lookups, Processing_Type
 
 # Professional styling with enhanced visual design
 st.markdown("""
@@ -224,128 +224,136 @@ class StartUpClass:
 
     def run_online_Mode(self):
         # Professional dashboard header with icon
-        st.markdown('<h1>🌐 Avisk Core Services Dashboard</h1>', unsafe_allow_html=True)
+        st.markdown('<h1>🌐 Avisk Core Services Dashboard</h1>',
+                    unsafe_allow_html=True)
         st.markdown('<p style="color: #5a6c7d; font-size: 1.1rem; margin-top: -0.5rem;">Real-time document processing & AI insights monitoring</p>', unsafe_allow_html=True)
-        
+
         # Database context in sidebar
         st.sidebar.markdown("### ⚙️ Configuration")
         database_context = st.sidebar.radio(
             "Database Environment", ["Development", "Test"], index=0)
-        
+
         if (database_context == 'Development'):
             self.database_context = 'Development'
         else:
             self.database_context = "Test"
-        
+
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 📊 Quick Stats")
         st.sidebar.info("Monitor your pipeline status in real-time")
 
         st.markdown("---")
-        st.markdown('<h2>📋 Processing Status Overview</h2>', unsafe_allow_html=True)
-        
+        st.markdown('<h2>📋 Processing Status Overview</h2>',
+                    unsafe_allow_html=True)
+
         # 2x2 Grid for main processes with enhanced cards
         col1, col2 = st.columns(2, gap="medium")
-        
+
         with col1:
             st.markdown('<div class="icon-header"><span style="font-size: 1.8rem;">🔍</span><h4 style="margin: 0;">Exposure Pathway Keyword Search</h4></div>', unsafe_allow_html=True)
             failed_exp, pending_exp = LookupsDBManager(
                 self.database_context).get_current_processing_status(processing_type=Processing_Type().KEYWORD_GEN_EXP)
-            
+
             metric_col1, metric_col2 = st.columns(2)
             with metric_col1:
                 st.metric("📄 Pending", pending_exp)
             with metric_col2:
                 st.metric("⚠️ Failed", failed_exp)
-            
+
             if pending_exp == 0 and failed_exp == 0:
                 st.success("✅ All documents processed successfully", icon="✅")
             else:
                 st.info(f"⏳ Processing {pending_exp} documents...")
-        
+
         with col2:
             st.markdown('<div class="icon-header"><span style="font-size: 1.8rem;">🛡️</span><h4 style="margin: 0;">Mitigation Keyword Search</h4></div>', unsafe_allow_html=True)
             failed_mit, pending_mit = LookupsDBManager(
                 self.database_context).get_current_processing_status(processing_type=Processing_Type().KEYWORD_GEN_MIT)
-            
+
             metric_col1, metric_col2 = st.columns(2)
             with metric_col1:
                 st.metric("📄 Pending", pending_mit)
             with metric_col2:
                 st.metric("⚠️ Failed", failed_mit)
-            
+
             if pending_mit == 0 and failed_mit == 0:
                 st.success("✅ All documents processed successfully", icon="✅")
             else:
                 st.info(f"⏳ Processing {pending_mit} documents...")
-        
+
         st.markdown("<br>", unsafe_allow_html=True)
-        
+
         col3, col4 = st.columns(2, gap="medium")
-        
+
         with col3:
             st.markdown('<div class="icon-header"><span style="font-size: 1.8rem;">🔗</span><h4 style="margin: 0;">Internalization Keyword Search</h4></div>', unsafe_allow_html=True)
             failed_int, pending_int = LookupsDBManager(
                 self.database_context).get_current_processing_status(processing_type=Processing_Type().KEYWORD_GEN_INT)
-            
+
             metric_col1, metric_col2 = st.columns(2)
             with metric_col1:
                 st.metric("📄 Pending", pending_int)
             with metric_col2:
                 st.metric("⚠️ Failed", failed_int)
-            
+
             if pending_int == 0 and failed_int == 0:
                 st.success("✅ All documents processed successfully", icon="✅")
             else:
                 st.info(f"⏳ Processing {pending_int} documents...")
-        
+
         with col4:
             st.markdown('<div class="icon-header"><span style="font-size: 1.8rem;">💡</span><h4 style="margin: 0;">Exposure Insight Generation</h4></div>', unsafe_allow_html=True)
             failed_exp_ins, pending_exp_ins = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().EXPOSURE_INSIGHTS_GEN)
-            
+
             metric_col1, metric_col2 = st.columns(2)
             with metric_col1:
                 st.metric("📄 Pending", pending_exp_ins)
             with metric_col2:
                 st.metric("⚠️ Failed", failed_exp_ins)
-            
+
             if pending_exp_ins == 0 and failed_exp_ins == 0:
                 st.success("✅ All insights generated successfully", icon="✅")
             else:
-                st.info(f"🔄 Generating insights for {pending_exp_ins} documents...")
-        
+                st.info(
+                    f"🔄 Generating insights for {pending_exp_ins} documents...")
+
         # Advanced Insight Generation Section with gradient header
         st.markdown("")
-        st.markdown('<h2>🧠 Advanced Insight Generation</h2>', unsafe_allow_html=True)
-        st.markdown('<p style="color: #5a6c7d; margin-top: -0.5rem;">Multi-stage AI-powered insight pipelines</p>', unsafe_allow_html=True)
-        
+        st.markdown('<h2>🧠 Advanced Insight Generation</h2>',
+                    unsafe_allow_html=True)
+        st.markdown(
+            '<p style="color: #5a6c7d; margin-top: -0.5rem;">Multi-stage AI-powered insight pipelines</p>', unsafe_allow_html=True)
+
         col1, col2, col3 = st.columns(3, gap="medium")
-        
+
         with col1:
             st.markdown('<div class="icon-header"><span style="font-size: 1.6rem;">🎯</span><span style="font-weight: 600; color: #2c3e50;">Internalization Insights</span></div>', unsafe_allow_html=True)
             failed_int_ins, pending_int_ins = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().INTERNALIZATION_INSIGHTS_GEN)
-            st.metric("Pending Documents", pending_int_ins, delta=f"-{failed_int_ins} failed" if failed_int_ins > 0 else None)
+            st.metric("Pending Documents", pending_int_ins,
+                      delta=f"-{failed_int_ins} failed" if failed_int_ins > 0 else None)
             if pending_int_ins == 0 and failed_int_ins == 0:
                 st.success("Complete ✓")
-        
+
         with col2:
             st.markdown('<div class="icon-header"><span style="font-size: 1.6rem;">🔄</span><span style="font-weight: 600; color: #2c3e50;">Exposure → Internalization</span></div>', unsafe_allow_html=True)
             failed_exp_int, pending_exp_int = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().Exp_Int_Insight_GEN)
-            st.metric("Pending Documents", pending_exp_int, delta=f"-{failed_exp_int} failed" if failed_exp_int > 0 else None)
+            st.metric("Pending Documents", pending_exp_int,
+                      delta=f"-{failed_exp_int} failed" if failed_exp_int > 0 else None)
             if pending_exp_int == 0 and failed_exp_int == 0:
                 st.success("Complete ✓")
-        
+
         with col3:
             st.markdown('<div class="icon-header"><span style="font-size: 1.6rem;">🚀</span><span style="font-weight: 600; color: #2c3e50;">Mitigation Insights</span></div>', unsafe_allow_html=True)
             failed_mit_exp, pending_mit_exp = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().Mitigation_Exp_Insight_GEN)
-            st.metric("Pending Documents", pending_mit_exp, delta=f"-{failed_mit_exp} failed" if failed_mit_exp > 0 else None)
+            st.metric("Pending Documents", pending_mit_exp,
+                      delta=f"-{failed_mit_exp} failed" if failed_mit_exp > 0 else None)
             if pending_mit_exp == 0 and failed_mit_exp == 0:
                 st.success("Complete ✓")
-        
+
         # Footer tip with enhanced styling
         st.markdown("")
         st.markdown("---")

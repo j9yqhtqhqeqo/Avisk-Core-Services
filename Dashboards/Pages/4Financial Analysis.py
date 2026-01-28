@@ -38,6 +38,7 @@ st.markdown("""
 
 # st.set_page_config removed - configured in Home.py
 
+
 class StartUpClass:
 
     def __init__(self) -> None:
