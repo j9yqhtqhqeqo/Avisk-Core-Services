@@ -16,7 +16,7 @@ st.markdown("""
     .stApp {
         padding-top: 0rem !important;
         margin-top: 0rem !important;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: #ffffff;
     }
     
     /* Remove ALL block container padding */
@@ -72,13 +72,10 @@ st.markdown("""
     
     /* Professional Title with gradient */
     h1 {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: #000000;
         font-weight: 800;
         font-size: 2.2rem;
-        margin-bottom: 0.8rem;
+        margin-bottom: 0.3rem;
         margin-top: 0rem !important;
         padding-top: 0rem !important;
         text-align: left;
@@ -90,25 +87,27 @@ st.markdown("""
         color: #2c3e50;
         font-weight: 700;
         font-size: 1.4rem;
-        margin-top: 1.5rem;
-        margin-bottom: 0.8rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 3px solid;
-        border-image: linear-gradient(90deg, #667eea 0%, #764ba2 100%) 1;
+        margin-top: 0rem !important;
+        margin-bottom: 0.3rem;
+        padding-top: 0rem !important;
+        padding-bottom: 0.3rem;
     }
     
     h3 {
         color: #34495e;
         font-weight: 600;
         font-size: 1.1rem;
-        margin: 0.5rem 0;
+        margin-top: 0rem !important;
+        margin-bottom: 0.2rem;
+        padding-top: 0rem !important;
     }
     
     h4 {
         color: #2c3e50;
         font-weight: 600;
-        margin-top: 0rem;
-        margin-bottom: 0.5rem;
+        margin-top: 0rem !important;
+        margin-bottom: 0.2rem;
+        padding-top: 0rem !important;
         font-size: 1.05rem;
     }
     
@@ -117,15 +116,83 @@ st.markdown("""
         background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%) !important;
         border-left: 4px solid #667eea !important;
         border-radius: 8px !important;
-        padding: 1rem !important;
+        padding: 0.6rem !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
     }
     
     .stSuccess {
-        background: linear-gradient(135deg, #11998e15 0%, #38ef7d15 100%) !important;
-        border-left: 4px solid #11998e !important;
+        background: #e3f2fd !important;
+        border-left: 4px solid #2196f3 !important;
         border-radius: 8px !important;
+        padding: 0.6rem !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+        color: #000000 !important;
+    }
+    
+    .stSuccess > div {
+        background: #e3f2fd !important;
+        color: #000000 !important;
+    }
+    
+    .stSuccess [data-testid="stMarkdownContainer"] {
+        color: #000000 !important;
+    }
+    
+    .stSuccess p {
+        color: #000000 !important;
+    }
+    
+    .stSuccess svg {
+        fill: #000000 !important;
+    }
+    
+    .stSuccess * {
+        color: #000000 !important;
+    }
+    
+    /* Target all success alert variants */
+    div[data-testid="stAlert"][data-baseweb="notification"],
+    div[data-testid="stNotificationContentSuccess"],
+    div[kind="success"],
+    .element-container:has(.stSuccess) {
+        background: #e3f2fd !important;
+    }
+    
+    div[data-testid="stAlert"] div[data-baseweb="notification"] {
+        background-color: #e3f2fd !important;
+        border-left-color: #2196f3 !important;
+    }
+    
+    [data-baseweb="notification"][kind="success"],
+    [data-baseweb="notification"][kind="success"] > div {
+        background-color: #e3f2fd !important;
+        color: #000000 !important;
+    }
+    
+    [data-baseweb="notification"][kind="success"] * {
+        color: #000000 !important;
+    }
+    
+    /* Override Streamlit's default success styling */
+    [data-testid="stNotification"] {
+        background: #e3f2fd !important;
+        border-left: 4px solid #2196f3 !important;
+    }
+    
+    div[data-baseweb="notification"][kind="success"] {
+        background: #e3f2fd !important;
+        border-left: 4px solid #2196f3 !important;
+    }
+    
+    /* Target alert components */
+    .st-emotion-cache-1wmy9hl, .st-emotion-cache-16idsys {
+        background: #e3f2fd !important;
+        border-left: 4px solid #2196f3 !important;
+    }
+    
+    /* Target success alert */
+    div[role="alert"][data-baseweb="notification"] {
+        background: #e3f2fd !important;
     }
     
     /* Enhanced metrics */
@@ -149,7 +216,7 @@ st.markdown("""
     div[data-testid="column"] {
         background: white;
         border-radius: 12px;
-        padding: 1.2rem;
+        padding: 0.8rem;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
@@ -161,10 +228,33 @@ st.markdown("""
     
     /* Dividers */
     hr {
-        margin: 1.5rem 0;
+        margin-top: 0rem !important;
+        margin-bottom: 0.5rem;
+        padding-top: 0rem !important;
         border: none;
         height: 2px;
         background: linear-gradient(90deg, transparent, #667eea, transparent);
+    }
+    
+    /* Remove all element container spacing */
+    .element-container {
+        margin-top: 0rem !important;
+        padding-top: 0rem !important;
+    }
+    
+    div.row-widget {
+        margin-top: 0rem !important;
+        padding-top: 0rem !important;
+    }
+    
+    /* Remove vertical block spacing */
+    .stVerticalBlock {
+        gap: 0rem !important;
+    }
+    
+    .stVerticalBlock > div {
+        margin-top: 0rem !important;
+        padding-top: 0rem !important;
     }
     
     /* Sidebar styling */
@@ -187,6 +277,7 @@ st.markdown("""
         align-items: center;
         gap: 0.5rem;
         font-size: 1.3rem;
+        color: #2c3e50;
     }
     
     /* Status badges */
@@ -224,9 +315,11 @@ class StartUpClass:
 
     def run_online_Mode(self):
         # Professional dashboard header with icon
-        st.markdown('<h1>🌐 Avisk Core Services Dashboard</h1>',
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown('<h1>🌍 Avisk Core Services Dashboard</h1>',
                     unsafe_allow_html=True)
         st.markdown('<p style="color: #5a6c7d; font-size: 1.1rem; margin-top: -0.5rem;">Real-time document processing & AI insights monitoring</p>', unsafe_allow_html=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
         # Database context in sidebar
         st.sidebar.markdown("### ⚙️ Configuration")
@@ -243,8 +336,6 @@ class StartUpClass:
         st.sidebar.info("Monitor your pipeline status in real-time")
 
         st.markdown("---")
-        st.markdown('<h2>📋 Processing Status Overview</h2>',
-                    unsafe_allow_html=True)
 
         # 2x2 Grid for main processes with enhanced cards
         col1, col2 = st.columns(2, gap="medium")
@@ -261,7 +352,7 @@ class StartUpClass:
                 st.metric("⚠️ Failed", failed_exp)
 
             if pending_exp == 0 and failed_exp == 0:
-                st.success("✅ All documents processed successfully", icon="✅")
+                st.success("All documents processed successfully", icon="✅")
             else:
                 st.info(f"⏳ Processing {pending_exp} documents...")
 
@@ -277,11 +368,11 @@ class StartUpClass:
                 st.metric("⚠️ Failed", failed_mit)
 
             if pending_mit == 0 and failed_mit == 0:
-                st.success("✅ All documents processed successfully", icon="✅")
+                st.success("All documents processed successfully", icon="✅")
             else:
                 st.info(f"⏳ Processing {pending_mit} documents...")
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
         col3, col4 = st.columns(2, gap="medium")
 
@@ -297,7 +388,7 @@ class StartUpClass:
                 st.metric("⚠️ Failed", failed_int)
 
             if pending_int == 0 and failed_int == 0:
-                st.success("✅ All documents processed successfully", icon="✅")
+                st.success("All documents processed successfully", icon="✅")
             else:
                 st.info(f"⏳ Processing {pending_int} documents...")
 
@@ -306,29 +397,22 @@ class StartUpClass:
             failed_exp_ins, pending_exp_ins = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().EXPOSURE_INSIGHTS_GEN)
 
-            metric_col1, metric_col2 = st.columns(2)
-            with metric_col1:
-                st.metric("📄 Pending", pending_exp_ins)
-            with metric_col2:
-                st.metric("⚠️ Failed", failed_exp_ins)
+            st.metric("📄 Pending", pending_exp_ins)
 
             if pending_exp_ins == 0 and failed_exp_ins == 0:
-                st.success("✅ All insights generated successfully", icon="✅")
+                st.success("Complete ✓")
             else:
                 st.info(
                     f"🔄 Generating insights for {pending_exp_ins} documents...")
 
         # Advanced Insight Generation Section with gradient header
-        st.markdown("")
-        st.markdown('<h2>🧠 Advanced Insight Generation</h2>',
-                    unsafe_allow_html=True)
-        st.markdown(
-            '<p style="color: #5a6c7d; margin-top: -0.5rem;">Multi-stage AI-powered insight pipelines</p>', unsafe_allow_html=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns(3, gap="medium")
 
         with col1:
             st.markdown('<div class="icon-header"><span style="font-size: 1.6rem;">🎯</span><span style="font-weight: 600; color: #2c3e50;">Internalization Insights</span></div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             failed_int_ins, pending_int_ins = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().INTERNALIZATION_INSIGHTS_GEN)
             st.metric("Pending Documents", pending_int_ins,
@@ -338,6 +422,7 @@ class StartUpClass:
 
         with col2:
             st.markdown('<div class="icon-header"><span style="font-size: 1.6rem;">🔄</span><span style="font-weight: 600; color: #2c3e50;">Exposure → Internalization</span></div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             failed_exp_int, pending_exp_int = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().Exp_Int_Insight_GEN)
             st.metric("Pending Documents", pending_exp_int,
@@ -347,6 +432,7 @@ class StartUpClass:
 
         with col3:
             st.markdown('<div class="icon-header"><span style="font-size: 1.6rem;">🚀</span><span style="font-weight: 600; color: #2c3e50;">Mitigation Insights</span></div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             failed_mit_exp, pending_mit_exp = LookupsDBManager(self.database_context).get_current_processing_status(
                 processing_type=Processing_Type().Mitigation_Exp_Insight_GEN)
             st.metric("Pending Documents", pending_mit_exp,
@@ -355,9 +441,9 @@ class StartUpClass:
                 st.success("Complete ✓")
 
         # Footer tip with enhanced styling
-        st.markdown("")
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("---")
-        st.info("💡 **Pro Tip:** Use the sidebar to switch environments and navigate between sections. Enable auto-refresh for real-time monitoring.", icon="💡")
+        st.info("**Pro Tip:** Use the sidebar to switch environments and navigate between sections. Enable auto-refresh for real-time monitoring.", icon="💡")
 
 
 st_autorefresh(interval=20000, key="fizzbuzzcounter")
