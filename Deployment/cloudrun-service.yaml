@@ -13,9 +13,9 @@ spec:
   template:
     metadata:
       annotations:
-        # Allocate 1 CPU and 1Gi memory
+        # Allocate 1 CPU and 2Gi memory
         run.googleapis.com/cpu: "1"
-        run.googleapis.com/memory: "1Gi"
+        run.googleapis.com/memory: "2Gi"
         # Set max instances for scaling
         run.googleapis.com/execution-environment: gen2
         autoscaling.knative.dev/maxScale: "10"
@@ -44,7 +44,7 @@ spec:
         resources:
           limits:
             cpu: "1"
-            memory: "1Gi"
+            memory: "2Gi"
         # Health and readiness probes
         livenessProbe:
           httpGet:
