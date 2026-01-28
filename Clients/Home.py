@@ -6,6 +6,7 @@ import time
 import sys
 from pathlib import Path
 import os
+from version import get_full_version_info
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 
@@ -447,15 +448,14 @@ class StartUpClass:
 
         # Build information footer
         st.markdown("<br>", unsafe_allow_html=True)
+        version_info = get_full_version_info()
         footer_col1, footer_col2, footer_col3 = st.columns(3)
         with footer_col1:
-            st.markdown(f"**Build Version:** 1.0.0")
+            st.markdown(f"**Build Version:** {version_info['version']}")
         with footer_col2:
-            from datetime import datetime
-            st.markdown(
-                f"**Build Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            st.markdown(f"**Build Date:** {version_info['build_date']}")
         with footer_col3:
-            st.markdown(f"**Environment:** {self.database_context}")
+            st.markdown(f"**Environment:** {version_info['environment']}")
 
 
 st_autorefresh(interval=10000, key="fizzbuzzcounter")
