@@ -73,7 +73,7 @@ class DB_Connection:
             name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})
             password = response.payload.data.decode("UTF-8")
-            print("✅ Retrieved database password from Google Secret Manager")
+            # print("✅ Retrieved database password from Google Secret Manager")
             return password
         except Exception as e:
             # For local development without Secret Manager access, provide a default

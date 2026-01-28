@@ -124,26 +124,27 @@ class PathConfiguration:
 
     def get_new_include_dict_term_path(self) -> str:
         """Get path for new include dictionary terms"""
-        if self.environment == Environment.DEVELOPMENT:
-            path = f"{self.base_config['base_data_path']}/Source Code/Data-Company/Dictionary/new_include_list.txt"
-        else:
-            path = f"{self.base_config['base_data_path']}/Dictionary/new_include_list.txt"
+        path = f"{self.base_config['base_data_path']}/Dictionary/new_include_list.txt"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
 
     def get_new_exclude_dict_term_path(self) -> str:
         """Get path for new exclude dictionary terms"""
-        if self.environment == Environment.DEVELOPMENT:
-            path = f"{self.base_config['base_data_path']}/Source Code/Data-Company/Dictionary/new_exclude_list.txt"
-        else:
-            path = f"{self.base_config['base_data_path']}/Dictionary/new_exclude_list.txt"
+        path = f"{self.base_config['base_data_path']}/Dictionary/new_exclude_list.txt"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
 
     def get_validation_list_path(self) -> str:
         """Get path for validation dictionary files"""
-        if self.environment == Environment.DEVELOPMENT:
-            path = f"{self.base_config['base_data_path']}/Source Code/Data-Testing/Dictionary/"
-        else:
-            path = f"{self.base_config['base_data_path']}/Validation/Dictionary/"
+        path = f"{self.base_config['base_data_path']}/Dictionary/DataTesting/"
+        return self._ensure_directory_exists(path)
+
+    def get_include_logs_path(self) -> str:
+        """Get path for inclusion dictionary log files"""
+        path = f"{self.base_config['base_data_path']}/Dictionary/IncludeLogs/"
+        return self._ensure_directory_exists(path)
+
+    def get_exclude_logs_path(self) -> str:
+        """Get path for exclusion dictionary log files"""
+        path = f"{self.base_config['base_data_path']}/Dictionary/ExcludeLogs/"
         return self._ensure_directory_exists(path)
 
     def get_tenk_output_path(self) -> str:
@@ -277,6 +278,8 @@ class PathConfiguration:
             'new_include_dict_term': self.get_new_include_dict_term_path(),
             'new_exclude_dict_term': self.get_new_exclude_dict_term_path(),
             'validation_list': self.get_validation_list_path(),
+            'include_logs': self.get_include_logs_path(),
+            'exclude_logs': self.get_exclude_logs_path(),
             'tenk_output': self.get_tenk_output_path(),
             'stage1_folder': self.get_stage1_folder_path(),
             'document_loader_log': self.get_document_loader_log_path(),
