@@ -12,7 +12,7 @@ import re
 import time
 
 PARM_BGNYEAR = 2022  # User selected bgn period.  Earliest available is 1993
-PARM_ENDYEAR = 2022 # User selected end period.
+PARM_ENDYEAR = 2022  # User selected end period.
 PARM_BGNQTR = 1  # Beginning quarter of each year
 PARM_ENDQTR = 4  # Ending quarter of each year
 # Path where you will store the downloaded files
@@ -25,7 +25,7 @@ PARM_PATH_FORM_DOWNLOAD_TEST = r'/Users/mohanganadal/Data Company/Text Processin
 # Change the file pointer below to reflect your location for the log file
 #    (directory must already exist)
 PARM_LOGFILE = (r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/EdgarDownload' +
-                str(PARM_BGNYEAR) +'Q'+str(PARM_BGNQTR) + '-' + str(PARM_ENDYEAR) +'Q'+str(PARM_ENDQTR))
+                str(PARM_BGNYEAR) + 'Q'+str(PARM_BGNQTR) + '-' + str(PARM_ENDYEAR) + 'Q'+str(PARM_ENDQTR))
 # EDGAR parameter
 PARM_FORM_PREFIX = 'https://www.sec.gov/Archives/'
 PARM_MASTERIDX_PREFIX = 'https://www.sec.gov/Archives/edgar/full-index/'
@@ -108,16 +108,15 @@ def download_index_files():
 def download_sec_forms(form_type):
     # Get list of file from Index Down Loads
 
-    success_logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}Success.txt'
+    success_logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime(\"%Y%m%d_%H%M%S\")}Success.txt'
     print(success_logfile)
-    failure_logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}Failure.txt'
+    failure_logfile = f'{PARM_LOGFILE} {dt.datetime.now().strftime(\"%Y%m%d_%H%M%S\")}Failure.txt'
     print(failure_logfile)
     f_log = open(success_logfile, 'a')
     f_log_failure = open(failure_logfile, 'a')
-   
+
     n_err = 0
 
-    
     file_list = sorted(os.listdir(PARM_PATH_INDEX_DOWNLOAD))
 
     print(file_list)
@@ -128,17 +127,17 @@ def download_sec_forms(form_type):
         processed_file_path = f'{PARM_PATH_PROCESSED_FILES}/{file}'
         # print(filepath)
         # print(processed_file_path)
-        if(file == '.DS_Store'):
+        if (file == '.DS_Store'):
             print('skipping system temp file')
         else:
             with open(filepath) as fread:
                 text_lines = fread.readlines()
                 text_lines_clean = text_lines[11:]
-                
+
                 linecount = len(re.findall('10-K', str(text_lines_clean)))
 
                 print(f'Found {linecount} occurances')
-                
+
                 for lineitem in text_lines_clean:
 
                     files_downloaded = 0
@@ -146,39 +145,42 @@ def download_sec_forms(form_type):
 
                     linedesc = IndexDescriptors(lineitem.strip())
                     sec_url = f'{PARM_FORM_PREFIX}/{linedesc.path}'
-                    if(len(re.findall('10-K', linedesc.form)) >0 ):
+                    if (len(re.findall('10-K', linedesc.form)) > 0):
 
                         # # Download 10K
-                        download_path = '{0}/10K/{1}'.format(PARM_PATH_FORM_DOWNLOAD,file.strip(".txt"))
-                        #print(download_path)
+                        download_path = '{0}/10K/{1}'.format(
+                            PARM_PATH_FORM_DOWNLOAD, file.strip(".txt"))
+                        # print(download_path)
                         if not os.path.exists(download_path):
                             os.makedirs(download_path)
                             print('Path: {0} created'.format(download_path))
-                        file_location = "{0}/{1}".format(download_path, linedesc.fileName)
-                        if(os.path.isfile(file_location)):
+                        file_location = "{0}/{1}".format(
+                            download_path, linedesc.fileName)
+                        if (os.path.isfile(file_location)):
                             file_exists = True
                         else:
-                            files_downloaded = download_single_file(sec_url, file_location)
+                            files_downloaded = download_single_file(
+                                sec_url, file_location)
 
                         if files_downloaded == 1:
                             n_tot = n_tot + 1
                             print(f'{n_tot} of {linecount}:download completed for {linedesc.path}:.  Time = ' +
-                                f' | {dt.datetime.now()}')
+                                  f' | {dt.datetime.now()}')
                             f_log.write(f'{n_tot} of {linecount}:download completed for {linedesc.path}:.  Time = ' +
-                                f' | {dt.datetime.now()}')
+                                        f' | {dt.datetime.now()}')
                             f_log.write('\n')
                             f_log.flush()
                         elif files_downloaded == -1:
                             f_log_failure.write(f'download failed for {linedesc.path}:.  Time = ' +
-                                f' | {dt.datetime.now()}')
+                                                f' | {dt.datetime.now()}')
                             f_log_failure.write('\n')
                             f_log_failure.flush()
                         elif file_exists == True:
                             n_tot = n_tot + 1
                             print(f'{n_tot} of {linecount}:download completed: This file already exists - {linedesc.path}:.  Time = ' +
-                                f' | {dt.datetime.now()}')
+                                  f' | {dt.datetime.now()}')
                             f_log.write(f'{n_tot} of {linecount}:download completed:This file already exists -  {linedesc.path}:.  Time = ' +
-                                f' | {dt.datetime.now()}')
+                                        f' | {dt.datetime.now()}')
                             f_log.write('\n')
                             f_log.flush()
                     # time.sleep(0.001)
@@ -190,8 +192,8 @@ def download_sec_forms(form_type):
         # f' | {dt.datetime.now()}')
         # download_path = '{0}/10K/{1}'.format(PARM_PATH_FORM_DOWNLOAD,file.strip(".txt"))
         # print(download_path)
-        os.rename(filepath,processed_file_path)
-            
+        os.rename(filepath, processed_file_path)
+
 
 class IndexDescriptors:
     def __init__(self, line):
@@ -207,7 +209,7 @@ class IndexDescriptors:
         else:
             self.err = True
         return
-    
+
     def getFileName(self):
         parts = self.path.split('/')
         length = len(parts)

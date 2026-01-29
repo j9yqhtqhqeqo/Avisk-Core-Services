@@ -67,7 +67,7 @@ class InsightGeneratorDBManager:
         self.d_next_seed = 0
         self.batch_id = 0
 
-        self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
+        self.log_file_path = f'{PARM_LOGFILE}_{dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
         self.log_generator = logGenerator(self.log_file_path)
 
     def convert_numpy_types(self, value):

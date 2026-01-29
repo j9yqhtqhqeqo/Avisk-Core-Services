@@ -134,8 +134,8 @@ class DictionaryManager:
 
     def update_Dictionary(self):
         # print('Update Dictionary Called..Check Why??')
-        include_dict_bkp_path = f'{INCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%c")}.txt'
-        exclude_dict_bkp_path = f'{EXCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%c")}.txt'
+        include_dict_bkp_path = f'{INCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+        exclude_dict_bkp_path = f'{EXCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
 
         dictionary_manager = DictionaryManager()
 

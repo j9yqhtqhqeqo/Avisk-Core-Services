@@ -54,7 +54,7 @@ IGNORE_ZERO_CALC_WARNING = True
 class keyWordSearchManager:
 
     def __init__(self, database_context: None) -> None:
-        self.log_file_path = f'{PARM_LOGFILE} {dt.datetime.now().strftime("%c")}.txt'
+        self.log_file_path = f'{PARM_LOGFILE}_{dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
 
         self.document_id: int
         self.document_name: str

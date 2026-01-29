@@ -34,7 +34,7 @@ class DataSourceProcessor:
 
         # Set up logging
         log_path = self.path_config.get_log_path("DataSourceLog")
-        self.logfile = f'{log_path} {dt.datetime.now().strftime("%c")}.txt'
+        self.logfile = f'{log_path} {dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
         self.flagged_for_review = False
 
         # Use centralized GCS manager
@@ -173,11 +173,11 @@ class DataSourceProcessor:
                 elif (source_type == 'file'):
                     print('Processing Manually downloaded file:')
                     l_file_location = os.path.join(
-                        self.pdf_in_folder, 'Manual Downloads', source_url)
+                        self.pdf_in_folder, 'ManualDownloads', source_url)
                     print(l_file_location)
 
                     # For manually downloaded files, try to get from GCS first
-                    gcs_relative_path = f"Stage0SourcePDFFiles/Manual Downloads/{source_url}"
+                    gcs_relative_path = f"Stage0SourcePDFFiles/ManualDownloads/{source_url}"
                     if not self._download_from_gcs_if_needed(l_file_location, gcs_relative_path):
                         # If file doesn't exist locally or in GCS
                         if not os.path.exists(l_file_location):

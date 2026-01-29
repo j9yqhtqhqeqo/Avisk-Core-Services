@@ -101,7 +101,7 @@ class PathConfiguration:
         except PermissionError:
             # In case of permission error (like /var/log on development machine),
             # fall back to temp directory
-            if self.environment == Environment.CLOUD and '/var/log' in path:
+            if self.environment in [Environment.PRODUCTION, Environment.DEVELOPMENT, Environment.TEST] and '/var/log' in path:
                 fallback_path = path.replace(
                     '/var/log/avisk', '/tmp/avisk/logs')
                 try:
