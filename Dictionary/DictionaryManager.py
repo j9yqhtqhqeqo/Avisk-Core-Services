@@ -1,4 +1,3 @@
-from Utilities.GCSFileManager import gcs_manager
 from Utilities.PathConfiguration import PathConfiguration
 from Utilities.LoggingServices import logGenerator
 import ast
@@ -32,36 +31,12 @@ VALIDATION_FILES_FOLDER = path_config.get_validation_list_path()
 
 class DictionaryManager:
     def __init__(self) -> None:
-        self.gcs_manager = gcs_manager if gcs_manager.is_available() else None
-
-    def _ensure_file_available(self, file_path: str, gcs_relative_path: str) -> bool:
-        """Ensure file is available locally, download from GCS if needed"""
-        # If file exists locally, use it
-        if os.path.exists(file_path):
-            return True
-
-        # If GCS is available, try to download
-        if self.gcs_manager:
-            print(f"Downloading dictionary file from GCS: {gcs_relative_path}")
-            return self.gcs_manager.download_file(gcs_relative_path, file_path, overwrite=False)
-
-        return False
-
-    def _sync_to_gcs(self, file_path: str, gcs_relative_path: str):
-        """Upload file to GCS if available"""
-        if self.gcs_manager and os.path.exists(file_path):
-            try:
-                self.gcs_manager.upload_file(file_path, gcs_relative_path)
-            except Exception as e:
-                print(f"Warning: Failed to sync dictionary to GCS: {e}")
+        pass  # Files are directly accessible via FUSE mount
 
     def _update_Dictionary_Items(self, new_dictionary_item_path, current_dictionary_item_path, bkp_file_path):
-        # Determine GCS paths
-        dict_filename = os.path.basename(current_dictionary_item_path)
-        gcs_dict_path = f"Dictionary/{dict_filename}"
-
-        # Ensure current dictionary is available locally
-        if not self._ensure_file_available(current_dictionary_item_path, gcs_dict_path):
+        # Files are directly accessible via FUSE mount
+        # Ensure current dictionary exists
+        if not os.path.exists(current_dictionary_item_path):
             print(
                 f"Warning: Could not find dictionary file: {current_dictionary_item_path}")
             # Create empty dictionary if file doesn't exist
@@ -109,10 +84,7 @@ class DictionaryManager:
         os.makedirs(os.path.dirname(bkp_file_path), exist_ok=True)
         os.rename(current_dictionary_item_path, bkp_file_path)
 
-        # Sync backup to GCS
-        bkp_filename = os.path.basename(bkp_file_path)
-        gcs_bkp_path = f"Dictionary/Backups/{bkp_filename}"
-        self._sync_to_gcs(bkp_file_path, gcs_bkp_path)
+        # Files written to FUSE mount are automatically in GCS
 
         log_generator = logGenerator(current_dictionary_item_path)
         log_generator.log_details('{', False)
@@ -129,8 +101,7 @@ class DictionaryManager:
 
         log_generator.log_details('}', False)
 
-        # Sync updated dictionary to GCS
-        self._sync_to_gcs(current_dictionary_item_path, gcs_dict_path)
+        # Files written to FUSE mount are automatically in GCS
 
     def update_Dictionary(self):
         # print('Update Dictionary Called..Check Why??')
@@ -265,14 +236,12 @@ class DictionaryManager:
 class ContextResolver:
 
     def __init__(self) -> None:
-        dict_manager = DictionaryManager()
+        # Files are directly accessible via FUSE mount - just check if they exist
 
         # Ensure inclusion dictionary is available
-        gcs_include_path = "Dictionary/InclusionDictionary.txt"
-        if not dict_manager._ensure_file_available(CURRENT_INCLUDE_DITCTORY_ITEM_PATH, gcs_include_path):
+        if not os.path.exists(CURRENT_INCLUDE_DITCTORY_ITEM_PATH):
             raise FileNotFoundError(
-                f"Inclusion dictionary not found: {CURRENT_INCLUDE_DITCTORY_ITEM_PATH}. "
-                f"Please ensure the file exists locally or in GCS at {gcs_include_path}"
+                f"Inclusion dictionary not found: {CURRENT_INCLUDE_DITCTORY_ITEM_PATH}"
             )
 
         with open(CURRENT_INCLUDE_DITCTORY_ITEM_PATH, 'r') as include_dict:
@@ -280,11 +249,9 @@ class ContextResolver:
             self.Inclusion_Dictionary = ast.literal_eval(include_dict_data)
 
         # Ensure exclusion dictionary is available
-        gcs_exclude_path = "Dictionary/ExclusionDictionary.txt"
-        if not dict_manager._ensure_file_available(CURRENT_EXCLUDE_DITCTORY_ITEM_PATH, gcs_exclude_path):
+        if not os.path.exists(CURRENT_EXCLUDE_DITCTORY_ITEM_PATH):
             raise FileNotFoundError(
-                f"Exclusion dictionary not found: {CURRENT_EXCLUDE_DITCTORY_ITEM_PATH}. "
-                f"Please ensure the file exists locally or in GCS at {gcs_exclude_path}"
+                f"Exclusion dictionary not found: {CURRENT_EXCLUDE_DITCTORY_ITEM_PATH}"
             )
 
         with open(CURRENT_EXCLUDE_DITCTORY_ITEM_PATH, 'r') as exclude_dict:

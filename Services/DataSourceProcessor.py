@@ -11,7 +11,6 @@ import urllib
 import fitz
 import pdfkit
 from Utilities.PathConfiguration import PathConfiguration
-from Utilities.GCSFileManager import gcs_manager
 from DBEntities.DataSourceDBManager import DataSourceDBManager
 from DBEntities.DataSourceDBEntity import DataSourceDBEntity
 import sys
@@ -36,23 +35,6 @@ class DataSourceProcessor:
         log_path = self.path_config.get_log_path("DataSourceLog")
         self.logfile = f'{log_path} {dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
         self.flagged_for_review = False
-
-        # Use centralized GCS manager
-        self.gcs_manager = gcs_manager
-
-    def _download_from_gcs_if_needed(self, local_file_path: str, gcs_relative_path: str) -> bool:
-        """
-        Download file from GCS to local path if it doesn't exist locally
-        Returns True if file is available locally, False otherwise
-        """
-        return self.gcs_manager.download_file(gcs_relative_path, local_file_path)
-
-    def _upload_to_gcs_if_available(self, local_file_path: str, gcs_relative_path: str) -> bool:
-        """
-        Upload file from local path to GCS
-        Returns True if upload successful, False otherwise
-        """
-        return self.gcs_manager.upload_file(local_file_path, gcs_relative_path)
 
     def download_webpage_as_pdf_file(self, url: str, f_name=None, f_log=None):
         try:
@@ -176,23 +158,20 @@ class DataSourceProcessor:
                         self.pdf_in_folder, 'ManualDownloads', source_url)
                     print(l_file_location)
 
-                    # For manually downloaded files, try to get from GCS first
-                    gcs_relative_path = f"Stage0SourcePDFFiles/ManualDownloads/{source_url}"
-                    if not self._download_from_gcs_if_needed(l_file_location, gcs_relative_path):
-                        # If file doesn't exist locally or in GCS
-                        if not os.path.exists(l_file_location):
-                            print(f'Manual file not found: {l_file_location}')
-                            raise FileNotFoundError(
-                                f'Manual file not found: {l_file_location}')
+                    # Verify file exists (directly accessible via FUSE mount)
+                    if not os.path.exists(l_file_location):
+                        print(f'Manual file not found: {l_file_location}')
+                        raise FileNotFoundError(
+                            f'Manual file not found: {l_file_location}')
 
-                # Verify file was downloaded/exists before processing
+                # Verify file exists before processing
                 if not os.path.exists(l_file_location):
                     print(
-                        f'File not found after download: {l_file_location}')
+                        f'File not found: {l_file_location}')
                     raise FileNotFoundError(
                         f'File not found: {l_file_location}')
 
-                print(f'File downloaded successfully: {l_file_location}')
+                print(f'File ready for processing: {l_file_location}')
             except Exception as download_exc:
                 print(
                     f'Download failed for {source_url}: {str(download_exc)}')
@@ -233,9 +212,7 @@ class DataSourceProcessor:
                         f'File Size is:{file_stats.st_size} Bytes, Flagged for review')
                     self.flagged_for_review = True
 
-                # Upload processed file to GCS
-                gcs_stage1_path = f"Stage1CleanTextFiles/{year}/{output_file_name}"
-                self._upload_to_gcs_if_available(output_path, gcs_stage1_path)
+                # Files written to FUSE mount are automatically in GCS - no upload needed
 
                 # Add to database
                 self.datasourceDBMgr.add_stage1_processed_files_to_t_document(

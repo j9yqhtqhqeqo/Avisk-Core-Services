@@ -49,6 +49,11 @@ class PathConfiguration:
         """Get base configuration based on environment"""
         is_local = os.path.exists('/Users/mohanganadal')
 
+        # Check if GCS FUSE is mounted
+        gcs_fuse_path = '/opt/avisk/gcs-data'
+        has_gcs_fuse = os.path.exists(f'{gcs_fuse_path}/Development') or os.path.exists(
+            f'{gcs_fuse_path}/Production') or os.path.exists(f'{gcs_fuse_path}/Test')
+
         if self.environment == Environment.DEVELOPMENT:
             if is_local:
                 # Local development
@@ -59,39 +64,88 @@ class PathConfiguration:
                     'project_root': '/Users/mohanganadal/Avisk/Avisk-Core-Services',
                     'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
                     'gcs_prefix': 'Development/',
-                    'use_gcs': os.getenv('USE_GCS', 'true').lower() == 'true'
+                    'use_gcs': os.getenv('USE_GCS', 'true').lower() == 'true',
+                    'has_gcs_fuse': False,
+                    'gcs_fuse_path': None
                 }
             else:
                 # Cloud deployment with development data
+                if has_gcs_fuse:
+                    # Use GCS FUSE mount - no downloads needed
+                    return {
+                        'base_data_path': f'{gcs_fuse_path}/Development/data',
+                        'temp_path': '/tmp/avisk',
+                        'log_base': '/var/log/avisk',
+                        'project_root': '/opt/avisk/app',
+                        'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
+                        'gcs_prefix': 'Development/',
+                        'use_gcs': True,
+                        'has_gcs_fuse': True,
+                        'gcs_fuse_path': gcs_fuse_path
+                    }
+                else:
+                    # Fallback to download mode
+                    return {
+                        'base_data_path': '/opt/avisk/data',
+                        'temp_path': '/tmp/avisk',
+                        'log_base': '/var/log/avisk',
+                        'project_root': '/opt/avisk/app',
+                        'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
+                        'gcs_prefix': 'Development/',
+                        'use_gcs': True,
+                        'has_gcs_fuse': False,
+                        'gcs_fuse_path': None
+                    }
+        elif self.environment == Environment.TEST:
+            if has_gcs_fuse:
+                return {
+                    'base_data_path': f'{gcs_fuse_path}/Test/data',
+                    'temp_path': '/tmp/avisk',
+                    'log_base': '/var/log/avisk',
+                    'project_root': '/opt/avisk/app',
+                    'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-app-data-eb7773c8'),
+                    'gcs_prefix': 'Test/',
+                    'use_gcs': True,
+                    'has_gcs_fuse': True,
+                    'gcs_fuse_path': gcs_fuse_path
+                }
+            else:
+                return {
+                    'base_data_path': '/tmp/avisk_test/data',
+                    'temp_path': '/tmp/avisk_test',
+                    'log_base': '/tmp/avisk_test/logs',
+                    'project_root': '/tmp/avisk_test/app',
+                    'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-app-data-eb7773c8'),
+                    'gcs_prefix': 'Test/',
+                    'use_gcs': True,
+                    'has_gcs_fuse': False,
+                    'gcs_fuse_path': None
+                }
+        elif self.environment == Environment.PRODUCTION:
+            if has_gcs_fuse:
+                return {
+                    'base_data_path': f'{gcs_fuse_path}/Production/data',
+                    'temp_path': '/tmp/avisk',
+                    'log_base': '/var/log/avisk',
+                    'project_root': '/opt/avisk/app',
+                    'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
+                    'gcs_prefix': 'Production/',
+                    'use_gcs': True,
+                    'has_gcs_fuse': True,
+                    'gcs_fuse_path': gcs_fuse_path
+                }
+            else:
                 return {
                     'base_data_path': '/opt/avisk/data',
                     'temp_path': '/tmp/avisk',
                     'log_base': '/var/log/avisk',
                     'project_root': '/opt/avisk/app',
-                    'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
-                    'gcs_prefix': 'Development/',
-                    'use_gcs': True
+                    'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
+                    'gcs_prefix': 'Production/',
+                    'use_gcs': True,
+                    'has_gcs_fuse': False,
+                    'gcs_fuse_path': None
                 }
-        elif self.environment == Environment.TEST:
-            return {
-                'base_data_path': '/tmp/avisk_test/data',
-                'temp_path': '/tmp/avisk_test',
-                'log_base': '/tmp/avisk_test/logs',
-                'project_root': '/tmp/avisk_test/app',
-                'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-app-data-eb7773c8'),
-                'gcs_prefix': 'Test/',
-                'use_gcs': True
-            }
-        elif self.environment == Environment.PRODUCTION:
-            return {
-                'base_data_path': '/opt/avisk/data',
-                'temp_path': '/tmp/avisk',
-                'log_base': '/var/log/avisk',
-                'project_root': '/opt/avisk/app',
-                'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
-                'gcs_prefix': 'Production/',
-                'use_gcs': True
-            }
 
     def _ensure_directory_exists(self, path: str) -> str:
         """Ensure directory exists, create if necessary"""
@@ -209,6 +263,14 @@ class PathConfiguration:
     def should_use_gcs(self) -> bool:
         """Check if Google Cloud Storage should be used"""
         return self.base_config.get('use_gcs', False)
+
+    def has_gcs_fuse_mount(self) -> bool:
+        """Check if GCS FUSE mount is available"""
+        return self.base_config.get('has_gcs_fuse', False)
+
+    def get_gcs_fuse_path(self) -> str:
+        """Get GCS FUSE mount base path if available"""
+        return self.base_config.get('gcs_fuse_path', None)
 
     def get_gcs_path(self, relative_path: str) -> str:
         """Get full GCS path for a relative path"""

@@ -21,7 +21,6 @@ from Dictionary.DictionaryManager import ContextResolver
 
 from Utilities.TelemetryServices import TelemetryTracker, OperationTimer
 from Utilities.PathConfiguration import path_config
-from Utilities.GCSFileManager import gcs_manager
 import time
 
 import copy
@@ -753,7 +752,6 @@ class keyWordSearchManager:
 class db_Insight_keyWordSearchManager(keyWordSearchManager):
     def __init__(self) -> None:
         super().__init__()
-        self.gcs_manager = gcs_manager
 
     def _load_content(self, document_name: str, document_id: int, year: int, qtr: int):
 
@@ -762,12 +760,7 @@ class db_Insight_keyWordSearchManager(keyWordSearchManager):
 
         f_input_file_path = f'{PARM_TENK_OUTPUT_PATH}Year{year}Q{qtr}/{document_name}'
 
-        # Try to download from GCS if file doesn't exist locally
-        if not os.path.exists(f_input_file_path):
-            gcs_relative_path = f"Extracted10K/Year{year}Q{qtr}/{document_name}"
-            self.gcs_manager.download_file(
-                gcs_relative_path, f_input_file_path)
-
+        # Files are directly accessible via FUSE mount
         with open(f_input_file_path, 'r') as fin:
             # self.current_data = fin.read()
             sourcedata = fin.read()
@@ -780,7 +773,6 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
     def __init__(self, folder_path: str, database_context: None) -> None:
         super().__init__(database_context)
         self.folder_path = folder_path
-        self.gcs_manager = gcs_manager
 
     def _load_content(self, document_name: str, document_id: int, year: int):
 
@@ -789,12 +781,7 @@ class file_folder_keyWordSearchManager(keyWordSearchManager):
 
         f_input_file_path = f'{self.folder_path}/{year}/{document_name}'
 
-        # Try to download from GCS if file doesn't exist locally
-        if not os.path.exists(f_input_file_path):
-            gcs_relative_path = f"Stage1CleanTextFiles/{year}/{document_name}"
-            self.gcs_manager.download_file(
-                gcs_relative_path, f_input_file_path)
-
+        # Files are directly accessible via FUSE mount
         with open(f_input_file_path, 'r') as fin:
           # self.current_data = fin.read()
             sourcedata = fin.read()
