@@ -147,6 +147,7 @@ class keyWordSearchManager:
 
 # Search all exposure pathway dictionary terms in the document and save locations
 
+
     def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0, validation_mode=False):
 
         self.validation_mode = validation_mode
@@ -610,7 +611,7 @@ class keyWordSearchManager:
                     retry_for_new_dicitonary_items = True
                 elif (self.validation_mode):
                     print('Completed Keyword Search Validation - Batch#:' + str(batch_num) + ', Document:' +
-                          str(document_count)+' of ' + str(len(self.document_list) +' , Document:' + self.document_name + ')'))
+                          str(document_count)+' of ' + str(len(self.document_list) + ' , Document:' + self.document_name + ')'))
                     # Add logic to update Valdiation Flags
                 else:
                     print(
@@ -945,6 +946,7 @@ class Insight_Generator(keyWordSearchManager):
 
 
 # Generate Aggregate Insights
+
 
     def generate_aggregate_insights_from_keyword_location_details(self):
 
