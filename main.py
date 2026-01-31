@@ -1,182 +1,52 @@
-from version import get_version_string, get_build_string, ENVIRONMENT
-from Utilities.Lookups import Lookups, Processing_Type
-from DBEntities.LookupsDBManager import LookupsDBManager
+
+import numpy as np
+import pandas as pd
+from Services.DataSourceProcessor import DataSourceProcessor
 import streamlit as st
+import os
+import datetime as dt
+import ast
 import sys
 from pathlib import Path
-import os
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 
-# Configure page
-st.set_page_config(
-    page_title="Dashboard",
-    page_icon="🌍",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+class StartUpClass:
+
+    def __init__(self) -> None:
+        self.unprocessed_document_list = []
+
+    def load_unprocessed_data_list(self):
+        self.unprocessed_document_list = (DataSourceProcessor(
+            self.database_context)).get_unprocessed_source_document_list()
+        print(self.unprocessed_document_list)
+
+        [x.as_dict() for x in self.unprocessed_document_list]
+
+        df = pd.DataFrame([x.as_dict()
+                          for x in self.unprocessed_document_list])
+        st.dataframe(data=df)
+
+    def extract_source_data(self):
+        (DataSourceProcessor(self.database_context)
+         ).download_content_from_source_and_process_text()
+
+    def run_online_Mode(self):
+        database_context = st.radio(
+            "Database Context", ["Development", "Test"], index=0)
+        if (database_context == 'Development'):
+            self.database_context = 'Development'
+        else:
+            self.database_context = "Test"
+
+        st.button('Load Unprocessed Source List',
+                  on_click=self.load_unprocessed_data_list)
+
+        st.button('Extract Source Data',
+                  on_click=self.extract_source_data)
 
 
-def main():
-    # Page title
-    st.title("🌍 Avisk Core Services Dashboard")
-    st.markdown("---")
+# (DataSourceProcessor()).get_unprocessed_source_document_list()
 
-    # Sidebar navigation
-    st.sidebar.title("📊 Navigation")
-
-    # Database context selection
-    database_context = st.sidebar.radio(
-        "Database Context",
-        ["Development", "Test"],
-        index=0,
-        help="Select the database environment"
-    )
-
-    # Auto-refresh toggle
-    auto_refresh = st.sidebar.checkbox("Auto Refresh (20s)", value=False)
-
-    if auto_refresh:
-        # Only import autorefresh if enabled
-        try:
-            from streamlit_autorefresh import st_autorefresh
-            st_autorefresh(interval=5000, key="dashboard_refresh")
-        except ImportError:
-            st.sidebar.warning("Auto-refresh not available")
-
-    # Main content
-    st.header("📋 Processing Status Overview")
-
-    # Create columns for better layout
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader('🔍 Exposure Pathway Keyword Search', divider='blue')
-        try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
-                processing_type=Processing_Type().KEYWORD_GEN_EXP
-            )
-            if pending_docs == 0 and failed_docs == 0:
-                st.success(
-                    '✅ No New Documents to Process: Awaiting Batch Process Scheduling')
-            else:
-                st.info(f"📄 Documents Pending: {pending_docs}")
-                if failed_docs > 0:
-                    st.error(f"❌ Documents Failed: {failed_docs}")
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
-
-        st.subheader('🔗 Internalization Keyword Search', divider='blue')
-        try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
-                processing_type=Processing_Type().KEYWORD_GEN_INT
-            )
-            if pending_docs == 0 and failed_docs == 0:
-                st.success(
-                    '✅ No New Documents to Process: Awaiting Batch Process Scheduling')
-            else:
-                st.info(f"📄 Documents Pending: {pending_docs}")
-                if failed_docs > 0:
-                    st.error(f"❌ Documents Failed: {failed_docs}")
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
-
-    with col2:
-        st.subheader('🛡️ Mitigation Keyword Search', divider='blue')
-        try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
-                processing_type=Processing_Type().KEYWORD_GEN_MIT
-            )
-            if pending_docs == 0 and failed_docs == 0:
-                st.success(
-                    '✅ No New Documents to Process: Awaiting Batch Process Scheduling')
-            else:
-                st.info(f"📄 Documents Pending: {pending_docs}")
-                if failed_docs > 0:
-                    st.error(f"❌ Documents Failed: {failed_docs}")
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
-
-        st.subheader('💡 Exposure Insight Generation', divider='blue')
-        try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
-                processing_type=Processing_Type().EXPOSURE_INSIGHTS_GEN
-            )
-            if pending_docs == 0 and failed_docs == 0:
-                st.success(
-                    '✅ No New Documents to Process: Awaiting Batch Process Scheduling')
-            else:
-                st.info(f"📄 Documents Pending: {pending_docs}")
-                if failed_docs > 0:
-                    st.error(f"❌ Documents Failed: {failed_docs}")
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
-
-    # Additional insight generation sections
-    st.subheader('🧠 Advanced Insight Generation', divider='green')
-
-    insight_col1, insight_col2, insight_col3 = st.columns(3)
-
-    with insight_col1:
-        st.markdown("**Internalization Insights**")
-        try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
-                processing_type=Processing_Type().INTERNALIZATION_INSIGHTS_GEN
-            )
-            if pending_docs == 0 and failed_docs == 0:
-                st.success('✅ Ready')
-            else:
-                st.info(f"📄 Pending: {pending_docs}")
-                if failed_docs > 0:
-                    st.error(f"❌ Failed: {failed_docs}")
-        except Exception as e:
-            st.error("Error loading status")
-
-    with insight_col2:
-        st.markdown("**Exposure → Internalization**")
-        try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
-                processing_type=Processing_Type().Exp_Int_Insight_GEN
-            )
-            if pending_docs == 0 and failed_docs == 0:
-                st.success('✅ Ready')
-            else:
-                st.info(f"📄 Pending: {pending_docs}")
-                if failed_docs > 0:
-                    st.error(f"❌ Failed: {failed_docs}")
-        except Exception as e:
-            st.error("Error loading status")
-
-    with insight_col3:
-        st.markdown("**Mitigation Insights**")
-        try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
-                processing_type=Processing_Type().Mitigation_Exp_INT_Insight_GEN
-            )
-            if pending_docs == 0 and failed_docs == 0:
-                st.success('✅ Ready')
-            else:
-                st.info(f"📄 Pending: {pending_docs}")
-                if failed_docs > 0:
-                    st.error(f"❌ Failed: {failed_docs}")
-        except Exception as e:
-            st.error("Error loading status")
-
-    # Footer
-    st.markdown("---")
-    st.markdown(
-        "**💡 Tip:** Use the sidebar to navigate between sections and toggle auto-refresh")
-
-    # Status bar at the bottom
-    st.markdown("---")
-    footer_col1, footer_col2, footer_col3 = st.columns([1, 1, 1])
-    with footer_col1:
-        st.caption(f"🏷️ {get_version_string()}")
-    with footer_col2:
-        st.caption(f"🔨 {get_build_string()}")
-    with footer_col3:
-        st.caption(f"🌍 Environment: {ENVIRONMENT.title()}")
-
-
-if __name__ == "__main__":
-    main()
+l_startup_class = StartUpClass()
+l_startup_class.run_online_Mode()
