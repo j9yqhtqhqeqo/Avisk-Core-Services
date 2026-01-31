@@ -197,6 +197,9 @@ class DataSourceProcessor:
                         out.write(text)  # write text of page
                         # write page delimiter (form feed 0x0C)
                         out.write(bytes((12,)))
+                    out.flush()  # Flush Python buffers
+                    # Force OS to write to GCS FUSE immediately
+                    os.fsync(out.fileno())
                 doc.close()
 
                 # Create list of successfully processed Files

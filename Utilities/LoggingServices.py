@@ -19,3 +19,4 @@ class logGenerator:
                 f_log.write(f'{message}')
             f_log.write('\n')
             f_log.flush()
+            os.fsync(f_log.fileno())  # Force immediate sync to GCS FUSE
