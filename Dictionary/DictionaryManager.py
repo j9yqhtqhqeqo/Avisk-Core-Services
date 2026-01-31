@@ -8,6 +8,14 @@ import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 
+class DuplicateDictionaryTermsError(Exception):
+    """Exception raised when same keywords exist in both include and exclude files"""
+    def __init__(self, duplicate_terms):
+        self.duplicate_terms = duplicate_terms
+        message = f"Found {len(duplicate_terms)} duplicate keyword(s) in both include and exclude files. Please review and keep them in only ONE file."
+        super().__init__(message)
+
+
 # Initialize path configuration
 path_config = PathConfiguration()
 
@@ -84,27 +92,67 @@ class DictionaryManager:
         os.makedirs(os.path.dirname(bkp_file_path), exist_ok=True)
         os.rename(current_dictionary_item_path, bkp_file_path)
 
-        # Files written to FUSE mount are automatically in GCS
-
-        log_generator = logGenerator(current_dictionary_item_path)
-        log_generator.log_details('{', False)
-
+        # Build dictionary content in memory first for better performance
+        dict_lines = ['{']
+        
         new_sorted_dict = dict(sorted(current_dict_items.items()))
         for key, value in new_sorted_dict.items():
             if isinstance(value, list):
-                log_generator.log_details(
-                    '\'' + key.strip()+'\':' + str(value) + ',', False)
-            elif ('[' not in value):
+                dict_lines.append('\'' + key.strip()+'\':' + str(value) + ',')
+            else:
+                # It's a string value - wrap it in list format
                 value_1 = '[\''+value+'\']'
-                log_generator.log_details(
-                    '\'' + key.strip()+'\':' + str(value_1) + ',', False)
-
-        log_generator.log_details('}', False)
+                dict_lines.append('\'' + key.strip()+'\':' + str(value_1) + ',')
+        
+        dict_lines.append('}')
+        
+        # Write all content at once
+        os.makedirs(os.path.dirname(current_dictionary_item_path), exist_ok=True)
+        with open(current_dictionary_item_path, 'w') as f:
+            f.write('\n'.join(dict_lines))
+            f.flush()
+            os.fsync(f.fileno())
 
         # Files written to FUSE mount are automatically in GCS
 
+    def _check_for_duplicate_terms(self):
+        """Check if same keywords exist in both include and exclude files"""
+        include_terms = set()
+        exclude_terms = set()
+        
+        # Read include file if it exists
+        if os.path.isfile(NEW_INCLUDE_DITCTORY_ITEM_PATH):
+            with open(NEW_INCLUDE_DITCTORY_ITEM_PATH, 'r') as f:
+                for line in f:
+                    if line.strip():
+                        key_value = line.strip().split(':')
+                        if len(key_value) >= 2:
+                            key = key_value[0].upper().strip()
+                            value = key_value[1].upper().strip()
+                            include_terms.add(f"{key}:{value}")
+        
+        # Read exclude file if it exists
+        if os.path.isfile(NEW_EXCLUDE_DITCTORY_ITEM_PATH):
+            with open(NEW_EXCLUDE_DITCTORY_ITEM_PATH, 'r') as f:
+                for line in f:
+                    if line.strip():
+                        key_value = line.strip().split(':')
+                        if len(key_value) >= 2:
+                            key = key_value[0].upper().strip()
+                            value = key_value[1].upper().strip()
+                            exclude_terms.add(f"{key}:{value}")
+        
+        # Find duplicates
+        duplicates = include_terms.intersection(exclude_terms)
+        if duplicates:
+            raise DuplicateDictionaryTermsError(list(duplicates))
+    
     def update_Dictionary(self):
-        # print('Update Dictionary Called..Check Why??')
+        print('Update Dictionary Called..Check Why??')
+        
+        # Check for duplicate terms before processing
+        self._check_for_duplicate_terms()
+        
         include_dict_bkp_path = f'{INCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
         exclude_dict_bkp_path = f'{EXCLUDE_LOG_FOLDER}{dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
 

@@ -196,8 +196,8 @@ class keyWordSearchManager:
                         "New Keywords added to Dictionary...Self Healing in effect...")
                     retry_for_new_dicitonary_items = True
                 elif (self.validation_mode):
-                    print('Completed Validation - Batch#:' + str(batch_num) + ', Document:' +
-                          str(document_count)+' of ' + str(len(self.document_list)))
+                    print('Completed Keyword Search Validation - Batch#:' + str(batch_num) + ', Document:' +
+                          str(document_count)+' of ' + str(len(self.document_list) + ' , Document:' + self.document_name + ')'))
                     # Add Logic to update  Validation Completed Flags
 
                 else:
@@ -378,8 +378,8 @@ class keyWordSearchManager:
                         "New Keywords added to Dictionary...Self Healing in effect...")
                     retry_for_new_dicitonary_items = True
                 elif (self.validation_mode):
-                    print('Completed Keyword Search- Batch#:' + str(batch_num) + ', Document:' +
-                          str(document_count)+' of ' + str(len(self.document_list)))
+                    print('Completed Keyword Search Validation - Batch#:' + str(batch_num) + ', Document:' +
+                          str(document_count)+' of ' + str(len(self.document_list) + ' , Document:' + self.document_name + ')'))
                 # Add Logic to update  Validation Completed Flags
                 else:
                     print(
@@ -609,8 +609,8 @@ class keyWordSearchManager:
                         "New Keywords added to Dictionary...Self Healing in effect...")
                     retry_for_new_dicitonary_items = True
                 elif (self.validation_mode):
-                    print('Completed Keyword Search- Batch#:' + str(batch_num) + ', Document:' +
-                          str(document_count)+' of ' + str(len(self.document_list)))
+                    print('Completed Keyword Search Validation - Batch#:' + str(batch_num) + ', Document:' +
+                          str(document_count)+' of ' + str(len(self.document_list) +' , Document:' + self.document_name + ')'))
                     # Add logic to update Valdiation Flags
                 else:
                     print(

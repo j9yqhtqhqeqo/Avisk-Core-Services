@@ -75,7 +75,7 @@ class PathConfiguration:
                     return {
                         'base_data_path': f'{gcs_fuse_path}/Development/data',
                         'temp_path': '/tmp/avisk',
-                        'log_base': '/var/log/avisk',
+                        'log_base': f'{gcs_fuse_path}/Development/data/logs',
                         'project_root': '/opt/avisk/app',
                         'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
                         'gcs_prefix': 'Development/',
@@ -101,7 +101,7 @@ class PathConfiguration:
                 return {
                     'base_data_path': f'{gcs_fuse_path}/Test/data',
                     'temp_path': '/tmp/avisk',
-                    'log_base': '/var/log/avisk',
+                    'log_base': f'{gcs_fuse_path}/Test/data/logs',
                     'project_root': '/opt/avisk/app',
                     'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-app-data-eb7773c8'),
                     'gcs_prefix': 'Test/',
@@ -126,7 +126,7 @@ class PathConfiguration:
                 return {
                     'base_data_path': f'{gcs_fuse_path}/Production/data',
                     'temp_path': '/tmp/avisk',
-                    'log_base': '/var/log/avisk',
+                    'log_base': f'{gcs_fuse_path}/Production/data/logs',
                     'project_root': '/opt/avisk/app',
                     'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
                     'gcs_prefix': 'Production/',

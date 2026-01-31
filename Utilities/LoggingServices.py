@@ -12,7 +12,7 @@ class logGenerator:
         # Ensure local directory exists
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
 
-        # Write to file (automatically synced to GCS via FUSE mount)
+        # Write to file and force sync to GCS FUSE
         with open(self.file_path, 'a') as f_log:
             if stamp_date_time:
                 f_log.write(f'{dt.datetime.now()} : {message}')
@@ -20,5 +20,7 @@ class logGenerator:
                 f_log.write(f'{message}')
             f_log.write('\n')
             f_log.flush()
+            # Force OS-level sync to ensure GCS FUSE writes to bucket
+            os.fsync(f_log.fileno())
 
-        # Files written to FUSE mount are automatically in GCS
+        # Files written to FUSE mount are synced to GCS with fsync
