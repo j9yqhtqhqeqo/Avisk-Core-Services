@@ -71,11 +71,12 @@ class PathConfiguration:
             else:
                 # Cloud deployment with development data
                 if has_gcs_fuse:
-                    # Use GCS FUSE mount - no downloads needed
+                    # Use GCS FUSE for data, local storage for Dictionary and logs (performance)
                     return {
                         'base_data_path': f'{gcs_fuse_path}/Development/data',
+                        'local_dictionary_path': '/opt/avisk/local-data/Dictionary',
                         'temp_path': '/tmp/avisk',
-                        'log_base': f'{gcs_fuse_path}/Development/data/logs',
+                        'log_base': '/var/log/avisk',
                         'project_root': '/opt/avisk/app',
                         'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
                         'gcs_prefix': 'Development/',
@@ -87,6 +88,7 @@ class PathConfiguration:
                     # Fallback to download mode
                     return {
                         'base_data_path': '/opt/avisk/data',
+                        'local_dictionary_path': '/opt/avisk/data/Dictionary',
                         'temp_path': '/tmp/avisk',
                         'log_base': '/var/log/avisk',
                         'project_root': '/opt/avisk/app',
@@ -100,8 +102,9 @@ class PathConfiguration:
             if has_gcs_fuse:
                 return {
                     'base_data_path': f'{gcs_fuse_path}/Test/data',
+                    'local_dictionary_path': '/opt/avisk/local-data/Dictionary',
                     'temp_path': '/tmp/avisk',
-                    'log_base': f'{gcs_fuse_path}/Test/data/logs',
+                    'log_base': '/var/log/avisk',
                     'project_root': '/opt/avisk/app',
                     'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-app-data-eb7773c8'),
                     'gcs_prefix': 'Test/',
@@ -112,6 +115,7 @@ class PathConfiguration:
             else:
                 return {
                     'base_data_path': '/tmp/avisk_test/data',
+                    'local_dictionary_path': '/tmp/avisk_test/data/Dictionary',
                     'temp_path': '/tmp/avisk_test',
                     'log_base': '/tmp/avisk_test/logs',
                     'project_root': '/tmp/avisk_test/app',
@@ -125,8 +129,9 @@ class PathConfiguration:
             if has_gcs_fuse:
                 return {
                     'base_data_path': f'{gcs_fuse_path}/Production/data',
+                    'local_dictionary_path': '/opt/avisk/local-data/Dictionary',
                     'temp_path': '/tmp/avisk',
-                    'log_base': f'{gcs_fuse_path}/Production/data/logs',
+                    'log_base': '/var/log/avisk',
                     'project_root': '/opt/avisk/app',
                     'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
                     'gcs_prefix': 'Production/',
@@ -137,6 +142,7 @@ class PathConfiguration:
             else:
                 return {
                     'base_data_path': '/opt/avisk/data',
+                    'local_dictionary_path': '/opt/avisk/data/Dictionary',
                     'temp_path': '/tmp/avisk',
                     'log_base': '/var/log/avisk',
                     'project_root': '/opt/avisk/app',
@@ -177,28 +183,38 @@ class PathConfiguration:
         return self._ensure_directory_exists(os.path.dirname(path)) and path
 
     def get_new_include_dict_term_path(self) -> str:
-        """Get path for new include dictionary terms"""
-        path = f"{self.base_config['base_data_path']}/Dictionary/new_include_list.txt"
+        """Get path for new include dictionary terms (uses local storage for performance)"""
+        dict_base = self.base_config.get(
+            'local_dictionary_path', f"{self.base_config['base_data_path']}/Dictionary")
+        path = f"{dict_base}/new_include_list.txt"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
 
     def get_new_exclude_dict_term_path(self) -> str:
-        """Get path for new exclude dictionary terms"""
-        path = f"{self.base_config['base_data_path']}/Dictionary/new_exclude_list.txt"
+        """Get path for new exclude dictionary terms (uses local storage for performance)"""
+        dict_base = self.base_config.get(
+            'local_dictionary_path', f"{self.base_config['base_data_path']}/Dictionary")
+        path = f"{dict_base}/new_exclude_list.txt"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
 
     def get_validation_list_path(self) -> str:
-        """Get path for validation dictionary files"""
-        path = f"{self.base_config['base_data_path']}/Dictionary/DataTesting/"
+        """Get path for validation dictionary files (uses local storage for performance)"""
+        dict_base = self.base_config.get(
+            'local_dictionary_path', f"{self.base_config['base_data_path']}/Dictionary")
+        path = f"{dict_base}/DataTesting/"
         return self._ensure_directory_exists(path)
 
     def get_include_logs_path(self) -> str:
-        """Get path for inclusion dictionary log files"""
-        path = f"{self.base_config['base_data_path']}/Dictionary/IncludeLogs/"
+        """Get path for inclusion dictionary log files (uses local storage for performance)"""
+        dict_base = self.base_config.get(
+            'local_dictionary_path', f"{self.base_config['base_data_path']}/Dictionary")
+        path = f"{dict_base}/IncludeLogs/"
         return self._ensure_directory_exists(path)
 
     def get_exclude_logs_path(self) -> str:
-        """Get path for exclusion dictionary log files"""
-        path = f"{self.base_config['base_data_path']}/Dictionary/ExcludeLogs/"
+        """Get path for exclusion dictionary log files (uses local storage for performance)"""
+        dict_base = self.base_config.get(
+            'local_dictionary_path', f"{self.base_config['base_data_path']}/Dictionary")
+        path = f"{dict_base}/ExcludeLogs/"
         return self._ensure_directory_exists(path)
 
     def get_tenk_output_path(self) -> str:

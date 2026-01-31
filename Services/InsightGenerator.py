@@ -197,7 +197,7 @@ class keyWordSearchManager:
                     retry_for_new_dicitonary_items = True
                 elif (self.validation_mode):
                     print('Completed Keyword Search Validation - Batch#:' + str(batch_num) + ', Document:' +
-                          str(document_count)+' of ' + str(len(self.document_list) + ' , Document:' + self.document_name + ')'))
+                          str(document_count)+' of ' + str(len(self.document_list)) + ' , Document:' + self.document_name)
                     # Add Logic to update  Validation Completed Flags
 
                 else:
