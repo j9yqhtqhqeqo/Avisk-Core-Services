@@ -17,15 +17,39 @@ class StartUpClass:
         self.unprocessed_document_list = []
 
     def load_unprocessed_data_list(self):
-        self.unprocessed_document_list = (DataSourceProcessor(
-            self.database_context)).get_unprocessed_source_document_list()
-        print(self.unprocessed_document_list)
+        """Load and display unprocessed documents with summary metrics"""
+        with st.spinner('Loading unprocessed documents...'):
+            self.unprocessed_document_list = (DataSourceProcessor(
+                self.database_context)).get_unprocessed_source_document_list()
 
-        [x.as_dict() for x in self.unprocessed_document_list]
+            if len(self.unprocessed_document_list) == 0:
+                st.success(
+                    "✅ All documents have been processed! No pending items.")
+                return
 
-        df = pd.DataFrame([x.as_dict()
-                          for x in self.unprocessed_document_list])
-        st.dataframe(data=df)
+            # Display summary metrics
+            st.markdown("### 📊 Data Summary")
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric("Total Pending Documents", len(
+                    self.unprocessed_document_list))
+
+            with col2:
+                years = list(
+                    set([x.year for x in self.unprocessed_document_list]))
+                st.metric("Years Covered", len(years))
+
+            with col3:
+                companies = list(
+                    set([x.company_name for x in self.unprocessed_document_list]))
+                st.metric("Unique Companies", len(companies))
+
+            # Display detailed table
+            st.markdown("### 📋 Unprocessed Documents")
+            df = pd.DataFrame([x.as_dict()
+                              for x in self.unprocessed_document_list])
+            st.dataframe(data=df, use_container_width=True, height=400)
 
     def extract_source_data(self):
         (DataSourceProcessor(self.database_context)
