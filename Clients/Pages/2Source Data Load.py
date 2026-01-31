@@ -52,8 +52,48 @@ class StartUpClass:
             st.dataframe(data=df, use_container_width=True, height=400)
 
     def extract_source_data(self):
-        (DataSourceProcessor(self.database_context)
-         ).download_content_from_source_and_process_text()
+        """Extract and process source data with progress tracking"""
+        import time
+
+        st.markdown("### 🚀 Processing Documents")
+
+        # Get initial count
+        processor = DataSourceProcessor(self.database_context)
+        document_list = processor.datasourceDBMgr.get_unprocessed_content_list()
+
+        if len(document_list) == 0:
+            st.warning("No unprocessed documents found.")
+            return
+
+        total_documents = len(document_list)
+
+        # Show initial metrics
+        st.info(f"📄 Starting processing of {total_documents} document(s)...")
+
+        # Create progress indicator
+        with st.spinner('Processing documents...'):
+            start_time = time.time()
+
+            # Call the actual processing method
+            result = processor.download_content_from_source_and_process_text()
+
+            elapsed_time = time.time() - start_time
+
+        # Show completion metrics
+        st.markdown("### ✅ Processing Complete!")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Documents", total_documents)
+        with col2:
+            st.metric("⏱️ Time Elapsed", f"{int(elapsed_time)}s")
+        with col3:
+            avg_time = elapsed_time / total_documents if total_documents > 0 else 0
+            st.metric("⚡ Avg Time/Doc", f"{avg_time:.1f}s")
+
+        st.success(
+            f"🎉 Successfully processed {total_documents} document(s) in {int(elapsed_time)} seconds!")
+        st.balloons()
 
     def run_online_Mode(self):
         database_context = st.radio(
@@ -63,11 +103,11 @@ class StartUpClass:
         else:
             self.database_context = "Test"
 
-        st.button('Load Unprocessed Source List',
-                  on_click=self.load_unprocessed_data_list)
+        if st.button('Load Unprocessed Source List'):
+            self.load_unprocessed_data_list()
 
-        st.button('Extract Source Data',
-                  on_click=self.extract_source_data)
+        if st.button('Extract Source Data'):
+            self.extract_source_data()
 
 
 # (DataSourceProcessor()).get_unprocessed_source_document_list()
