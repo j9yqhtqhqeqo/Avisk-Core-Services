@@ -71,7 +71,12 @@ class DB_Connection:
             from google.cloud import secretmanager
             client = secretmanager.SecretManagerServiceClient()
             project_id = "avisk-ai-platform"
-            secret_name = "dev-db-name"
+
+            # Determine secret prefix based on deployment environment
+            deployment_env = os.getenv('DEPLOYMENT_ENV', 'development')
+            secret_prefix = 'production' if deployment_env == 'production' else 'dev'
+            secret_name = f"{secret_prefix}-db-name"
+
             name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})
             dbname = response.payload.data.decode("UTF-8")
@@ -105,7 +110,12 @@ class DB_Connection:
             from google.cloud import secretmanager
             client = secretmanager.SecretManagerServiceClient()
             project_id = "avisk-ai-platform"
-            secret_name = "dev-db-username"
+
+            # Determine secret prefix based on deployment environment
+            deployment_env = os.getenv('DEPLOYMENT_ENV', 'development')
+            secret_prefix = 'production' if deployment_env == 'production' else 'dev'
+            secret_name = f"{secret_prefix}-db-username"
+
             name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})
             username = response.payload.data.decode("UTF-8")
@@ -138,7 +148,12 @@ class DB_Connection:
             from google.cloud import secretmanager
             client = secretmanager.SecretManagerServiceClient()
             project_id = "avisk-ai-platform"
-            secret_name = "dev-db-password"
+
+            # Determine secret prefix based on deployment environment
+            deployment_env = os.getenv('DEPLOYMENT_ENV', 'development')
+            secret_prefix = 'production' if deployment_env == 'production' else 'dev'
+            secret_name = f"{secret_prefix}-db-password"
+
             name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})
             password = response.payload.data.decode("UTF-8")
