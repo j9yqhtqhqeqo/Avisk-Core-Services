@@ -13,6 +13,18 @@ from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
+# Configure page
+st.set_page_config(
+    page_title="Validation",
+    page_icon="✅",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Page header
+st.title("✅ Keyword Validation")
+st.markdown("---")
+
 
 class StartUpClass:
 

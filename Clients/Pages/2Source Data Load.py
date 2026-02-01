@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 from Services.DataSourceProcessor import DataSourceProcessor
@@ -10,6 +9,18 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
+# Configure page
+st.set_page_config(
+    page_title="Source Data Load",
+    page_icon="📥",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Page header
+st.title("📥 Source Data Load")
+st.markdown("---")
+
 
 class StartUpClass:
 
@@ -20,7 +31,7 @@ class StartUpClass:
         """Load and display unprocessed documents with summary metrics"""
         with st.spinner('Loading unprocessed documents...'):
             self.unprocessed_document_list = (DataSourceProcessor(
-                )).get_unprocessed_source_document_list()
+            )).get_unprocessed_source_document_list()
 
             if len(self.unprocessed_document_list) == 0:
                 st.success(

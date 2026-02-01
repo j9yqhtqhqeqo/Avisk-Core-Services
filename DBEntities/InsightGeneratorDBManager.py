@@ -27,7 +27,7 @@ EXP_INT_MITIGATION_THRESHOLD = 10
 PARM_LOGFILE = (
     r'/opt/avisk/gcs-data/Development/data/logs/InsightGenLog/InsightDBLog')
 DB_CONNECTION_STRING = DB_Connection().DB_CONNECTION_STRING
-DB_LOGGING_ENABLED = True
+DB_LOGGING_ENABLED = False
 
 
 class InsightGeneratorDBManager:
@@ -401,21 +401,21 @@ class InsightGeneratorDBManager:
         """
         Save insights with telemetrics tracking using centralized method
         """
-        start_time = time.time()
+        # start_time = time.time()
         insight: Insight
         self.d_next_seed = 0
         total_records_added_to_db = 0
         sector_id = self.get_sector_id(document_id)
 
         # Telemetrics initialization
-        db_operation_time = 0
-        preparation_time = 0
+        # db_operation_time = 0
+        # preparation_time = 0
 
         if (DB_LOGGING_ENABLED):
             self.log_generator.log_details(
                 f"🔄 Starting save_insights for {len(insightList)} records...")
 
-        prep_start = time.time()
+        # prep_start = time.time()
 
         for insight in insightList:
             key_word_hit_id1 = insight.keyword_hit_id1
@@ -430,11 +430,11 @@ class InsightGeneratorDBManager:
             exposure_path_id = insight.exposure_path_id
             internalization_id = insight.internalization_id
 
-            prep_end = time.time()
-            preparation_time += (prep_end - prep_start)
+            # prep_end = time.time()
+            # preparation_time += (prep_end - prep_start)
 
             # Database operation timing
-            db_start = time.time()
+            # db_start = time.time()
 
             cursor = self.dbConnection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
@@ -487,44 +487,43 @@ class InsightGeneratorDBManager:
 
             except Exception as exc:
                 self.dbConnection.rollback()
-                if (DB_LOGGING_ENABLED):
-                    self.log_generator.log_details(
-                        f"Error in save_insights: {str(exc)}")
+                self.log_generator.log_details(
+                    f"Error in save_insights: {str(exc)}")
                 raise exc
 
-            db_end = time.time()
-            db_operation_time += (db_end - db_start)
-            prep_start = time.time()
+            # db_end = time.time()
+            # db_operation_time += (db_end - db_start)
+            # prep_start = time.time()
 
         # Final commit
-        commit_start = time.time()
+        # commit_start = time.time()
         if (total_records_added_to_db > 0):
             self.dbConnection.commit()
             cursor.close()
-        commit_end = time.time()
+        # commit_end = time.time()
 
         # Calculate total time and log telemetrics
-        total_time = time.time() - start_time
-        commit_time = commit_end - commit_start
+        # total_time = time.time() - start_time
+        # commit_time = commit_end - commit_start
 
         # Additional metrics specific to this operation
-        additional_metrics = {
-            "Dictionary Type": dictionary_type,
-            "Document ID": document_id,
-            "Year": year,
-            "Batch Commit Frequency": "Every 50 records"
-        }
+        # additional_metrics = {
+        #     "Dictionary Type": dictionary_type,
+        #     "Document ID": document_id,
+        #     "Year": year,
+        #     "Batch Commit Frequency": "Every 50 records"
+        # }
 
         # Use centralized telemetrics method
-        self._log_telemetrics(
-            operation_name="save_insights",
-            total_records=total_records_added_to_db,
-            total_time=total_time,
-            preparation_time=preparation_time,
-            db_operation_time=db_operation_time,
-            commit_time=commit_time,
-            additional_metrics=additional_metrics
-        )
+        # self._log_telemetrics(
+        #     operation_name="save_insights",
+        #     total_records=total_records_added_to_db,
+        #     total_time=total_time,
+        #     preparation_time=preparation_time,
+        #     db_operation_time=db_operation_time,
+        #     commit_time=commit_time,
+        #     additional_metrics=additional_metrics
+        # )
 
     def cleanup_insights_for_document(self, dictionary_type, document_list):
 
@@ -1434,15 +1433,14 @@ class InsightGeneratorDBManager:
         Target: 500+ records/second (20x improvement)
         """
         if not insightList:
-            if DB_LOGGING_ENABLED:
-                self.log_generator.log_details("No insights to save")
+            self.log_generator.log_details("No insights to save")
             return
 
-        start_time = time.time()
+        # start_time = time.time()
         sector_id = self.get_sector_id(document_id)
 
         # OPTIMIZATION 1: Pre-validate and batch convert data
-        prep_start = time.time()
+        # prep_start = time.time()
         insert_data = []
         skipped_records = 0
 
@@ -1512,7 +1510,7 @@ class InsightGeneratorDBManager:
                         f"Conversion error for record: {str(e)}")
                 continue
 
-        prep_time = time.time() - prep_start
+        # prep_time = time.time() - prep_start
 
         if not insert_data:
             if DB_LOGGING_ENABLED:
@@ -1521,7 +1519,7 @@ class InsightGeneratorDBManager:
             return
 
         # OPTIMIZATION 2: Use executemany for bulk insert
-        bulk_start = time.time()
+        # bulk_start = time.time()
         sql = """INSERT INTO t_exp_int_insights(
                     document_id, sector_id, document_name, 
                     exp_keyword_hit_id1, exp_keyword1, exp_keyword_hit_id2, exp_keyword2,
@@ -1544,49 +1542,49 @@ class InsightGeneratorDBManager:
             self.dbConnection.commit()
             cursor.close()
 
-            bulk_time = time.time() - bulk_start
-            total_time = time.time() - start_time
+            # bulk_time = time.time() - bulk_start
+            # total_time = time.time() - start_time
 
             # Enhanced telemetry
-            if DB_LOGGING_ENABLED:
-                self.log_generator.log_details(
-                    f"✅ OPTIMIZED bulk insert completed:")
-                self.log_generator.log_details(
-                    f"   📝 Records processed: {len(insightList)}")
-                self.log_generator.log_details(
-                    f"   ✅ Records inserted: {len(insert_data)}")
-                self.log_generator.log_details(
-                    f"   ⚠️  Records skipped: {skipped_records}")
-                self.log_generator.log_details(
-                    f"   🔧 Preparation time: {prep_time:.3f}s ({prep_time/total_time*100:.1f}%)")
-                self.log_generator.log_details(
-                    f"   💾 Bulk insert time: {bulk_time:.3f}s ({bulk_time/total_time*100:.1f}%)")
-                self.log_generator.log_details(
-                    f"   ⏱️  Total time: {total_time:.3f}s")
-                if bulk_time > 0:
-                    self.log_generator.log_details(
-                        f"   📈 Insertion rate: {len(insert_data)/bulk_time:.2f} records/sec")
-                    self.log_generator.log_details(
-                        f"   📊 Avg time/record: {bulk_time/len(insert_data)*1000:.2f}ms")
+            # if DB_LOGGING_ENABLED:
+            #     self.log_generator.log_details(
+            #         f"✅ OPTIMIZED bulk insert completed:")
+            #     self.log_generator.log_details(
+            #         f"   📝 Records processed: {len(insightList)}")
+            #     self.log_generator.log_details(
+            #         f"   ✅ Records inserted: {len(insert_data)}")
+            #     self.log_generator.log_details(
+            #         f"   ⚠️  Records skipped: {skipped_records}")
+            #     self.log_generator.log_details(
+            #         f"   🔧 Preparation time: {prep_time:.3f}s ({prep_time/total_time*100:.1f}%)")
+            #     self.log_generator.log_details(
+            #         f"   💾 Bulk insert time: {bulk_time:.3f}s ({bulk_time/total_time*100:.1f}%)")
+            #     self.log_generator.log_details(
+            #         f"   ⏱️  Total time: {total_time:.3f}s")
+            #     if bulk_time > 0:
+            #         self.log_generator.log_details(
+            #             f"   📈 Insertion rate: {len(insert_data)/bulk_time:.2f} records/sec")
+            #         self.log_generator.log_details(
+            #             f"   📊 Avg time/record: {bulk_time/len(insert_data)*1000:.2f}ms")
 
-                # Performance rating
-                records_per_sec = len(insert_data) / \
-                    bulk_time if bulk_time > 0 else 0
-                if records_per_sec >= 1000:
-                    rating = "⚡ Excellent (1000+ records/sec)"
-                elif records_per_sec >= 500:
-                    rating = "🚀 Very Good (500-1000 records/sec)"
-                elif records_per_sec >= 100:
-                    rating = "✅ Good (100-500 records/sec)"
-                elif records_per_sec >= 50:
-                    rating = "⚠️  Fair (50-100 records/sec)"
-                else:
-                    rating = "🐌 Needs Optimization (<50 records/sec)"
+            #     # Performance rating
+            #     records_per_sec = len(insert_data) / \
+            #         bulk_time if bulk_time > 0 else 0
+            #     if records_per_sec >= 1000:
+            #         rating = "⚡ Excellent (1000+ records/sec)"
+            #     elif records_per_sec >= 500:
+            #         rating = "🚀 Very Good (500-1000 records/sec)"
+            #     elif records_per_sec >= 100:
+            #         rating = "✅ Good (100-500 records/sec)"
+            #     elif records_per_sec >= 50:
+            #         rating = "⚠️  Fair (50-100 records/sec)"
+            #     else:
+            #         rating = "🐌 Needs Optimization (<50 records/sec)"
 
-                self.log_generator.log_details(
-                    f"   🎯 Performance Rating: {rating}")
-                self.log_generator.log_details(
-                    '################################################################################################')
+            #     self.log_generator.log_details(
+            #         f"   🎯 Performance Rating: {rating}")
+            #     self.log_generator.log_details(
+            #         '################################################################################################')
 
         except Exception as exc:
             self.dbConnection.rollback()

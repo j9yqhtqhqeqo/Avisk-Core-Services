@@ -150,10 +150,19 @@ class keyWordSearchManager:
 
 # Search all exposure pathway dictionary terms in the document and save locations
 
-
     def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0, validation_mode=False):
         # print(
         #     f"[DEBUG] Starting generate_keyword_location_map_for_exposure_pathway - Batch: {batch_num}, Validation Mode: {validation_mode}, Documents: {len(document_List)}")
+
+        # Initialize telemetry tracking
+        telemetry = TelemetryTracker(
+            self.log_generator, "generate_keyword_location_map_for_exposure_pathway")
+        telemetry.start_operation()
+
+        telemetry.add_metric("Batch Number", batch_num)
+        telemetry.add_metric("Validation Mode", validation_mode)
+        telemetry.add_metric("Total Documents", len(document_List))
+        telemetry.add_metric("Dictionary Type", "Exposure Pathway")
 
         self.validation_mode = validation_mode
         # self.keyword_search_logfile_init()
@@ -164,10 +173,13 @@ class keyWordSearchManager:
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_exposure_pathway")
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             return
 
         retry_for_new_dicitonary_items = False
         document_count = 0
+        documents_failed = 0
         for document in self.document_list:
             try:
                 # print(
@@ -245,6 +257,7 @@ class keyWordSearchManager:
                 # print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id, search_failed=True, validation_failed=True)
+                documents_failed += 1
 
             except Exception as exc:
                 print(f"Error: {str(exc)}")
@@ -255,13 +268,25 @@ class keyWordSearchManager:
                 # print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id, search_failed=True)
+                documents_failed += 1
 
         if (retry_for_new_dicitonary_items):
             print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
             # print(
             #     f"[DEBUG] Retry required for new dictionary items. Rerunning generate_keyword_location_map_for_exposure_pathway for batch {batch_num}")
+            telemetry.add_metric("Retry Required", True)
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             self.generate_keyword_location_map_for_exposure_pathway(
                 document_List, batch_num, validation_mode)
+        else:
+            # Log final metrics
+            telemetry.add_metric("Documents Processed", document_count)
+            telemetry.add_metric("Documents Failed", documents_failed)
+            telemetry.add_metric("Success Rate (%)", round(
+                (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
 
         # print(
         #     f"[DEBUG] Completed generate_keyword_location_map_for_exposure_pathway - Batch: {batch_num}")
@@ -380,6 +405,16 @@ class keyWordSearchManager:
 # Search all internalization pathway dictionary terms in the document and save locations
 
     def generate_keyword_location_map_for_internalization(self, document_List=[], batch_num=0, validation_mode=False):
+        # Initialize telemetry tracking
+        telemetry = TelemetryTracker(
+            self.log_generator, "generate_keyword_location_map_for_internalization")
+        telemetry.start_operation()
+
+        telemetry.add_metric("Batch Number", batch_num)
+        telemetry.add_metric("Validation Mode", validation_mode)
+        telemetry.add_metric("Total Documents", len(document_List))
+        telemetry.add_metric("Dictionary Type", "Internalization")
+
         self.validation_mode = validation_mode
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
@@ -387,10 +422,13 @@ class keyWordSearchManager:
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_internalization")
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             return
 
         retry_for_new_dicitonary_items = False
         document_count = 0
+        documents_failed = 0
         for document in self.document_list:
             try:
                 self.document_id = document.document_id
@@ -437,14 +475,27 @@ class keyWordSearchManager:
                 print(f"Error: {exc.get_error_description()}")
                 self.insightDBMgr.update_internalization_keyword_search_completed_ind(
                     self.document_id, search_failed=True, validation_failed=True)
+                documents_failed += 1
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 self.insightDBMgr.update_internalization_keyword_search_completed_ind(
                     self.document_id, search_failed=True)
+                documents_failed += 1
 
         if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_internalization..")
+            telemetry.add_metric("Retry Required", True)
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             self.generate_keyword_location_map_for_internalization()
+        else:
+            # Log final metrics
+            telemetry.add_metric("Documents Processed", document_count)
+            telemetry.add_metric("Documents Failed", documents_failed)
+            telemetry.add_metric("Success Rate (%)", round(
+                (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
 
     def _get_int_dictionary_term_list(self):
         # DEBUG Code
@@ -613,6 +664,16 @@ class keyWordSearchManager:
 # Search all mitigation dictionary terms in the document and save locations
 
     def generate_keyword_location_map_for_mitigation(self, document_List=[], batch_num=0, validation_mode=False):
+        # Initialize telemetry tracking
+        telemetry = TelemetryTracker(
+            self.log_generator, "generate_keyword_location_map_for_mitigation")
+        telemetry.start_operation()
+
+        telemetry.add_metric("Batch Number", batch_num)
+        telemetry.add_metric("Validation Mode", validation_mode)
+        telemetry.add_metric("Total Documents", len(document_List))
+        telemetry.add_metric("Dictionary Type", "Mitigation")
+
         # self.keyword_search_logfile_init()
         self.validation_mode = validation_mode
         self.proximity_entity_list = []
@@ -620,10 +681,13 @@ class keyWordSearchManager:
         if (len(self.document_list) == 0):
             print(
                 "All documents processed: No new documents to process - Exiting generate_keyword_location_map_for_mitigation")
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             return
 
         retry_for_new_dicitonary_items = False
         document_count = 0
+        documents_failed = 0
         for document in self.document_list:
             try:
                 self.document_id = document.document_id
@@ -668,15 +732,28 @@ class keyWordSearchManager:
                 print(f"Error: {exc.get_error_description()}")
                 self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
                     self.document_id, search_failed=True, validation_failed=True)
+                documents_failed += 1
 
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 self.insightDBMgr.update_mitigation_keyword_search_completed_ind(
                     self.document_id, search_failed=True)
+                documents_failed += 1
 
         if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_mitigation..")
+            telemetry.add_metric("Retry Required", True)
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             self.generate_keyword_location_map_for_mitigation()
+        else:
+            # Log final metrics
+            telemetry.add_metric("Documents Processed", document_count)
+            telemetry.add_metric("Documents Failed", documents_failed)
+            telemetry.add_metric("Success Rate (%)", round(
+                (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
 
     def _get_mitigation_dictionary_term_list(self):
 
@@ -994,7 +1071,6 @@ class Insight_Generator(keyWordSearchManager):
 
 # Generate Aggregate Insights
 
-
     def generate_aggregate_insights_from_keyword_location_details(self):
 
         # Create a sorted array of all locations found for a given dictionary list
@@ -1261,6 +1337,14 @@ class triangulation_Insight_Generator(keyWordSearchManager):
     # MITIGATION
 
     def generate_mitigation_exp_insights(self, document_list: [], batch_num=0):
+        # Initialize telemetry tracking
+        telemetry = TelemetryTracker(
+            self.log_generator, "generate_mitigation_exp_insights")
+        telemetry.start_operation()
+        telemetry.add_metric("Batch Number", batch_num)
+        telemetry.add_metric("Total Documents", len(document_list))
+        telemetry.add_metric("Insight Type", "Mitigation-Exposure")
+
         self.log_generator.log_details(
             "Generating  Exposure -> Mitigation Insights")
         # print("###########################################################")
@@ -1270,6 +1354,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         if (len(document_list) == 0):
             print('No new document available to process Mitigation-Exposure Insights')
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             return
 
         self.insightDBMgr.cleanup_insights_for_document(
@@ -1278,6 +1364,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         document_item: KeyWordLocationsEntity
         document_count = 0
+        documents_failed = 0
 
         for document_item in document_list:
             self.log_generator.log_details(
@@ -1334,12 +1421,29 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 print(f"Error: {str(exc)}")
                 self.log_generator.log_details('Error saving Mitigation-Exp insights for Document ID:' +
                                                str(document_item.document_id))
+                documents_failed += 1
                 raise exc
 
             print('Completed EXP->MITIGATION INSGHT GEN- Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
 
+        # Log final metrics
+        telemetry.add_metric("Documents Processed", document_count)
+        telemetry.add_metric("Documents Failed", documents_failed)
+        telemetry.add_metric("Success Rate (%)", round(
+            (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+        telemetry.stop_operation()
+        telemetry.log_telemetry_summary()
+
     def generate_mitigation_int_insights(self, document_list: [], batch_num=0):
+        # Initialize telemetry tracking
+        telemetry = TelemetryTracker(
+            self.log_generator, "generate_mitigation_int_insights")
+        telemetry.start_operation()
+        telemetry.add_metric("Batch Number", batch_num)
+        telemetry.add_metric("Total Documents", len(document_list))
+        telemetry.add_metric("Insight Type", "Mitigation-Internalization")
+
         self.log_generator.log_details(
             "Generating Mitigation Insights for Internalization Pathways")
         # print("###########################################################")
@@ -1350,6 +1454,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         if (len(document_list) == 0):
             print(
                 'No new document available to process Mitigation-Internalization Insights')
+            telemetry.stop_operation()
+            telemetry.log_telemetry_summary()
             return
 
         self.insightDBMgr.cleanup_insights_for_document(
@@ -1358,6 +1464,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
         document_item: KeyWordLocationsEntity
         document_count = 0
+        documents_failed = 0
 
         for document_item in document_list:
             self.log_generator.log_details(
@@ -1410,10 +1517,19 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 print(f"Error: {str(exc)}")
                 self.log_generator.log_details('Error saving Mitigation-Int insights for Document ID:' +
                                                str(document_item.document_id))
+                documents_failed += 1
                 raise exc
 
             print('Completed INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
+
+        # Log final metrics
+        telemetry.add_metric("Documents Processed", document_count)
+        telemetry.add_metric("Documents Failed", documents_failed)
+        telemetry.add_metric("Success Rate (%)", round(
+            (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+        telemetry.stop_operation()
+        telemetry.log_telemetry_summary()
 
     def _create_mitigation_insights_for_document(self, mitigation_keyword_locations: None, doc_location_list: None, document_id=0, document_name='', insight_entity=None,   mitigation_keyword='', mitigation_keyword_hit_id=0, exposure_path_id=0, internalization_id=0, year=0):
 

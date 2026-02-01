@@ -8,34 +8,49 @@ import datetime as dt
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
+# Configure page
+st.set_page_config(
+    page_title="Update Sector Stats",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Page header
+st.title("📊 Update Sector Statistics")
+st.markdown("---")
+
 
 class StartUpClass:
 
     def __init__(self) -> None:
-         pass
+        pass
 
     def process_update_stats(self, DebugMode=False):
-        update_sector_stats( sector=self.sl_sector, year=self.sl_year, 
-            generate_exp_sector_insights=self.generate_exp_sector_insights,
-            generate_int_sector_insights=self.generate_int_sector_insights,generate_exp_mit_sector_insights=self.generate_exp_mit_sector_insights,
-            generate_exp_int_mit_sector_insights=self.generate_exp_int_mit_sector_insights, update_all = self.update_all)
+        update_sector_stats(sector=self.sl_sector, year=self.sl_year,
+                            generate_exp_sector_insights=self.generate_exp_sector_insights,
+                            generate_int_sector_insights=self.generate_int_sector_insights, generate_exp_mit_sector_insights=self.generate_exp_mit_sector_insights,
+                            generate_exp_int_mit_sector_insights=self.generate_exp_int_mit_sector_insights, update_all=self.update_all)
 
     def run_online_Mode(self):
-      
+
         self.dataset_sector_sl = get_sector_list()
         self.sl_sector = st.selectbox(
             'Sector:', (self.dataset_sector_sl))
-        
+
         self.dataset_year_sl = get_year_list()
         self.sl_year = st.selectbox(
             'Year:', (self.dataset_year_sl), index=0)
-        
-        self.generate_exp_sector_insights = st.checkbox("Exposure", value=False)
-        
-        self.generate_int_sector_insights = st.checkbox("Exposure ->Internalization", value=False)
-        
-        self.generate_exp_mit_sector_insights = st.checkbox("Exposure ->Mitigation", value=False)
-        
+
+        self.generate_exp_sector_insights = st.checkbox(
+            "Exposure", value=False)
+
+        self.generate_int_sector_insights = st.checkbox(
+            "Exposure ->Internalization", value=False)
+
+        self.generate_exp_mit_sector_insights = st.checkbox(
+            "Exposure ->Mitigation", value=False)
+
         self.generate_exp_int_mit_sector_insights = st.checkbox(
             "Exposure->Internalization->Mitigation", value=False)
 

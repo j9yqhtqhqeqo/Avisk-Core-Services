@@ -10,6 +10,18 @@ import datetime as dt
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
+# Configure page
+st.set_page_config(
+    page_title="Process Dictionary Terms",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Page header
+st.title("📚 Process Dictionary Terms")
+st.markdown("---")
+
 
 class StartUpClass:
 
@@ -188,7 +200,6 @@ class StartUpClass:
 
     def run_online_Mode(self):
         st.title("Process Dictionary Terms")
-
 
         # Show file information before processing
         self.show_dictionary_file_info()
