@@ -223,10 +223,7 @@ class DictionaryManager:
         if not os.path.isfile(NEW_VALIDATION_FILE_PATH):
             print("No new keywords found - automatically marking documents as validated")
             from DBEntities.InsightGeneratorDBManager import InsightGeneratorDBManager
-            from Utilities.PathConfiguration import PathConfiguration
-            path_config = PathConfiguration()
-            db_manager = InsightGeneratorDBManager(
-                path_config.get_database_context())
+            db_manager = InsightGeneratorDBManager('Development')
             db_manager.update_validation_completed_status()
             return
 

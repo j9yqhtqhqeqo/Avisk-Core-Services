@@ -25,7 +25,7 @@ EXP_INT_MITIGATION_THRESHOLD = 10
 
 
 PARM_LOGFILE = (
-    r'/Users/mohanganadal/Data Company/Text Processing/Programs/DocumentProcessor/Log/InsightGenLog/InsighDBtLog')
+    r'/opt/avisk/gcs-data/Development/data/logs/InsightGenLog/InsightDBLog')
 DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
 DB_LOGGING_ENABLED = True
 
