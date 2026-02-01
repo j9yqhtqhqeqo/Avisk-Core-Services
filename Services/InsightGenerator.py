@@ -154,8 +154,8 @@ class keyWordSearchManager:
 
 
     def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0, validation_mode=False):
-        print(
-            f"[DEBUG] Starting generate_keyword_location_map_for_exposure_pathway - Batch: {batch_num}, Validation Mode: {validation_mode}, Documents: {len(document_List)}")
+        # print(
+        #     f"[DEBUG] Starting generate_keyword_location_map_for_exposure_pathway - Batch: {batch_num}, Validation Mode: {validation_mode}, Documents: {len(document_List)}")
 
         self.validation_mode = validation_mode
         # self.keyword_search_logfile_init()
@@ -172,8 +172,8 @@ class keyWordSearchManager:
         document_count = 0
         for document in self.document_list:
             try:
-                print(
-                    f"[DEBUG] Processing document {document_count + 1}/{len(self.document_list)}: ID={document.document_id}, Name={document.document_name}")
+                # print(
+                #     f"[DEBUG] Processing document {document_count + 1}/{len(self.document_list)}: ID={document.document_id}, Name={document.document_name}")
 
                 self.document_id = document.document_id
                 self.document_name = document.document_name
@@ -182,8 +182,8 @@ class keyWordSearchManager:
                 self.batch_id = document.batch_id
                 document_count = document_count + 1
 
-                print(
-                    f"[DEBUG] Loading content for document: {document.document_name}")
+                # print(
+                #     f"[DEBUG] Loading content for document: {document.document_name}")
                 self._load_content(document.document_name,
                                    document.document_id, document.year)
 
@@ -191,40 +191,40 @@ class keyWordSearchManager:
                 # print(
                 #     "Generating keyword location map for exposure pathway dictionary terms ")
 
-                print(f"[DEBUG] Getting exposure dictionary term list")
+                # print(f"[DEBUG] Getting exposure dictionary term list")
                 self._get_exp_dictionary_term_list()
-                print(f"[DEBUG] Creating exposure dictionary proximity map")
+                # print(f"[DEBUG] Creating exposure dictionary proximity map")
                 self._create_exp_dictionary_proximity_map()
-                print(
-                    f"[DEBUG] Proximity map created. Related keywords need addressing: {self.is_related_keywords_need_to_be_addressed}")
+                # print(
+                #     f"[DEBUG] Proximity map created. Related keywords need addressing: {self.is_related_keywords_need_to_be_addressed}")
 
                 if (self.is_related_keywords_need_to_be_addressed):
-                    print(
-                        f"[DEBUG] Calling _address_related_keywords for document: {document.document_name}")
+                    # print(
+                    #     f"[DEBUG] Calling _address_related_keywords for document: {document.document_name}")
                     self._address_related_keywords()
-                    print(
-                        f"[DEBUG] _address_related_keywords completed. Retry needed: {self.retry_required_for_related_keywords}")
+                    # print(
+                    #     f"[DEBUG] _address_related_keywords completed. Retry needed: {self.retry_required_for_related_keywords}")
 
                 retry_for_new_dicitonary_items = self.retry_required_for_related_keywords or retry_for_new_dicitonary_items
 
                 if not self.is_related_keywords_need_to_be_addressed and not self.validation_mode:
-                    print(
-                        f"[DEBUG] Saving dictionary keyword search results for document ID: {self.document_id}")
+                    # print(
+                    #     f"[DEBUG] Saving dictionary keyword search results for document ID: {self.document_id}")
                     self._save_dictionary_keyword_search_results(
                         Lookups().Exposure_Pathway_Dictionary_Type)
-                    print(
-                        f"[DEBUG] Updating exposure pathway search completion status")
+                    # print(
+                    #     f"[DEBUG] Updating exposure pathway search completion status")
                     self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                         self.document_id)
 
                     print('Completed Keyword Search- Batch#:' + str(batch_num) + ', Document:' +
                           str(document_count)+' of ' + str(len(self.document_list)))
-                    print(
-                        f"[DEBUG] Completed document {document_count}/{len(self.document_list)}: {document.document_name}")
+                    # print(
+                    #     f"[DEBUG] Completed document {document_count}/{len(self.document_list)}: {document.document_name}")
 
                 elif (not self.validation_mode):
-                    print(
-                        f"[DEBUG] New keywords found. Updating dictionary for auto-healing")
+                    # print(
+                    #     f"[DEBUG] New keywords found. Updating dictionary for auto-healing")
                     self.dictionary_Mgr.update_Dictionary()
                     print(
                         "New Keywords added to Dictionary...Self Healing in effect...")
@@ -232,8 +232,8 @@ class keyWordSearchManager:
                 elif (self.validation_mode):
                     print('Completed Keyword Search Validation - Batch#:' + str(batch_num) + ', Document:' +
                           str(document_count)+' of ' + str(len(self.document_list)) + ' , Document:' + self.document_name)
-                    print(
-                        f"[DEBUG] Completed document {document_count}/{len(self.document_list)}: {document.document_name}")
+                    # print(
+                    #     f"[DEBUG] Completed document {document_count}/{len(self.document_list)}: {document.document_name}")
                     # Add Logic to update  Validation Completed Flags
 
                 else:
@@ -242,30 +242,31 @@ class keyWordSearchManager:
 
             except DataValidationException as exc:
                 # Rollback the transaction if any error occurs
-                print(
-                    f"[ERROR] DataValidationException for document {document.document_name}: {exc.get_error_description()}")
-                import traceback
-                print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
+                print(f"Error: {exc.get_error_description()}")
+                # import traceback
+                # print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id, search_failed=True, validation_failed=True)
 
             except Exception as exc:
-                print(
-                    f"[ERROR] Exception processing document {document.document_name}: {type(exc).__name__}")
-                print(f"[ERROR] Error details: {str(exc)}")
-                import traceback
-                print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
+                print(f"Error: {str(exc)}")
+                # print(
+                #     f"[ERROR] Exception processing document {document.document_name}: {type(exc).__name__}")
+                # print(f"[ERROR] Error details: {str(exc)}")
+                # import traceback
+                # print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
                 self.insightDBMgr.update_exp_pathway_keyword_search_completed_ind(
                     self.document_id, search_failed=True)
 
         if (retry_for_new_dicitonary_items):
-            print(
-                f"[DEBUG] Retry required for new dictionary items. Rerunning generate_keyword_location_map_for_exposure_pathway for batch {batch_num}")
+            print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
+            # print(
+            #     f"[DEBUG] Retry required for new dictionary items. Rerunning generate_keyword_location_map_for_exposure_pathway for batch {batch_num}")
             self.generate_keyword_location_map_for_exposure_pathway(
                 document_List, batch_num, validation_mode)
 
-        print(
-            f"[DEBUG] Completed generate_keyword_location_map_for_exposure_pathway - Batch: {batch_num}")
+        # print(
+        #     f"[DEBUG] Completed generate_keyword_location_map_for_exposure_pathway - Batch: {batch_num}")
 
     def _get_exp_dictionary_term_list(self):
 
