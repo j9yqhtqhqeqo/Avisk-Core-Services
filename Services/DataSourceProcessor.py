@@ -20,9 +20,9 @@ sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 class DataSourceProcessor:
 
-    def __init__(self, databse_context: None) -> None:
+    def __init__(self) -> None:
         self.document_list = []
-        self.datasourceDBMgr = DataSourceDBManager(databse_context)
+        self.datasourceDBMgr = DataSourceDBManager()
 
         # Use PathConfiguration for environment-aware paths
         self.path_config = PathConfiguration()

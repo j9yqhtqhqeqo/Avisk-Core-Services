@@ -23,39 +23,33 @@ import threading
 class InsightGenerationClient:
 
     def generate_Insights(self, DebugMode=False):
-        exp_int_insght_generator = Insight_Generator(self.database_context)
-        triangulation_insight_gen = triangulation_Insight_Generator(self.database_context)
+        exp_int_insght_generator = Insight_Generator()
+        triangulation_insight_gen = triangulation_Insight_Generator()
 
         if (self.generate_exp_insights):
            print("Generating Insights for Exposure Pathway")
-           batch_process_generate_insights_for_exposure(self.database_context)
+           batch_process_generate_insights_for_exposure()
         if (self.generate_int_insights):
             print("Generating Insights for Internalization Dictionary Terms")
-            batch_process_generate_insights_for_internalization(self.database_context)
+            batch_process_generate_insights_for_internalization()
 
         if (self.generate_exp_int_insights):
             print("Generating EXP->INT Insights")
-            batch_process_generate_insights_for_exposure_internalization(self.database_context)
+            batch_process_generate_insights_for_exposure_internalization()
 
         if (self.generate_exp_mitigation_insights):
             print("Generating EXP->MIT Insights")
-            batch_process_generate_insights_for_exposure_mitigation_insights(self.database_context)
+            batch_process_generate_insights_for_exposure_mitigation_insights()
         
         if(self.generate_int_mitigation_insights):
             print("Generating INT->MIT Insights")
-            batch_process_generate_insights_for_internalization_mitigation_insights(self.database_context)
+            batch_process_generate_insights_for_internalization_mitigation_insights()
         
         if(self.generate_exp_int_mitigation_insights):
             print("Generating EXP->INT->MIT Insights")
-            batch_process_generate_insights_for_exp_int_mitigation_insights(self.database_context)
+            batch_process_generate_insights_for_exp_int_mitigation_insights()
 
     def run_online_Mode(self):
-
-        database_context = st.radio("Database Context",["Development","Test"], index=0)
-        if(database_context == 'Development'):
-            self.database_context='Development'
-        else:
-            self.database_context = "Test"
 
         st.text("Select Insight Generation  Category:")
 

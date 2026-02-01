@@ -11,9 +11,7 @@ import streamlit as st
 import threading
 
 key_word_search_mgr = file_folder_keyWordSearchManager(
-            folder_path=PARM_STAGE1_FOLDER, database_context='Test')
-
-# key_word_search_mgr.database_context = "Test"
+            folder_path=PARM_STAGE1_FOLDER)
 
 key_word_search_mgr.validation_mode = False
 

@@ -32,7 +32,7 @@ DB_LOGGING_ENABLED = True
 
 class InsightGeneratorDBManager:
 
-    def __init__(self, database_context: None = None) -> None:
+    def __init__(self) -> None:
         import os
 
         # Check if database is disabled for testing

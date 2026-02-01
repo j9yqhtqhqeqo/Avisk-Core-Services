@@ -16,7 +16,7 @@ TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earth
 
 class DashboardDBManager():
 
-    def __init__(self, database_context: None = None) -> None:
+    def __init__(self) -> None:
 
         connection_string = DB_CONNECTION_STRING
 

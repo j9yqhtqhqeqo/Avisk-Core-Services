@@ -12,7 +12,7 @@ DB_CONNECTION_STRING = DB_Connection().DB_CONNECTION_STRING
 
 class DataSourceDBManager():
 
-    def __init__(self, database_context: None = None) -> None:
+    def __init__(self) -> None:
 
         connection_string = DB_CONNECTION_STRING
 

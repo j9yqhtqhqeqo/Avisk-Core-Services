@@ -17,7 +17,7 @@ DB_CONNECTION_STRING = db_conn.DB_CONNECTION_STRING
 
 class LookupsDBManager():
 
-    def __init__(self, database_context: None = None) -> None:
+    def __init__(self) -> None:
         import os
 
         # Check if database is disabled for testing

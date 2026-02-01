@@ -22,16 +22,6 @@ def main():
     st.title("🌍 Avisk Core Services Dashboard")
     st.markdown("---")
 
-    # Sidebar navigation
-    st.sidebar.title("📊 Navigation")
-
-    # Database context selection
-    database_context = st.sidebar.radio(
-        "Database Context",
-        ["Development", "Test"],
-        index=0,
-        help="Select the database environment"
-    )
 
     # Auto-refresh toggle
     auto_refresh = st.sidebar.checkbox("Auto Refresh (20s)", value=False)
@@ -53,7 +43,7 @@ def main():
     with col1:
         st.subheader('🔍 Exposure Pathway Keyword Search', divider='blue')
         try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().KEYWORD_GEN_EXP
             )
             if pending_docs == 0 and failed_docs == 0:
@@ -68,7 +58,7 @@ def main():
 
         st.subheader('🔗 Internalization Keyword Search', divider='blue')
         try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().KEYWORD_GEN_INT
             )
             if pending_docs == 0 and failed_docs == 0:
@@ -84,7 +74,7 @@ def main():
     with col2:
         st.subheader('🛡️ Mitigation Keyword Search', divider='blue')
         try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().KEYWORD_GEN_MIT
             )
             if pending_docs == 0 and failed_docs == 0:
@@ -99,7 +89,7 @@ def main():
 
         st.subheader('💡 Exposure Insight Generation', divider='blue')
         try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().EXPOSURE_INSIGHTS_GEN
             )
             if pending_docs == 0 and failed_docs == 0:
@@ -120,7 +110,7 @@ def main():
     with insight_col1:
         st.markdown("**Internalization Insights**")
         try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().INTERNALIZATION_INSIGHTS_GEN
             )
             if pending_docs == 0 and failed_docs == 0:
@@ -135,7 +125,7 @@ def main():
     with insight_col2:
         st.markdown("**Exposure → Internalization**")
         try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().Exp_Int_Insight_GEN
             )
             if pending_docs == 0 and failed_docs == 0:
@@ -150,7 +140,7 @@ def main():
     with insight_col3:
         st.markdown("**Mitigation Insights**")
         try:
-            failed_docs, pending_docs = LookupsDBManager(database_context).get_current_processing_status(
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().Mitigation_Exp_INT_Insight_GEN
             )
             if pending_docs == 0 and failed_docs == 0:

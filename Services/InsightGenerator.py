@@ -55,7 +55,7 @@ IGNORE_ZERO_CALC_WARNING = True
 
 class keyWordSearchManager:
 
-    def __init__(self, database_context: None) -> None:
+    def __init__(self) -> None:
         self.log_file_path = f'{PARM_LOGFILE}_{dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
 
         self.document_id: int
@@ -90,9 +90,7 @@ class keyWordSearchManager:
         self.retry_required_for_related_keywords = False
         self.is_related_keywords_need_to_be_addressed = False
 
-        self.insightDBMgr = InsightGeneratorDBManager(database_context)
-
-        self.database_context = database_context
+        self.insightDBMgr = InsightGeneratorDBManager()
 
         # Capture count of documents failed to process due to erors
         self.exp_documents_failed_to_process = 0
@@ -273,7 +271,7 @@ class keyWordSearchManager:
         # DEBUG Code
         # self.exp_dictionary_term_list.append(DictionaryEntity(dictionary_id=1000,keywords='floods', exposure_pathway_id=10102))
 
-        insightDBMgr = InsightGeneratorDBManager(self.database_context)
+        insightDBMgr = InsightGeneratorDBManager()
         self.exp_dictionary_term_list = insightDBMgr.get_exp_dictionary_term_list()
 
     def _create_exp_dictionary_proximity_map(self):
@@ -452,7 +450,7 @@ class keyWordSearchManager:
         # DEBUG Code
         # self.int_dictionary_term_list.append(DictionaryEntity(dictionary_id=1001,keywords='materials', exposure_pathway_id=10102))
 
-        insightDBMgr = InsightGeneratorDBManager(self.database_context)
+        insightDBMgr = InsightGeneratorDBManager()
         self.int_dictionary_term_list = self.insightDBMgr.get_int_dictionary_term_list()
 
     def _create_int_dictionary_proximity_map(self):
@@ -682,7 +680,7 @@ class keyWordSearchManager:
 
     def _get_mitigation_dictionary_term_list(self):
 
-        insightDBMgr = InsightGeneratorDBManager(self.database_context)
+        insightDBMgr = InsightGeneratorDBManager()
         self.mitigation_dictionary_term_list = self.insightDBMgr.get_mitigation_dictionary_term_list()
 
     def _create_mitigation_dictionary_proximity_map(self):
@@ -820,8 +818,8 @@ class db_Insight_keyWordSearchManager(keyWordSearchManager):
 
 
 class file_folder_keyWordSearchManager(keyWordSearchManager):
-    def __init__(self, folder_path: str, database_context: None) -> None:
-        super().__init__(database_context)
+    def __init__(self, folder_path: str) -> None:
+        super().__init__()
         self.folder_path = folder_path
 
     def _load_content(self, document_name: str, document_id: int, year: int):
@@ -1629,23 +1627,3 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                                               year=year
                                               )
             self.mitigation_comon_insightList.append(insight)
-            # print("Mitigation:"+mitigation_keyword+",Exp Keywords:"+exp_insight_entity.keyword1+' ,'+exp_insight_entity.keyword2, +" , Score"+score)
-
-# document_list = InsightGeneratorDBManager(
-#         "Development").get_unprocessed_document_items_for_insight_gen(dictionary_type=Lookups().Internalization_Dictionary_Type)
-# exp_int_insght_generator = Insight_Generator("Development")
-# insight_generator_db_mgr = InsightGeneratorDBManager("Development")
-# for document in document_list:
-#     document_keyword_list =  insight_generator_db_mgr.get_keyword_hits_for_insight_gen(Lookups().Internalization_Dictionary_Type, document.document_id)
-#     insight_generator_db_mgr.cleanup_insights_for_document(Lookups().Internalization_Dictionary_Type,document.document_id)
-#     exp_int_insght_generator.generate_insights_with_2_factors(
-#                     Lookups().Internalization_Dictionary_Type, document_keyword_list,batch_num=1)
-
-
-# internalization_document_list = InsightGeneratorDBManager(
-#         "Development").get_internalization_document_list(False)
-# key_word_search_mgr = file_folder_keyWordSearchManager(
-#         folder_path=PARM_STAGE1_FOLDER, database_context= "Development")
-
-# key_word_search_mgr.generate_keyword_location_map_for_internalization(
-#        internalization_document_list, 1, False)

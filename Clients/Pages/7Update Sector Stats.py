@@ -15,25 +15,18 @@ class StartUpClass:
          pass
 
     def process_update_stats(self, DebugMode=False):
-        update_sector_stats(
-            database_context=self.database_context, sector=self.sl_sector, year=self.sl_year, 
+        update_sector_stats( sector=self.sl_sector, year=self.sl_year, 
             generate_exp_sector_insights=self.generate_exp_sector_insights,
             generate_int_sector_insights=self.generate_int_sector_insights,generate_exp_mit_sector_insights=self.generate_exp_mit_sector_insights,
             generate_exp_int_mit_sector_insights=self.generate_exp_int_mit_sector_insights, update_all = self.update_all)
 
     def run_online_Mode(self):
-        database_context = st.radio(
-            "Database Context", ["Development", "Test"], index=0)
-        if (database_context == 'Development'):
-            self.database_context = 'Development'
-        else:
-            self.database_context = "Test"
-
-        self.dataset_sector_sl = get_sector_list(database_context=self.database_context)
+      
+        self.dataset_sector_sl = get_sector_list()
         self.sl_sector = st.selectbox(
             'Sector:', (self.dataset_sector_sl))
         
-        self.dataset_year_sl = get_year_list(database_context=self.database_context)
+        self.dataset_year_sl = get_year_list()
         self.sl_year = st.selectbox(
             'Year:', (self.dataset_year_sl), index=0)
         

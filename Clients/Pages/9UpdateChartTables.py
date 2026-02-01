@@ -18,25 +18,15 @@ class StartUpClass:
 
     def process_update_stats(self, DebugMode=False):
         update_chart_tables(
-            database_context=self.database_context,
             generate_top10_exposure_chart_data=self.generate_top10_exposure_chart_data, 
             generate_triangulation_data=self.generate_triangulation_chart_data, generate_yoy_chart_data=self.generate_yoy_chart_data)
 
     def run_online_Mode(self):
-        database_context = st.radio(
-            "Database Context", ["Development", "Test"], index=0)
-        if (database_context == 'Development'):
-            self.database_context = 'Development'
-        else:
-            self.database_context = "Test"
-
-        self.dataset_sector_sl = get_sector_list(
-            database_context=self.database_context)
+        self.dataset_sector_sl = get_sector_list()
         self.sl_sector = st.selectbox(
             'Sector:', (self.dataset_sector_sl))
 
-        self.dataset_year_sl = get_year_list(
-            database_context=self.database_context)
+        self.dataset_year_sl = get_year_list()
         self.sl_year = st.selectbox(
             'Year:', (self.dataset_year_sl), index=0)
         

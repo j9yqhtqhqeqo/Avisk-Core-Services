@@ -28,7 +28,7 @@ class StartUpClass:
 
         with status_container:
             st.info(
-                f"🚀 Starting validation process for {self.database_context} database...")
+                f"🚀 Starting validation process:")
 
         total_steps = sum([
             1 if self.ExposurePathwaySelected else 0,
@@ -40,7 +40,7 @@ class StartUpClass:
         current_step = 0
 
         key_word_search_mgr = file_folder_keyWordSearchManager(
-            folder_path=PARM_STAGE1_FOLDER, database_context=self.database_context)
+            folder_path=PARM_STAGE1_FOLDER)
         key_word_search_mgr.validation_mode = True
 
         if (self.ExposurePathwaySelected):
@@ -51,8 +51,7 @@ class StartUpClass:
             with status_container:
                 st.write("📝 Validating Exposure Pathway Dictionary Terms...")
             print('Validating Exposure Pathway Dictionary Terms:')
-            process_exposure_pathway_document_list(
-                self.database_context, validation_mode=True)
+            process_exposure_pathway_document_list(validation_mode=True)
             with status_container:
                 st.success("✅ Exposure Pathway validation completed")
 
@@ -64,8 +63,7 @@ class StartUpClass:
             with status_container:
                 st.write("📝 Validating Internalization Dictionary Terms...")
             print('Validating Internalization Dictionary Terms:')
-            process_internalization_document_list(
-                self.database_context, validation_mode=True)
+            process_internalization_document_list(validation_mode=True)
             with status_container:
                 st.success("✅ Internalization validation completed")
 
@@ -78,7 +76,7 @@ class StartUpClass:
                 st.write("📝 Validating Mitigation Dictionary Terms...")
             print('Validating Mitigation Dictionary Terms:')
             process_mitigation_document_list(
-                self.database_context, validation_mode=True)
+                validation_mode=True)
             with status_container:
                 st.success("✅ Mitigation validation completed")
 
@@ -102,19 +100,12 @@ class StartUpClass:
         with status_container:
             st.balloons()
             st.success(
-                f"🎉 All validation tasks completed successfully for {self.database_context} database!")
+                f"🎉 All validation tasks completed successfully!")
 
     # def run_thread_mode(self, DebugMode=False):
     #     process_exposure_pathway_document_list()
 
     def run_online_Mode(self):
-
-        database_context = st.radio(
-            "Database Context", ["Development", "Test"], index=0)
-        if (database_context == 'Development'):
-            self.database_context = 'Development'
-        else:
-            self.database_context = "Test"
 
         st.text("Select Keyword Validation Category:")
         self.ExposurePathwaySelected = st.checkbox(
@@ -133,5 +124,5 @@ class StartUpClass:
 l_startup_class = StartUpClass()
 l_startup_class.run_online_Mode()
 
-# l_startup_class.database_context = 'Test'
+
 # l_startup_class.run_keyword_validations()

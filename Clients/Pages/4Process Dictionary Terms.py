@@ -24,8 +24,7 @@ class StartUpClass:
         try:
             DictionaryManager().update_Dictionary()
             # print("✅ Processed Dictionary Terms Successfully - DEBUG - CLIENT")
-            update_validation_completed_status(
-                database_context=self.database_context)
+            update_validation_completed_status()
             st.success("✅ Dictionary terms processed successfully!")
         except DuplicateDictionaryTermsError as e:
             st.error(f"❌ Error: {str(e)}")
@@ -190,12 +189,6 @@ class StartUpClass:
     def run_online_Mode(self):
         st.title("Process Dictionary Terms")
 
-        database_context = st.radio(
-            "Database Context", ["Development", "Test"], index=0)
-        if (database_context == 'Development'):
-            self.database_context = 'Development'
-        else:
-            self.database_context = "Test"
 
         # Show file information before processing
         self.show_dictionary_file_info()

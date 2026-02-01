@@ -20,7 +20,7 @@ class StartUpClass:
         """Load and display unprocessed documents with summary metrics"""
         with st.spinner('Loading unprocessed documents...'):
             self.unprocessed_document_list = (DataSourceProcessor(
-                self.database_context)).get_unprocessed_source_document_list()
+                )).get_unprocessed_source_document_list()
 
             if len(self.unprocessed_document_list) == 0:
                 st.success(
@@ -58,7 +58,7 @@ class StartUpClass:
         st.markdown("### 🚀 Processing Documents")
 
         # Get initial count
-        processor = DataSourceProcessor(self.database_context)
+        processor = DataSourceProcessor()
         document_list = processor.datasourceDBMgr.get_unprocessed_content_list()
 
         if len(document_list) == 0:
@@ -96,12 +96,6 @@ class StartUpClass:
         st.balloons()
 
     def run_online_Mode(self):
-        database_context = st.radio(
-            "Database Context", ["Development", "Test"], index=0)
-        if (database_context == 'Development'):
-            self.database_context = 'Development'
-        else:
-            self.database_context = "Test"
 
         if st.button('Load Unprocessed Source List'):
             self.load_unprocessed_data_list()
