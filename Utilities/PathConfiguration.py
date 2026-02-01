@@ -71,12 +71,12 @@ class PathConfiguration:
             else:
                 # Cloud deployment with development data
                 if has_gcs_fuse:
-                    # Use GCS FUSE for data, local storage for Dictionary and logs (performance)
+                    # Use GCS FUSE for data and logs, local storage for Dictionary (performance)
                     return {
                         'base_data_path': f'{gcs_fuse_path}/Development/data',
                         'local_dictionary_path': '/opt/avisk/local-data/Dictionary',
                         'temp_path': '/tmp/avisk',
-                        'log_base': '/var/log/avisk',
+                        'log_base': f'{gcs_fuse_path}/Development/logs',
                         'project_root': '/opt/avisk/app',
                         'gcs_bucket': os.getenv('GCS_BUCKET_DEVELOPMENT', 'avisk-app-data-eb7773c8'),
                         'gcs_prefix': 'Development/',
@@ -104,7 +104,7 @@ class PathConfiguration:
                     'base_data_path': f'{gcs_fuse_path}/Test/data',
                     'local_dictionary_path': '/opt/avisk/local-data/Dictionary',
                     'temp_path': '/tmp/avisk',
-                    'log_base': '/var/log/avisk',
+                    'log_base': f'{gcs_fuse_path}/Test/logs',
                     'project_root': '/opt/avisk/app',
                     'gcs_bucket': os.getenv('GCS_BUCKET_TEST', 'avisk-app-data-eb7773c8'),
                     'gcs_prefix': 'Test/',
@@ -131,7 +131,7 @@ class PathConfiguration:
                     'base_data_path': f'{gcs_fuse_path}/Production/data',
                     'local_dictionary_path': '/opt/avisk/local-data/Dictionary',
                     'temp_path': '/tmp/avisk',
-                    'log_base': '/var/log/avisk',
+                    'log_base': f'{gcs_fuse_path}/Production/logs',
                     'project_root': '/opt/avisk/app',
                     'gcs_bucket': os.getenv('GCS_BUCKET_PRODUCTION', 'avisk-app-data-eb7773c8'),
                     'gcs_prefix': 'Production/',
