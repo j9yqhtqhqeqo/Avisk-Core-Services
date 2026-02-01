@@ -1,0 +1,1 @@
+bash Deployment/scripts/vm-deploy.sh $(gcloud config get-value project) us-central1-a avisk-core-services-vm1
