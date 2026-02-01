@@ -22,7 +22,7 @@ def main():
         db_conn = DB_Connection()
 
         print(
-            f"🔗 Using connection string: {db_conn.DEV_DB_CONNECTION_STRING[:50]}...")
+            f"🔗 Using connection string: {db_conn.DB_CONNECTION_STRING[:50]}...")
         print()
 
         # Test the connection

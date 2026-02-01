@@ -17,7 +17,7 @@ class DocumentDBManager():
         super().__init__()
         self.d_current_document_seed=0
         self.b_load_document_seed_from_db = True
-        self.dbConnection = pyodbc.connect(DB_Connection().DEV_DB_CONNECTION_STRING)
+        self.dbConnection = pyodbc.connect(DB_Connection().DB_CONNECTION_STRING)
         self.current_count:int
         
     def getCurrentDocumentSeed(self):

@@ -11,31 +11,24 @@ sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 # Connection Timeout = 30
 
 db_conn = DB_Connection()
-DEV_DB_CONNECTION_STRING = db_conn.DEV_DB_CONNECTION_STRING
+DB_CONNECTION_STRING = db_conn.DB_CONNECTION_STRING
 # TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
 
 
 class LookupsDBManager():
 
-    def __init__(self, database_context: None) -> None:
+    def __init__(self, database_context: None = None) -> None:
         import os
 
         # Check if database is disabled for testing
-        if DEV_DB_CONNECTION_STRING is None:
+        if DB_CONNECTION_STRING is None:
             self.dbConnection = None
             self.database_disabled = True
             print("⚠️  Database operations disabled for local testing")
             return
 
         self.database_disabled = False
-        connection_string = ''
-
-        if (database_context == 'Development'):
-            connection_string = DEV_DB_CONNECTION_STRING
-        elif (database_context == 'Test'):
-            connection_string = DEV_DB_CONNECTION_STRING  # Use same for now
-        else:
-            raise Exception("Database context Undefined")
+        connection_string = DB_CONNECTION_STRING
 
         try:
             self.dbConnection = psycopg2.connect(connection_string)

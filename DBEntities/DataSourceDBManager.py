@@ -6,22 +6,15 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
+DB_CONNECTION_STRING = DB_Connection().DB_CONNECTION_STRING
 # TEST_DB_CONNECTION_STRING = 'Updated for GCC PostgreSQL when test environment is available'
 
 
 class DataSourceDBManager():
 
-    def __init__(self, database_context: None) -> None:
+    def __init__(self, database_context: None = None) -> None:
 
-        connection_string = ''
-
-        if (database_context == 'Development'):
-            connection_string = DEV_DB_CONNECTION_STRING
-        elif (database_context == 'Test'):
-            raise Exception("Test database context not yet configured for GCC")
-        else:
-            raise Exception("Database context Undefined")
+        connection_string = DB_CONNECTION_STRING
 
         self.dbConnection = psycopg2.connect(connection_string)
         self.get_batch_id = self.get_batch_id()

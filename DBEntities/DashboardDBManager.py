@@ -10,22 +10,15 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
-DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
+DB_CONNECTION_STRING = DB_Connection().DB_CONNECTION_STRING
 TEST_DB_CONNECTION_STRING = 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=earthdevdb.database.windows.net;UID=earthdevdbadmin@earthdevdb.database.windows.net;PWD=3q45yE3fEgQej8h!@;database=earth-test'
 
 
 class DashboardDBManager():
 
-    def __init__(self, database_context: None) -> None:
+    def __init__(self, database_context: None = None) -> None:
 
-        connection_string = ''
-
-        if (database_context == 'Development'):
-            connection_string = DEV_DB_CONNECTION_STRING
-        elif (database_context == 'Test'):
-            connection_string = TEST_DB_CONNECTION_STRING
-        else:
-            raise Exception("Database context Undefined")
+        connection_string = DB_CONNECTION_STRING
 
         self.dbConnection = pyodbc.connect(connection_string)
 
@@ -35,7 +28,8 @@ class DashboardDBManager():
         print('Inside get_exposure_insights_by_company')
 
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
 
             sql = "SELECT insights.esg_category_name ESG_Category,  insights.exposure_path_name Exposure_Pathway,\
                             insights.cluster_count Clusters, insights.score_normalized Score\
@@ -73,7 +67,8 @@ class DashboardDBManager():
         #     print('Loading data from Cache')
         #     return self.dashboard_data_list
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute("\
                             SELECT sector_lookup.data_lookups_description Sector,  doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
                             count(*) Clusters, AVG(insights.score_normalized) Score\
@@ -110,7 +105,8 @@ class DashboardDBManager():
     def get_internalization_insights(self, company_name: str, year: int, content_type: int):
 
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             if (year == 0):
                 sql = "SELECT  \
                             doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
@@ -168,7 +164,8 @@ class DashboardDBManager():
     def get_mitigation_insights(self, company_name: str, year: int, content_type: int):
 
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             if (year == 0):
                 sql = "SELECT doc.company_name Company,doc.year Year,lookups.data_lookups_description Document_Type,esg.esg_category_name ESG_Category,  exp.exposure_path_name Exposure_Pathway,\
                                 int.internalization_name Internalization, mit.class_name,mit.sub_class_name, count(*) Clusters, AVG(insights.score_normalized) Score\
@@ -232,7 +229,8 @@ class DashboardDBManager():
                     from t_sector_exp_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and lookups.data_lookups_description = %s\
                     where insights..year = %s\
                   "
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         try:
 
             cursor.execute(sql, sector, year)
@@ -263,7 +261,8 @@ class DashboardDBManager():
                     from t_sector_exp_int_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and lookups.data_lookups_description = %s\
                     where insights..year = %s\
                   "
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         try:
 
             cursor.execute(sql, sector, year)
@@ -297,7 +296,8 @@ class DashboardDBManager():
         sector_id: int
 
         try:
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             sector_sql = "select sector_id from t_sec_company_sector_map where company_name = %s"
             cursor.execute(sector_sql, company_name)
 
@@ -331,7 +331,8 @@ class DashboardDBManager():
                     from t_sector_exp_int_mitigation_insights insights inner join  t_data_lookups lookups on insights.sector_id = lookups.data_lookups_id and lookups.data_lookups_description = %s\
                     where insights..year = %s\
               "
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         try:
 
             cursor.execute(sql, sector, year)
@@ -369,7 +370,8 @@ class DashboardDBManager():
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
@@ -388,7 +390,8 @@ class DashboardDBManager():
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
@@ -407,7 +410,8 @@ class DashboardDBManager():
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
@@ -430,7 +434,8 @@ class DashboardDBManager():
 
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
@@ -454,6 +459,7 @@ class DashboardDBManager():
 
 # Financial Metrics
 
+
     def get_financial_metrics(self, company_name: str, year: int):
         metrics_list = []
 
@@ -465,7 +471,8 @@ class DashboardDBManager():
                 FROM t_financial_metrics where company_name = %s and reporting_year =%s'
         try:
             # Execute the SQL query
-            cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(sql, company_name, year)
             rows = cursor.fetchall()
             for row in rows:
@@ -492,7 +499,8 @@ class DashboardDBManager():
               from t_chart_top10_exposures top10\
               where top10.company_name = %s and top10.[year] = %s\
               order by degree_of_control_sector desc"
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             # cursor.execute(sql)
             cursor.execute(sql, company_name, year)
@@ -524,7 +532,8 @@ class DashboardDBManager():
                 WHERE company_name = %s and year =%s\
                 order by sector_exposure_internalization_score_normalized desc"
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             cursor.execute(sql, company_name, year)
             rows = cursor.fetchall()
@@ -553,7 +562,8 @@ class DashboardDBManager():
                 where chart.company_name = %s\
                 order by chart.company_name,chart.exposure_path_name, chart.exposure_score desc,chart.year'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             cursor.execute(sql, company_name)
             rows = cursor.fetchall()
@@ -579,7 +589,8 @@ class DashboardDBManager():
         inner join t_chart_yoy exp on control.[year] = exp.year and control.top10_company_exposure = exp.exposure_path_name and exp.company_name =%s and exp.year = %s\
         where control.company_name =%s and control.year = %s'
 
-        cursor = self.dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             cursor.execute(sql, company_name, year, company_name, year)
             rows = cursor.fetchall()

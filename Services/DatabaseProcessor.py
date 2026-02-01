@@ -12,7 +12,7 @@ class tenKDatabaseProcessor(tenKProcessor):
         self.d_current_document_seed = 0
         self.b_load_document_seed_from_db = True
         self.dbConnection = psycopg2.connect(
-            DB_Connection().DEV_DB_CONNECTION_STRING)
+            DB_Connection().DB_CONNECTION_STRING)
         self.current_count: int
 
     def processDocumentHeader(self, current_count: 0, last_batch=False):
@@ -79,7 +79,7 @@ class tenKDatabaseProcessor(tenKProcessor):
 
         self.d_current_document_seed = self.getCurrentDocumentSeed()
 
-        conn = psycopg2.connect(DB_Connection().DEV_DB_CONNECTION_STRING)
+        conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
 
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()
@@ -225,7 +225,7 @@ class tenKDatabaseProcessor(tenKProcessor):
     def insertSeedData(self):
 
         # Establish a connection to the PostgreSQL database
-        conn = psycopg2.connect(DB_Connection().DEV_DB_CONNECTION_STRING)
+        conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
 
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()

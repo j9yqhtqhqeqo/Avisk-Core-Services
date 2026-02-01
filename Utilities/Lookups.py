@@ -35,8 +35,10 @@ class DB_Connection:
     def __init__(self):
         import os
 
-        # Get password from Secret Manager or environment variable
+        # Get credentials and database name from Secret Manager or environment variables
+        username = self._get_db_username()
         password = self._get_db_password()
+        dbname = self._get_db_name()
 
         # Check if we should skip database connection for testing
         use_gcs = os.getenv('USE_GCS', 'true').lower()
@@ -44,15 +46,82 @@ class DB_Connection:
 
         # For local testing without database, provide dummy connection string
         if deployment_env in ['test', 'local'] and use_gcs == 'false':
-            self.DEV_DB_CONNECTION_STRING = None  # Will skip database operations
+            self.DB_CONNECTION_STRING = None  # Will skip database operations
             print("⚠️  Database disabled for local testing")
         # Determine environment and connection method
         elif os.getenv('ENVIRONMENT') == 'cloud':
             # Cloud environment using Unix socket
-            self.DEV_DB_CONNECTION_STRING = f'host=/cloudsql/avisk-ai-platform:us-central1:avisk-core-dev dbname=avisk-core-dev-db1 user=avisk-admin password={password}'
+            self.DB_CONNECTION_STRING = f'host=/cloudsql/avisk-ai-platform:us-central1:avisk-core-dev dbname={dbname} user={username} password={password}'
         else:
             # Local development via Cloud SQL Auth Proxy
-            self.DEV_DB_CONNECTION_STRING = f'host=localhost port=5434 dbname=avisk-core-dev-db1 user=avisk-admin password={password}'
+            self.DB_CONNECTION_STRING = f'host=localhost port=5434 dbname={dbname} user={username} password={password}'
+
+    def _get_db_name(self):
+        """Retrieve database name from Google Secret Manager or environment variable"""
+        import os
+
+        # First, try to get database name from environment variable (for local development)
+        env_dbname = os.getenv('DB_NAME')
+        if env_dbname:
+            print("✅ Using database name from environment variable")
+            return env_dbname
+
+        # If no environment variable, try Secret Manager (for production)
+        try:
+            from google.cloud import secretmanager
+            client = secretmanager.SecretManagerServiceClient()
+            project_id = "avisk-ai-platform"
+            secret_name = "dev-db-name"
+            name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            dbname = response.payload.data.decode("UTF-8")
+            # print("✅ Retrieved database name from Google Secret Manager")
+            return dbname
+        except Exception as e:
+            # For local development without Secret Manager access, provide a default
+            deployment_env = os.getenv('DEPLOYMENT_ENV', 'unknown')
+            if deployment_env in ['test', 'local', 'development']:
+                print(
+                    f"⚠️  Secret Manager unavailable in {deployment_env} environment, using default database name")
+                return "avisk-core-dev-db1"  # Default database name for development
+            else:
+                print(
+                    f"❌ Secret Manager error retrieving database name: {str(e)}")
+                raise Exception(
+                    f"Unable to retrieve database name from Secret Manager: {str(e)}")
+
+    def _get_db_username(self):
+        """Retrieve database username from Google Secret Manager or environment variable"""
+        import os
+
+        # First, try to get username from environment variable (for local development)
+        env_username = os.getenv('DB_USERNAME')
+        if env_username:
+            print("✅ Using database username from environment variable")
+            return env_username
+
+        # If no environment variable, try Secret Manager (for production)
+        try:
+            from google.cloud import secretmanager
+            client = secretmanager.SecretManagerServiceClient()
+            project_id = "avisk-ai-platform"
+            secret_name = "dev-db-username"
+            name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            username = response.payload.data.decode("UTF-8")
+            # print("✅ Retrieved database username from Google Secret Manager")
+            return username
+        except Exception as e:
+            # For local development without Secret Manager access, provide a default
+            deployment_env = os.getenv('DEPLOYMENT_ENV', 'unknown')
+            if deployment_env in ['test', 'local', 'development']:
+                print(
+                    f"⚠️  Secret Manager unavailable in {deployment_env} environment, using default username")
+                return "avisk-admin"  # Default username for development
+            else:
+                print(f"❌ Secret Manager error retrieving username: {str(e)}")
+                raise Exception(
+                    f"Unable to retrieve username from Secret Manager: {str(e)}")
 
     def _get_db_password(self):
         """Retrieve database password from Google Secret Manager or environment variable"""
@@ -69,7 +138,7 @@ class DB_Connection:
             from google.cloud import secretmanager
             client = secretmanager.SecretManagerServiceClient()
             project_id = "avisk-ai-platform"
-            secret_name = "db-password"
+            secret_name = "dev-db-password"
             name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})
             password = response.payload.data.decode("UTF-8")
@@ -97,7 +166,7 @@ class DB_Connection:
 
         try:
             # Establish connection
-            connection = psycopg2.connect(self.DEV_DB_CONNECTION_STRING)
+            connection = psycopg2.connect(self.DB_CONNECTION_STRING)
             cursor = connection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
 

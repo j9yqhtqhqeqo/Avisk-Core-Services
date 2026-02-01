@@ -26,18 +26,18 @@ EXP_INT_MITIGATION_THRESHOLD = 10
 
 PARM_LOGFILE = (
     r'/opt/avisk/gcs-data/Development/data/logs/InsightGenLog/InsightDBLog')
-DEV_DB_CONNECTION_STRING = DB_Connection().DEV_DB_CONNECTION_STRING
+DB_CONNECTION_STRING = DB_Connection().DB_CONNECTION_STRING
 DB_LOGGING_ENABLED = True
 
 
 class InsightGeneratorDBManager:
 
-    def __init__(self, database_context: None) -> None:
+    def __init__(self, database_context: None = None) -> None:
         import os
 
         # Check if database is disabled for testing
         db_conn = DB_Connection()
-        if db_conn.DEV_DB_CONNECTION_STRING is None:
+        if db_conn.DB_CONNECTION_STRING is None:
             self.dbConnection = None
             self.database_disabled = True
             self.d_next_seed = 0
@@ -47,14 +47,7 @@ class InsightGeneratorDBManager:
             return
 
         self.database_disabled = False
-        connection_string = ''
-
-        if (database_context == 'Development'):
-            connection_string = DEV_DB_CONNECTION_STRING
-        elif (database_context == 'Test'):
-            connection_string = DEV_DB_CONNECTION_STRING  # Use same for now
-        else:
-            raise Exception("Database context Undefined")
+        connection_string = db_conn.DB_CONNECTION_STRING
 
         try:
             self.dbConnection = psycopg2.connect(connection_string)
