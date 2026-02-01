@@ -1,18 +1,17 @@
+from Services.SingletonServiceMgr import process_mitigation_document_list
+from Services.SingletonServiceMgr import process_internalization_document_list
+from Services.SingletonServiceMgr import process_exposure_pathway_document_list
+from Services.InsightGenerator import file_folder_keyWordSearchManager
+from Services.InsightGenerator import PARM_STAGE1_FOLDER
+from Services.InsightGenerator import Insight_Generator
+from Services.InsightGenerator import triangulation_Insight_Generator
+from Utilities.Lookups import Lookups
+import streamlit as st
+import threading
 import sys
 from pathlib import Path
 import os
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
-
-import threading
-import streamlit as st
-from Utilities.Lookups import Lookups
-from Services.InsightGenerator import triangulation_Insight_Generator
-from Services.InsightGenerator import Insight_Generator
-from Services.InsightGenerator import PARM_STAGE1_FOLDER
-from Services.InsightGenerator import file_folder_keyWordSearchManager
-from Services.SingletonServiceMgr import process_exposure_pathway_document_list
-from Services.SingletonServiceMgr import process_internalization_document_list
-from Services.SingletonServiceMgr import process_mitigation_document_list
 
 
 class StartUpClass:
@@ -23,35 +22,97 @@ class StartUpClass:
         self.MitigationSelected = True
 
     def run_keyword_validations(self, DebugMode=False):
+        # Create progress containers
+        status_container = st.container()
+        progress_container = st.container()
+
+        with status_container:
+            st.info(
+                f"🚀 Starting validation process for {self.database_context} database...")
+
+        total_steps = sum([
+            1 if self.ExposurePathwaySelected else 0,
+            1 if self.InternalizationSelected else 0,
+            1 if self.MitigationSelected else 0,
+            1  # Final step for sending validation files
+        ])
+
+        current_step = 0
 
         key_word_search_mgr = file_folder_keyWordSearchManager(
             folder_path=PARM_STAGE1_FOLDER, database_context=self.database_context)
         key_word_search_mgr.validation_mode = True
 
         if (self.ExposurePathwaySelected):
+            current_step += 1
+            with progress_container:
+                st.progress(current_step / total_steps,
+                            text=f"Step {current_step}/{total_steps}: Validating Exposure Pathway Dictionary Terms...")
+            with status_container:
+                st.write("📝 Validating Exposure Pathway Dictionary Terms...")
             print('Validating Exposure Pathway Dictionary Terms:')
-            process_exposure_pathway_document_list(self.database_context, validation_mode=True)
-            
+            process_exposure_pathway_document_list(
+                self.database_context, validation_mode=True)
+            with status_container:
+                st.success("✅ Exposure Pathway validation completed")
+
         if (self.InternalizationSelected):
+            current_step += 1
+            with progress_container:
+                st.progress(current_step / total_steps,
+                            text=f"Step {current_step}/{total_steps}: Validating Internalization Dictionary Terms...")
+            with status_container:
+                st.write("📝 Validating Internalization Dictionary Terms...")
             print('Validating Internalization Dictionary Terms:')
-            process_internalization_document_list(self.database_context,validation_mode=True)
+            process_internalization_document_list(
+                self.database_context, validation_mode=True)
+            with status_container:
+                st.success("✅ Internalization validation completed")
+
         if (self.MitigationSelected):
+            current_step += 1
+            with progress_container:
+                st.progress(current_step / total_steps,
+                            text=f"Step {current_step}/{total_steps}: Validating Mitigation Dictionary Terms...")
+            with status_container:
+                st.write("📝 Validating Mitigation Dictionary Terms...")
             print('Validating Mitigation Dictionary Terms:')
-            process_mitigation_document_list(self.database_context,validation_mode=True)
+            process_mitigation_document_list(
+                self.database_context, validation_mode=True)
+            with status_container:
+                st.success("✅ Mitigation validation completed")
 
         if (key_word_search_mgr.validation_mode):
-            print('Sending Include/Exclude Dictionary Files for Validation to keyword search manager...')
+            current_step += 1
+            with progress_container:
+                st.progress(current_step / total_steps,
+                            text=f"Step {current_step}/{total_steps}: Sending validation files...")
+            with status_container:
+                st.write(
+                    "📤 Sending Include/Exclude Dictionary Files for Validation...")
+            print(
+                'Sending Include/Exclude Dictionary Files for Validation to keyword search manager...')
             key_word_search_mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
+            with status_container:
+                st.success("✅ Validation files sent successfully")
+
+        # Final completion message
+        with progress_container:
+            st.progress(1.0, text="Validation process complete!")
+        with status_container:
+            st.balloons()
+            st.success(
+                f"🎉 All validation tasks completed successfully for {self.database_context} database!")
 
     # def run_thread_mode(self, DebugMode=False):
     #     process_exposure_pathway_document_list()
 
-
     def run_online_Mode(self):
 
-        database_context = st.radio("Database Context",["Development","Test"], index=0)
-        if(database_context == 'Development'):
-            self.database_context='Development'
+        database_context = st.radio(
+            "Database Context", ["Development", "Test"], index=0)
+        if (database_context == 'Development'):
+            self.database_context = 'Development'
         else:
             self.database_context = "Test"
 
@@ -64,10 +125,9 @@ class StartUpClass:
 
         st.button('Run Validations',
                   on_click=self.run_keyword_validations)
-        
+
         # st.button('Run Thread Mode',
         #           on_click=self.run_thread_mode)
-
 
 
 l_startup_class = StartUpClass()
