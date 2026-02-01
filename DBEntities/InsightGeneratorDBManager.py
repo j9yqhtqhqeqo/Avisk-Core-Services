@@ -820,17 +820,17 @@ class InsightGeneratorDBManager:
         exp_sql = f"UPDATE t_document set \
                     exp_validation_completed_ind = 1,modify_dt = CURRENT_TIMESTAMP \
                 where \
-                    exp_validation_completed_ind = 2 and exp_pathway_keyword_search_completed_ind = 0"
+                    exp_validation_completed_ind in(0,2) and exp_pathway_keyword_search_completed_ind = 0"
 
         int_sql = f"UPDATE t_document set \
                     int_validation_completed_ind =1,modify_dt = CURRENT_TIMESTAMP \
                 where \
-                    int_validation_completed_ind = 2 and internalization_keyword_search_completed_ind = 0"
+                    int_validation_completed_ind in(0,2) and internalization_keyword_search_completed_ind = 0"
 
         mit_sql = f"UPDATE t_document set \
                     mit_validation_completed_ind = 1,modify_dt = CURRENT_TIMESTAMP \
                 where \
-                    mit_validation_completed_ind = 2 and mitigation_search_completed_ind = 0"
+                    mit_validation_completed_ind in(0,2) and mitigation_search_completed_ind = 0"
         try:
             # print(exp_sql)
             # print(int_sql)

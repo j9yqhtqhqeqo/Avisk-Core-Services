@@ -4,6 +4,7 @@
 #  1. Add textfiles to PARM_STAGE1_FOLDER
 #  2. Create entry in table t_document and set document_processed_ind = 0
 ############################################################################################################
+import os as _os
 from Utilities.CustomExceptions import DataValidationException
 import datetime as dt
 import re
@@ -41,6 +42,8 @@ PARM_LOGFILE = path_config.get_insight_log_file_path()
 PARM_NEW_INCLUDE_DICT_TERM_PATH = path_config.get_new_include_dict_term_path()
 PARM_NEW_EXCLUDE_DICT_TERM_PATH = path_config.get_new_exclude_dict_term_path()
 PARM_VALIDATION_LIST_PATH = path_config.get_validation_list_path()
+# Combined validation file (format: KEYWORD:VALUE:INCLUDE or KEYWORD:VALUE:EXCLUDE)
+PARM_NEW_VALIDATION_FILE_PATH = path_config.get_new_validation_file_path()
 PARM_TENK_OUTPUT_PATH = path_config.get_tenk_output_path()
 PARM_STAGE1_FOLDER = path_config.get_stage1_folder_path()
 
@@ -75,12 +78,9 @@ class keyWordSearchManager:
 
         self.errors: any
         self.log_generator = logGenerator(self.log_file_path)
-        self.include_log_generator = logGenerator(
-            f'{PARM_NEW_INCLUDE_DICT_TERM_PATH}')
-        self.exclude_log_generator = logGenerator(
-            f'{PARM_NEW_EXCLUDE_DICT_TERM_PATH}')
+        # Single validation file for new keywords with INCLUDE/EXCLUDE indicator
         self.validation_log_generator = logGenerator(
-            f'{PARM_VALIDATION_LIST_PATH}')
+            f'{PARM_NEW_VALIDATION_FILE_PATH}')
 
         self.big_int_location_list = []
         self.dictionary_Mgr = DictionaryManager()
@@ -138,15 +138,13 @@ class keyWordSearchManager:
                 raise data_validation_exception
 
             else:
-                self.include_log_generator.log_details(
-                    keyword + ':' + related_keyword, False)
-                self.exclude_log_generator.log_details(
-                    keyword + ':' + related_keyword, False)
+                # Write to validation file with INCLUDE as default (user will select in UI)
+                self.validation_log_generator.log_details(
+                    keyword + ':' + related_keyword + ':INCLUDE', False)
                 exit_loop = True
 
 
 # Search all exposure pathway dictionary terms in the document and save locations
-
 
     def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0, validation_mode=False):
 
@@ -747,6 +745,7 @@ class keyWordSearchManager:
                                                  self.document_name, self.reporting_year, dictionary_type=dictionary_type, batch_id=self.batch_id)
 
     def send_Include_Exclude_Dictionary_Files_For_Validation(self):
+        print("Sending Include/Exclude Dictionary Files for Validation to Dictionary Manager...")
         self.dictionary_Mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
 
 
@@ -946,7 +945,6 @@ class Insight_Generator(keyWordSearchManager):
 
 
 # Generate Aggregate Insights
-
 
     def generate_aggregate_insights_from_keyword_location_details(self):
 

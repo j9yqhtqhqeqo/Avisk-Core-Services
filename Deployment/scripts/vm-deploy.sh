@@ -163,7 +163,7 @@ if [ -d "/opt/avisk/app" ]; then
     
     # Keep only last 5 backups
     cd /opt/avisk/backups
-    ls -t app-backup-*.tar.gz | tail -n +6 | xargs -r rm -f
+    ls -t app-backup-*.tar.gz 2>/dev/null | tail -n +6 | xargs -r sudo rm -f
 fi
 
 # Extract new deployment

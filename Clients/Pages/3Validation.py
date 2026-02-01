@@ -40,6 +40,7 @@ class StartUpClass:
             process_mitigation_document_list(self.database_context,validation_mode=True)
 
         if (key_word_search_mgr.validation_mode):
+            print('Sending Include/Exclude Dictionary Files for Validation to keyword search manager...')
             key_word_search_mgr.send_Include_Exclude_Dictionary_Files_For_Validation()
 
     # def run_thread_mode(self, DebugMode=False):
@@ -54,7 +55,7 @@ class StartUpClass:
         else:
             self.database_context = "Test"
 
-        st.text("Select Keyword Location Map Category:")
+        st.text("Select Keyword Validation Category:")
         self.ExposurePathwaySelected = st.checkbox(
             "Exposure Pathway", value=False)
         self.InternalizationSelected = st.checkbox(

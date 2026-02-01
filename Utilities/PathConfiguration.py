@@ -196,6 +196,13 @@ class PathConfiguration:
         path = f"{dict_base}/new_exclude_list.txt"
         return self._ensure_directory_exists(os.path.dirname(path)) and path
 
+    def get_new_validation_file_path(self) -> str:
+        """Get path for combined validation file with INCLUDE/EXCLUDE indicators (uses local storage for performance)"""
+        dict_base = self.base_config.get(
+            'local_dictionary_path', f"{self.base_config['base_data_path']}/Dictionary")
+        path = f"{dict_base}/new_keywords_for_validation.txt"
+        return self._ensure_directory_exists(os.path.dirname(path)) and path
+
     def get_validation_list_path(self) -> str:
         """Get path for validation dictionary files (uses local storage for performance)"""
         dict_base = self.base_config.get(
