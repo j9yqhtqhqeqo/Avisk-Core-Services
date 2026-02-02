@@ -37,61 +37,62 @@ def main():
     st.header("📋 Processing Status Overview")
 
     # Create columns for better layout
-    col1, col2 = st.columns(2)
+    st.subheader('🔍 Keyword Search', divider='blue')
 
-    with col1:
-        st.subheader('🔍 Exposure Pathway Keyword Search', divider='blue')
+    keyword_col1, keyword_col2, keyword_col3 = st.columns(3)
+
+    with keyword_col1:
+        st.markdown("**Exposure Pathway**")
         try:
             failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().KEYWORD_GEN_EXP
             )
             if pending_docs == 0 and failed_docs == 0:
-                st.success(
-                    '✅ No New Documents to Process: Awaiting Batch Process Scheduling')
+                st.success('✅ Ready')
             else:
-                st.info(f"📄 Documents Pending: {pending_docs}")
+                st.info(f"📄 Pending: {pending_docs}")
                 if failed_docs > 0:
-                    st.error(f"❌ Documents Failed: {failed_docs}")
+                    st.error(f"❌ Failed: {failed_docs}")
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error("Error loading status")
 
-        st.subheader('🔗 Internalization Keyword Search', divider='blue')
+    with keyword_col2:
+        st.markdown("**Internalization**")
         try:
             failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().KEYWORD_GEN_INT
             )
             if pending_docs == 0 and failed_docs == 0:
-                st.success(
-                    '✅ No New Documents to Process: Awaiting Batch Process Scheduling')
+                st.success('✅ Ready')
             else:
-                st.info(f"📄 Documents Pending: {pending_docs}")
+                st.info(f"📄 Pending: {pending_docs}")
                 if failed_docs > 0:
-                    st.error(f"❌ Documents Failed: {failed_docs}")
+                    st.error(f"❌ Failed: {failed_docs}")
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error("Error loading status")
 
-    with col2:
-        st.subheader('🛡️ Mitigation Keyword Search', divider='blue')
+    with keyword_col3:
+        st.markdown("**Mitigation**")
         try:
             failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().KEYWORD_GEN_MIT
             )
             if pending_docs == 0 and failed_docs == 0:
-                st.success(
-                    '✅ No New Documents to Process: Awaiting Batch Process Scheduling')
+                st.success('✅ Ready')
             else:
-                st.info(f"📄 Documents Pending: {pending_docs}")
+                st.info(f"📄 Pending: {pending_docs}")
                 if failed_docs > 0:
-                    st.error(f"❌ Documents Failed: {failed_docs}")
+                    st.error(f"❌ Failed: {failed_docs}")
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error("Error loading status")
 
     # Additional insight generation sections
     st.subheader('🧠 Advanced Insight Generation', divider='green')
 
-    insight_col1, insight_col2, insight_col3, insight_col4 = st.columns(4)
+    # First row - Basic insights
+    insight_row1_col1, insight_row1_col2, insight_row1_col3 = st.columns(3)
 
-    with insight_col1:
+    with insight_row1_col1:
         st.markdown("**Exposure Insights**")
         try:
             failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
@@ -106,7 +107,7 @@ def main():
         except Exception as e:
             st.error("Error loading status")
 
-    with insight_col2:
+    with insight_row1_col2:
         st.markdown("**Internalization Insights**")
         try:
             failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
@@ -121,7 +122,7 @@ def main():
         except Exception as e:
             st.error("Error loading status")
 
-    with insight_col3:
+    with insight_row1_col3:
         st.markdown("**Exposure → Internalization**")
         try:
             failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
@@ -136,8 +137,41 @@ def main():
         except Exception as e:
             st.error("Error loading status")
 
-    with insight_col4:
-        st.markdown("**Mitigation Insights**")
+    # Second row - Mitigation insights
+    insight_row2_col1, insight_row2_col2, insight_row2_col3 = st.columns(3)
+
+    with insight_row2_col1:
+        st.markdown("**Exposure → Mitigation**")
+        try:
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                processing_type=Processing_Type().Mitigation_Exp_Insight_GEN
+            )
+            if pending_docs == 0 and failed_docs == 0:
+                st.success('✅ Ready')
+            else:
+                st.info(f"📄 Pending: {pending_docs}")
+                if failed_docs > 0:
+                    st.error(f"❌ Failed: {failed_docs}")
+        except Exception as e:
+            st.error("Error loading status")
+
+    with insight_row2_col2:
+        st.markdown("**Internalization → Mitigation**")
+        try:
+            failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                processing_type=Processing_Type().Mitigation_Int_Insight_GEN
+            )
+            if pending_docs == 0 and failed_docs == 0:
+                st.success('✅ Ready')
+            else:
+                st.info(f"📄 Pending: {pending_docs}")
+                if failed_docs > 0:
+                    st.error(f"❌ Failed: {failed_docs}")
+        except Exception as e:
+            st.error("Error loading status")
+
+    with insight_row2_col3:
+        st.markdown("**Exposure → Internalization → Mitigation**")
         try:
             failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
                 processing_type=Processing_Type().Mitigation_Exp_INT_Insight_GEN

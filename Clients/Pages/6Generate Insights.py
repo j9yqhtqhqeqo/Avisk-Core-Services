@@ -136,7 +136,100 @@ class InsightGenerationClient:
             st.success("🎉 All insight generation tasks completed successfully!")
 
     def run_online_Mode(self):
+        # Display current queue status
+        st.subheader("📊 Current Processing Queue Status", divider='green')
 
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**💡 Exposure Insights**")
+            try:
+                from DBEntities.LookupsDBManager import LookupsDBManager
+                from Utilities.Lookups import Processing_Type
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().EXPOSURE_INSIGHTS_GEN
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+            st.markdown("**🔗 Internalization Insights**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().INTERNALIZATION_INSIGHTS_GEN
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+            st.markdown("**🔀 Exposure → Internalization**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().Exp_Int_Insight_GEN
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+        with col2:
+            st.markdown("**🛡️ Exposure → Mitigation**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().Mitigation_Exp_Insight_GEN
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+            st.markdown("**🔗 Internalization → Mitigation**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().Mitigation_Int_Insight_GEN
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+            st.markdown("**🔀 Exposure → Internalization → Mitigation**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().Mitigation_Exp_INT_Insight_GEN
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+        st.markdown("---")
         st.text("Select Insight Generation  Category:")
 
         self.generate_exp_insights = st.checkbox(

@@ -142,6 +142,57 @@ class StartUpClass:
                 for status in st.session_state.processing_status:
                     st.write(status)
 
+        # Display current queue status
+        st.subheader("📊 Current Processing Queue Status", divider='blue')
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.markdown("**🔍 Exposure Pathway**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().KEYWORD_GEN_EXP
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+        with col2:
+            st.markdown("**🔗 Internalization**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().KEYWORD_GEN_INT
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+        with col3:
+            st.markdown("**🛡️ Mitigation**")
+            try:
+                failed_docs, pending_docs = LookupsDBManager().get_current_processing_status(
+                    processing_type=Processing_Type().KEYWORD_GEN_MIT
+                )
+                if pending_docs == 0 and failed_docs == 0:
+                    st.success('✅ No documents pending')
+                else:
+                    st.info(f"📄 Pending: {pending_docs}")
+                    if failed_docs > 0:
+                        st.error(f"❌ Failed: {failed_docs}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+        st.markdown("---")
         st.text("Select Keyword Location Map Category:")
         self.ExposurePathwaySelected = st.checkbox(
             "Exposure Pathway", value=False)

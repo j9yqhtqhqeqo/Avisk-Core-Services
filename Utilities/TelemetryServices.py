@@ -48,9 +48,9 @@ class TelemetryTracker:
         self.metrics = {}
         self.is_tracking = True
 
-        if self.log_generator:
-            self.log_generator.log_details(
-                f"🔄 Starting telemetry tracking for: {self.operation_name}")
+        # if self.log_generator:
+        #     self.log_generator.log_details(
+        #         f"🔄 Starting telemetry tracking for: {self.operation_name}")
 
     def stop_operation(self):
         """Stop tracking the current operation"""
@@ -170,43 +170,46 @@ class TelemetryTracker:
 
         summary = self.get_performance_summary()
 
-        # Main telemetry header
-        self.log_generator.log_details("📊 TELEMETRY SUMMARY:")
-        self.log_generator.log_details(
-            f"   🎯 Operation: {summary['operation_name']}")
-        self.log_generator.log_details(
-            f"   📝 Total Records: {summary['total_records']}")
-        self.log_generator.log_details(
+        # Build complete summary as a single string for atomic logging (prevents interleaving in multiprocessing)
+        summary_lines = []
+        summary_lines.append("📊 TELEMETRY SUMMARY:")
+        summary_lines.append(f"   🎯 Operation: {summary['operation_name']}")
+        summary_lines.append(f"   📝 Total Records: {summary['total_records']}")
+        summary_lines.append(
             f"   ⏱️  Total Time: {summary['total_time']:.3f}s")
-        self.log_generator.log_details(
+        summary_lines.append(
             f"   📈 Records/Second: {summary['records_per_second']:.2f}")
-        self.log_generator.log_details(
+        summary_lines.append(
             f"   📊 Avg Time/Record: {summary['avg_time_per_record_ms']:.2f}ms")
 
         # Phase breakdown
         if include_phases and summary['phases']:
-            self.log_generator.log_details("   🔧 Phase Breakdown:")
+            summary_lines.append("   🔧 Phase Breakdown:")
             for phase_name, phase_info in summary['phases'].items():
                 icon = self._get_phase_icon(phase_name)
-                self.log_generator.log_details(
+                summary_lines.append(
                     f"      {icon} {phase_name.title()}: {phase_info['total_time']:.3f}s "
                     f"({phase_info['percentage']:.1f}%) - {phase_info['call_count']} calls"
                 )
 
         # Custom metrics
         if include_metrics and summary['metrics']:
-            self.log_generator.log_details("   📌 Custom Metrics:")
+            summary_lines.append("   📌 Custom Metrics:")
             for key, value in summary['metrics'].items():
-                self.log_generator.log_details(f"      • {key}: {value}")
+                summary_lines.append(f"      • {key}: {value}")
 
         # Performance assessment
         performance_rating = self._assess_performance(summary)
-        self.log_generator.log_details(
-            f"   🎯 Performance Rating: {performance_rating}")
-
-        self.log_generator.log_details("   ✅ Telemetry tracking completed")
-        self.log_generator.log_details(
+        summary_lines.append(f"   🎯 Performance Rating: {performance_rating}")
+        summary_lines.append("   ✅ Telemetry tracking completed")
+        summary_lines.append(
             "################################################################################################")
+
+        # Log as a single atomic write to prevent interleaving
+        # Join with newlines and indent continuation lines for timestamp alignment
+        complete_summary = '\n                               '.join(
+            summary_lines)
+        self.log_generator.log_details(complete_summary)
 
     def _get_phase_icon(self, phase_name: str) -> str:
         """Get appropriate icon for phase name"""
