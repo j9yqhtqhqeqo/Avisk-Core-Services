@@ -597,6 +597,73 @@ class SustainabilityReportDownloader:
             logger.error(f"Failed to check if data source exists: {e}")
             return None
 
+    def _is_url_already_downloaded(self, url: str, company_name: str) -> bool:
+        """
+        Check if a URL has already been downloaded by checking:
+        1. Database for existing entry
+        2. File system for existing file
+
+        Args:
+            url: The download URL
+            company_name: Name of the company
+
+        Returns:
+            True if already downloaded, False otherwise
+        """
+        # Extract filename and year from URL for checking
+        url_path = urlparse(url).path
+        original_filename = os.path.basename(url_path)
+
+        # Extract year from URL
+        year_match = re.search(r'20\d{2}', url)
+        if not year_match:
+            return False  # Can't determine year, proceed with download
+
+        year_str = year_match.group()
+
+        # Build expected filename
+        if original_filename and original_filename.lower().endswith('.pdf'):
+            base_name = original_filename[:-4]
+            if not re.search(r'[-_]20\d{2}$', base_name):
+                base_name = f"{base_name}-{year_str}"
+            # We don't know the symbol here, so check without prefix
+            expected_filename = original_filename
+        else:
+            return False  # Can't determine filename, proceed with download
+
+        # Check database first (most reliable)
+        if self.db_connection:
+            try:
+                cursor = self.db_connection.cursor()
+                # Check if any entry exists with this filename pattern
+                cursor.execute(
+                    """SELECT unique_id FROM t_data_source 
+                       WHERE company_name = %s AND year = %s 
+                       AND source_url LIKE %s
+                       LIMIT 1""",
+                    (company_name, int(year_str),
+                     f"%{original_filename[:-4]}%")
+                )
+                result = cursor.fetchone()
+                cursor.close()
+                if result:
+                    logger.info(
+                        f"Skipping {url} - already in database (id: {result[0]})")
+                    return True
+            except Exception as e:
+                logger.debug(f"Database check failed: {e}")
+
+        # Check file system as backup
+        year_dir = self.base_download_dir / year_str
+        if year_dir.exists():
+            # Look for any file containing the original filename base
+            for existing_file in year_dir.glob(f"*{original_filename[:-4]}*.pdf"):
+                logger.info(
+                    f"Skipping {url} - file already exists: {existing_file}")
+                return True
+
+        return False
+
     def _add_to_data_source(self, company_name: str, year: int, source_url: str,
                             document_name: str, filepath: str) -> Optional[int]:
         """
@@ -995,6 +1062,10 @@ class SustainabilityReportDownloader:
             Path to downloaded file, or None if failed
         """
         try:
+            # Check if already downloaded BEFORE making HTTP request
+            if company_name and self._is_url_already_downloaded(url, company_name):
+                return None  # Skip - already downloaded
+
             response = self.session.get(url, timeout=30)
             response.raise_for_status()
 
