@@ -566,6 +566,36 @@ class SustainabilityReportDownloader:
                 self.db_connection.rollback()
             return False
 
+    def _data_source_exists(self, company_name: str, year: int, document_name: str) -> Optional[int]:
+        """
+        Check if a data source entry already exists.
+
+        Args:
+            company_name: Name of the company
+            year: Year of the report
+            document_name: Name of the document file
+
+        Returns:
+            unique_id if exists, None otherwise
+        """
+        if not self.db_connection:
+            return None
+
+        try:
+            cursor = self.db_connection.cursor()
+            cursor.execute(
+                """SELECT unique_id FROM t_data_source 
+                   WHERE company_name = %s AND year = %s AND source_url = %s 
+                   LIMIT 1""",
+                (company_name, year, document_name)
+            )
+            result = cursor.fetchone()
+            cursor.close()
+            return result[0] if result else None
+        except Exception as e:
+            logger.error(f"Failed to check if data source exists: {e}")
+            return None
+
     def _add_to_data_source(self, company_name: str, year: int, source_url: str,
                             document_name: str, filepath: str) -> Optional[int]:
         """
@@ -579,10 +609,16 @@ class SustainabilityReportDownloader:
             filepath: Local file path where document is saved
 
         Returns:
-            unique_id of the inserted record, or None if failed
+            unique_id of the inserted record, or None if failed/already exists
         """
         if not self.db_connection:
             return None
+
+        # Check if entry already exists
+        existing_id = self._data_source_exists(company_name, year, document_name)
+        if existing_id:
+            logger.info(f"Data source already exists for {document_name} (id: {existing_id}) - skipping insert")
+            return existing_id
 
         # Ensure company exists in t_sec_company first (with sector mapping)
         self._ensure_company_exists(company_name)
