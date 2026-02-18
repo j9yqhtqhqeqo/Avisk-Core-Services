@@ -364,13 +364,20 @@ with tab3:
     
     if st.button("🚀 Start Download", type="primary", use_container_width=True, disabled=not can_download):
         
-        # Initialize downloader
+        # Get year filter from session state
+        years_filter = st.session_state.get('years_to_download')
+        
+        # Initialize downloader with year filter
         downloader = SustainabilityReportDownloader(
             download_dir=output_dir,
             delay_seconds=delay_seconds,
             current_sector_id=current_sector_id,
-            use_storage=use_storage
+            use_storage=use_storage,
+            year_filter=years_filter
         )
+        
+        if years_filter:
+            st.info(f"📅 Filtering downloads to years: {years_filter}")
         
         # Create progress containers
         progress_bar = st.progress(0)
@@ -393,7 +400,6 @@ with tab3:
         
         total = len(companies_to_process)
         results = []
-        years_filter = st.session_state.get('years_to_download')
         
         status_text.info(f"Processing {total} companies...")
         
@@ -409,14 +415,8 @@ with tab3:
             progress_bar.progress(progress)
             status_text.info(f"Processing {len(results) + 1}/{total}: {company} ({symbol})")
             
-            # Process company
+            # Process company (year filtering happens automatically in downloader)
             result = downloader.process_company(symbol, company, website)
-            
-            # Filter by year if specified
-            if years_filter and result.get('reports_downloaded', 0) > 0:
-                # Year filtering happens during download based on PDF metadata
-                pass
-            
             results.append(result)
             
             # Update metrics
