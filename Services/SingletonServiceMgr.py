@@ -282,6 +282,10 @@ def get_year_list():
     return InsightGeneratorDBManager().get_year_list()
 
 
+def get_pending_sector_updates():
+    return InsightGeneratorDBManager().get_sector_id_year_list(sector_data_update=True)
+
+
 # sector_list = get_sector_list('Test')
 # print(sector_list)
 

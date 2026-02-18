@@ -92,6 +92,11 @@ class keyWordSearchManager:
 
         self.insightDBMgr = InsightGeneratorDBManager()
 
+        # Load telemetry configuration from database
+        from DBEntities.LookupsDBManager import LookupsDBManager
+        lookups_mgr = LookupsDBManager()
+        self.enable_document_level_telemetry = lookups_mgr.get_telemetry_config()
+
         # Capture count of documents failed to process due to erors
         self.exp_documents_failed_to_process = 0
         self.int_documents_failed_to_process = 0
@@ -149,6 +154,7 @@ class keyWordSearchManager:
 
 
 # Search all exposure pathway dictionary terms in the document and save locations
+
 
     def generate_keyword_location_map_for_exposure_pathway(self, document_List=[], batch_num=0, validation_mode=False):
         # print(
@@ -1072,6 +1078,7 @@ class Insight_Generator(keyWordSearchManager):
 
 # Generate Aggregate Insights
 
+
     def generate_aggregate_insights_from_keyword_location_details(self):
 
         # Create a sorted array of all locations found for a given dictionary list
@@ -1185,14 +1192,17 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         document_item: KeyWordLocationsEntity
         document_count = 0
         for document_item in document_list:
-
-            telemetry = TelemetryTracker(
-                self.log_generator, "Generate_exp_int_insights:Document ID:"+str(document_item.document_id))
-            telemetry.start_operation()
-            telemetry.add_metric(
-                "Insight Type", 'Exposure Pathway ->Internalization')
-            telemetry.add_metric("Document ID", document_item.document_id)
-            telemetry.add_metric("Year", document_item.year)
+            # Create per-document telemetry tracker (if enabled)
+            doc_telemetry = None
+            if self.enable_document_level_telemetry:
+                doc_telemetry = TelemetryTracker(
+                    self.log_generator, "Generate_exp_int_insights:Document ID:"+str(document_item.document_id))
+                doc_telemetry.start_operation()
+                doc_telemetry.add_metric(
+                    "Insight Type", 'Exposure Pathway ->Internalization')
+                doc_telemetry.add_metric(
+                    "Document ID", document_item.document_id)
+                doc_telemetry.add_metric("Year", document_item.year)
 
             self.exp_insight_location_list, self.int_insight_location_list = self.insightDBMgr.get_exp_int_lists(
                 document_item.document_id)
@@ -1228,11 +1238,15 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 print(f"Error: {str(exc)}")
                 self.log_generator.log_details('Error saving Exp-Int insights for Document ID:' +
                                                str(document_item.document_id))
+                if doc_telemetry:
+                    doc_telemetry.stop_operation()
                 raise exc
 
-            telemetry.set_record_count(len(self.int_exp_insightList))
-            telemetry.stop_operation()
-            telemetry.log_telemetry_summary()
+            # Log per-document telemetry (if enabled)
+            if doc_telemetry:
+                doc_telemetry.set_record_count(len(self.int_exp_insightList))
+                doc_telemetry.stop_operation()
+                doc_telemetry.log_telemetry_summary()
 
     def _create_exp_int_insights_for_document(self, exp_insight_keyword_locations: None, int_insight_keyword_locations: None, document_id=0, document_name='', exp_insight_entity=None,   int_insight_entity=None, year=0):
 
@@ -1366,8 +1380,20 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         document_item: KeyWordLocationsEntity
         document_count = 0
         documents_failed = 0
+        total_insights_generated = 0
 
         for document_item in document_list:
+            # Create per-document telemetry tracker (if enabled)
+            doc_telemetry = None
+            if self.enable_document_level_telemetry:
+                doc_telemetry = TelemetryTracker(
+                    self.log_generator, f"Generate_mitigation_exp_insights:Document ID:{document_item.document_id}")
+                doc_telemetry.start_operation()
+                doc_telemetry.add_metric("Insight Type", "Mitigation-Exposure")
+                doc_telemetry.add_metric(
+                    "Document ID", document_item.document_id)
+                doc_telemetry.add_metric("Year", document_item.year)
+
             # self.log_generator.log_details(
             #     "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
             # print("Document ID:"+str(document_item.document_id) +
@@ -1402,6 +1428,7 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
             # self.log_generator.log_details("Dcoument:"+document_item.document_name +
             #                                ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
+            total_insights_generated += len(self.mitigation_comon_insightList)
             document_count = document_count + 1
 
             # self.insightDBMgr.cleanup_insights_for_document(
@@ -1423,7 +1450,16 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 self.log_generator.log_details('Error saving Mitigation-Exp insights for Document ID:' +
                                                str(document_item.document_id))
                 documents_failed += 1
+                if doc_telemetry:
+                    doc_telemetry.stop_operation()
                 raise exc
+
+            # Log per-document telemetry (if enabled)
+            if doc_telemetry:
+                doc_telemetry.set_record_count(
+                    len(self.mitigation_comon_insightList))
+                doc_telemetry.stop_operation()
+                doc_telemetry.log_telemetry_summary()
 
             print('Completed EXP->MITIGATION INSGHT GEN- Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
@@ -1431,8 +1467,11 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         # Log final metrics
         telemetry.add_metric("Documents Processed", document_count)
         telemetry.add_metric("Documents Failed", documents_failed)
+        telemetry.add_metric("Total Insights Generated",
+                             total_insights_generated)
         telemetry.add_metric("Success Rate (%)", round(
             (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+        telemetry.set_record_count(total_insights_generated)
         telemetry.stop_operation()
         telemetry.log_telemetry_summary()
 
@@ -1466,8 +1505,21 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         document_item: KeyWordLocationsEntity
         document_count = 0
         documents_failed = 0
+        total_insights_generated = 0
 
         for document_item in document_list:
+            # Create per-document telemetry tracker (if enabled)
+            doc_telemetry = None
+            if self.enable_document_level_telemetry:
+                doc_telemetry = TelemetryTracker(
+                    self.log_generator, f"Generate_mitigation_int_insights:Document ID:{document_item.document_id}")
+                doc_telemetry.start_operation()
+                doc_telemetry.add_metric(
+                    "Insight Type", "Mitigation-Internalization")
+                doc_telemetry.add_metric(
+                    "Document ID", document_item.document_id)
+                doc_telemetry.add_metric("Year", document_item.year)
+
             self.log_generator.log_details(
                 "Document ID:"+str(document_item.document_id)+", Document Name:"+str(document_item.document_name))
             # print("Document ID:"+str(document_item.document_id) +
@@ -1499,7 +1551,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
             # self.log_generator.log_details("Dcoument:"+document_item.document_name +
             #                                ", Total Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
-            # document_count = document_count+1
+            total_insights_generated += len(self.mitigation_comon_insightList)
+            document_count = document_count+1
 
             # self.insightDBMgr.cleanup_insights_for_document(
             #     Lookups().Mitigation_Int_Insight_Type, document_item.document_id)
@@ -1519,7 +1572,16 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 self.log_generator.log_details('Error saving Mitigation-Int insights for Document ID:' +
                                                str(document_item.document_id))
                 documents_failed += 1
+                if doc_telemetry:
+                    doc_telemetry.stop_operation()
                 raise exc
+
+            # Log per-document telemetry (if enabled)
+            if doc_telemetry:
+                doc_telemetry.set_record_count(
+                    len(self.mitigation_comon_insightList))
+                doc_telemetry.stop_operation()
+                doc_telemetry.log_telemetry_summary()
 
             print('Completed INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
                   str(document_count)+' of ' + str(len(document_list)))
@@ -1527,8 +1589,11 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         # Log final metrics
         telemetry.add_metric("Documents Processed", document_count)
         telemetry.add_metric("Documents Failed", documents_failed)
+        telemetry.add_metric("Total Insights Generated",
+                             total_insights_generated)
         telemetry.add_metric("Success Rate (%)", round(
             (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+        telemetry.set_record_count(total_insights_generated)
         telemetry.stop_operation()
         telemetry.log_telemetry_summary()
 
@@ -1617,8 +1682,21 @@ class triangulation_Insight_Generator(keyWordSearchManager):
         document_item: KeyWordLocationsEntity
         document_count = 0
         documents_failed = 0
+        total_insights_generated = 0
 
         for document_item in document_list:
+            # Create per-document telemetry tracker (if enabled)
+            doc_telemetry = None
+            if self.enable_document_level_telemetry:
+                doc_telemetry = TelemetryTracker(
+                    self.log_generator, f"Generate_mitigation_exp_int_insights:Document ID:{document_item.document_id}")
+                doc_telemetry.start_operation()
+                doc_telemetry.add_metric(
+                    "Insight Type", "Mitigation-Exposure-Internalization")
+                doc_telemetry.add_metric(
+                    "Document ID", document_item.document_id)
+                doc_telemetry.add_metric("Year", document_item.year)
+
             try:
                 # print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
                 #       str(document_count+1)+' of ' + str(len(document_list)))
@@ -1666,6 +1744,8 @@ class triangulation_Insight_Generator(keyWordSearchManager):
 
               #  self.log_generator.log_details("Dcoument:"+document_item.document_name +
                         #    ", Total Exp Int -> Mitigation Insights generated:" + str(len(self.mitigation_comon_insightList)))
+                total_insights_generated += len(
+                    self.mitigation_comon_insightList)
                 document_count = document_count + 1
                 # print('Generating EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) +', Document:' +
                 #           str(document_count)+' of ' + str(len(document_list)))
@@ -1689,7 +1769,16 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                     print(f"Error: {str(exc)}")
                     self.log_generator.log_details('Error saving EXP-INT-Mitigation insights for Document ID:' +
                                                    str(document_item.document_id))
+                    if doc_telemetry:
+                        doc_telemetry.stop_operation()
                     raise exc
+
+                # Log per-document telemetry (if enabled)
+                if doc_telemetry:
+                    doc_telemetry.set_record_count(
+                        len(self.mitigation_comon_insightList))
+                    doc_telemetry.stop_operation()
+                    doc_telemetry.log_telemetry_summary()
 
                 print('Completed EXP->INT->MITIGATION INSGHT GEN Batch#:' + str(batch_num) + ', Document:' +
                       str(document_count)+' of ' + str(len(document_list)))
@@ -1700,12 +1789,17 @@ class triangulation_Insight_Generator(keyWordSearchManager):
                 print(exc)
                 document_count = document_count + 1
                 documents_failed += 1
+                if doc_telemetry:
+                    doc_telemetry.stop_operation()
 
         # Log final metrics
         telemetry.add_metric("Documents Processed", document_count)
         telemetry.add_metric("Documents Failed", documents_failed)
+        telemetry.add_metric("Total Insights Generated",
+                             total_insights_generated)
         telemetry.add_metric("Success Rate (%)", round(
             (document_count - documents_failed) / document_count * 100, 2) if document_count > 0 else 0)
+        telemetry.set_record_count(total_insights_generated)
         telemetry.stop_operation()
         telemetry.log_telemetry_summary()
 

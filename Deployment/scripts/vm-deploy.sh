@@ -184,6 +184,18 @@ sudo cp deployment-metadata.json /opt/avisk/deployment-metadata.json
 sudo chown -R avisk:avisk /opt/avisk/app
 sudo chown avisk:avisk /opt/avisk/deployment-metadata.json
 
+# Update environment file with build metadata
+echo "Updating environment file with build metadata..."
+if [ -f /opt/avisk/config/.env ]; then
+    # Remove old BUILD_ID and BUILD_DATE if they exist
+    sudo sed -i '/^BUILD_ID=/d' /opt/avisk/config/.env
+    sudo sed -i '/^BUILD_DATE=/d' /opt/avisk/config/.env
+fi
+# Add new BUILD_ID and BUILD_DATE
+echo "BUILD_ID=$BUILD_ID" | sudo tee -a /opt/avisk/config/.env > /dev/null
+echo "BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S")" | sudo tee -a /opt/avisk/config/.env > /dev/null
+sudo chown avisk:avisk /opt/avisk/config/.env
+
 # Install/update Python dependencies
 echo "Installing Python dependencies..."
 sudo -u avisk /opt/avisk/venv/bin/pip install --upgrade pip

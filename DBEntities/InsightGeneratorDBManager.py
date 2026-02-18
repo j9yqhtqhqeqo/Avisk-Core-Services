@@ -13,6 +13,10 @@ from DBEntities.ProximityEntity import DocumentEntity
 from Utilities.LoggingServices import logGenerator
 from DBEntities.DashboardDBEntitties import SectorYearDBEntity, Reporting_DB_Entity
 from Utilities.Lookups import Lookups, DB_Connection
+from Utilities.TelemetryServices import TelemetryTracker
+from DBEntities.Top10Chart import Top10ExposureChartManager
+from DBEntities.TriangulationChartManager import TriangulationChartManager
+
 import time
 
 import sys
@@ -1935,12 +1939,25 @@ class InsightGeneratorDBManager:
         return doc_type_list
 
     def update_sector_stats(self, sector, year, generate_exp_sector_insights: bool, generate_int_sector_insights: bool, generate_exp_mit_sector_insights: bool, generate_exp_int_mit_sector_insights: bool, update_all: bool):
+        # Initialize telemetry tracking
+        telemetry = TelemetryTracker(
+            self.log_generator, "update_sector_stats")
+        telemetry.start_operation()
+        telemetry.add_metric("Update All", update_all)
+        telemetry.add_metric("Generate Exposure Stats",
+                             generate_exp_sector_insights)
+        telemetry.add_metric("Generate Exp-Int Stats",
+                             generate_int_sector_insights)
+        telemetry.add_metric("Generate Exp-Mit Stats",
+                             generate_exp_mit_sector_insights)
+        telemetry.add_metric("Generate Exp-Int-Mit Stats",
+                             generate_exp_int_mit_sector_insights)
+
         sector_year_list = []
         if (update_all):
             sector_year_list = self.get_sector_id_year_list(
                 sector_data_update=True)
         else:
-
             print('Sector Selected: '+sector)
             sector_id_sql = 'select lookups.data_lookups_id from t_data_lookups lookups where data_lookups_description = %s'
             cursor = self.dbConnection.cursor(
@@ -1955,8 +1972,15 @@ class InsightGeneratorDBManager:
             # print('Sector ID: '+str(sector_id))
             # print('Year:'+str(year))
 
-            sector_year: SectorYearDBEntity
-            for sector_year in sector_year_list:
+        telemetry.add_metric("Total Sectors/Years", len(sector_year_list))
+
+        # Process all sector/year combinations
+        sector_year: SectorYearDBEntity
+        sectors_processed = 0
+        sectors_failed = 0
+
+        for sector_year in sector_year_list:
+            try:
                 if (generate_exp_sector_insights):
                     self.update_sector_exposure_stats(
                         sector_year.SectorId, sector_year.Year)
@@ -1970,15 +1994,33 @@ class InsightGeneratorDBManager:
                     self.update_sector_exposure__mitigation_stats(
                         sector_year.SectorId, sector_year.Year)
 
-            sql_update = 'update t_sector_year_processing set  sector_data_processed_ind = 1 where sector_id = %s and year = %s'
-            cursor = self.dbConnection.cursor(
-                cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(
-                sql_update, ((sector_year.SectorId, sector_year.Year)))
-            self.dbConnection.commit()
-            cursor.close()
+                sql_update = 'update t_sector_year_processing set  sector_data_processed_ind = 1 where sector_id = %s and year = %s'
+                cursor = self.dbConnection.cursor(
+                    cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor.execute(
+                    sql_update, ((sector_year.SectorId, sector_year.Year)))
+                self.dbConnection.commit()
+                cursor.close()
 
-            print('Sector Stats Update Completed')
+                sectors_processed += 1
+                print(
+                    f'Completed sector {sector_year.SectorId}, year {sector_year.Year}')
+            except Exception as exc:
+                sectors_failed += 1
+                print(
+                    f'Error processing sector {sector_year.SectorId}, year {sector_year.Year}: {str(exc)}')
+                self.log_generator.log_details(
+                    f'Error updating sector stats for Sector ID: {sector_year.SectorId}, Year: {sector_year.Year}')
+
+        # Log final metrics
+        telemetry.add_metric("Sectors Processed", sectors_processed)
+        telemetry.add_metric("Sectors Failed", sectors_failed)
+        telemetry.add_metric("Success Rate (%)", round(
+            sectors_processed / len(sector_year_list) * 100, 2) if len(sector_year_list) > 0 else 0)
+        telemetry.stop_operation()
+        telemetry.log_telemetry_summary()
+
+        print('Sector Stats Update Completed')
 
     def update_sector_exposure_stats(self, sector_id, year):
         print('Updating Exposure STATS for Sector:' +
@@ -2415,6 +2457,7 @@ class InsightGeneratorDBManager:
 
     def update_chart_tables(self, generate_top10_exposure_chart_data=False, generate_triangulation_data=False, generate_yoy_chart_data=False):
         if (generate_top10_exposure_chart_data):
+
             self.update_top10_chart_data()
         if (generate_triangulation_data):
             self.update_triangulation_chart_data()
@@ -2424,49 +2467,47 @@ class InsightGeneratorDBManager:
     def update_top10_chart_data(self):
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
             top10_chart_refeshed_ind=True)
-        print('Started Processing Top10 Exposure Chart Data')
-        cursor = self.dbConnection.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor)
+        print('Started Processing Top10 Exposure Chart Data', flush=True)
+
+        processor = Top10ExposureChartManager(self.dbConnection)
 
         for sector_year in sector_year_list:
             print('Company:'+sector_year.Company_Name + '  Sector ID:' +
-                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year))
+                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year), flush=True)
             try:
-                cursor.execute("sp_load_top10_exposure_data %s, (%s, %s", (sector_year.Company_Name,
-                               sector_year.SectorId, sector_year.Year))
-                self.dbConnection.commit()
-                cursor.close()
+                processor.load_top10_exposure_data(
+                    sector_year.Company_Name, sector_year.SectorId, sector_year.Year)
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
 
+        cursor = self.dbConnection.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
         for sector_year in sector_year_list:
             try:
-                cursor.execute("update t_sector_year_processing set top10_chart_refeshed_ind = 1, ((modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = %s and year = %s",
-                               sector_year.SectorId, sector_year.Year)
+                cursor.execute("update t_sector_year_processing set top10_chart_refeshed_ind = 1, modify_dt = CURRENT_TIMESTAMP, modify_by = %s where sector_id = %s and year = %s",
+                               ('Mohan Hanumantha', sector_year.SectorId, sector_year.Year))
                 self.dbConnection.commit()
-                cursor.close()
             except Exception as exc:
                 print(f"Error: {str(exc)}")
+                cursor.close()
                 raise exc
-        print('Completed Processing Top10 Exposure Chart Data')
+        cursor.close()
+        print('Completed Processing Top10 Exposure Chart Data', flush=True)
 
     def update_triangulation_chart_data(self):
 
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
             triangulation_data_refreshed_ind=True)
-        print('Started Processing Triangulation Chart Data')
-        cursor = self.dbConnection.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor)
+        print('Started Processing Triangulation Chart Data', flush=True)
+        processor = TriangulationChartManager(self.dbConnection)
 
         for sector_year in sector_year_list:
             print('Company:'+sector_year.Company_Name + '  Sector ID:' +
-                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year))
+                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year), flush=True)
             try:
-                cursor.execute("sp_load_triangulation_chart_data %s, (%s, %s", (sector_year.Company_Name,
-                               sector_year.SectorId, sector_year.Year))
-                self.dbConnection.commit()
-                cursor
+                processor.load_triangulation_chart_data(
+                    sector_year.Company_Name, sector_year.SectorId, sector_year.Year)
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
@@ -2475,27 +2516,27 @@ class InsightGeneratorDBManager:
             cursor_factory=psycopg2.extras.RealDictCursor)
         for sector_year in sector_year_list:
             try:
-                cursor.execute("update t_sector_year_processing set triangulation_chart_refeshed_ind = 1, ((modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = %s and year = %s",
-                               sector_year.SectorId, sector_year.Year)
+                cursor.execute("update t_sector_year_processing set triangulation_chart_refeshed_ind = 1, modify_dt = CURRENT_TIMESTAMP, modify_by = %s where sector_id = %s and year = %s",
+                               ('Mohan Hanumantha', sector_year.SectorId, sector_year.Year))
                 self.dbConnection.commit()
-                cursor.close()
-
             except Exception as exc:
                 print(f"Error: {str(exc)}")
+                cursor.close()
                 raise exc
-            print('Completed Processing Triangulation Chart Data')
+        cursor.close()
+        print('Completed Processing Triangulation Chart Data', flush=True)
 
     def update_yoy_chart_data(self):
 
         sector_year_list: SectorYearDBEntity = self.get_sector_id_year_list(
             yoy_chart_ind=True)
-        print('Started Processing YOY Chart Data')
+        print('Started Processing YOY Chart Data', flush=True)
         cursor = self.dbConnection.cursor(
             cursor_factory=psycopg2.extras.RealDictCursor)
 
         for sector_year in sector_year_list:
             print('Company:'+sector_year.Company_Name + '  Sector ID:' +
-                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year))
+                  str(sector_year.SectorId)+'  Year'+str(sector_year.Year), flush=True)
 
             try:
 
@@ -2526,25 +2567,26 @@ class InsightGeneratorDBManager:
                                sector_year.Year, sector_year.Company_Name))
 
                 self.dbConnection.commit()
-                cursor.close()
 
             except Exception as exc:
                 print(f"Error: {str(exc)}")
                 raise exc
+
+        cursor.close()
 
         cursor = self.dbConnection.cursor(
             cursor_factory=psycopg2.extras.RealDictCursor)
         for sector_year in sector_year_list:
             try:
-                cursor.execute("update t_sector_year_processing set yoy_chart_refreshed_ind = 1, ((modify_dt = CURRENT_TIMESTAMP ,modify_by = N'Mohan Hanumantha' where sector_id = %s and year = %s",
-                               sector_year.SectorId, sector_year.Year)
+                cursor.execute("update t_sector_year_processing set yoy_chart_refreshed_ind = 1, modify_dt = CURRENT_TIMESTAMP, modify_by = %s where sector_id = %s and year = %s",
+                               ('Mohan Hanumantha', sector_year.SectorId, sector_year.Year))
                 self.dbConnection.commit()
-                cursor.close()
-
             except Exception as exc:
                 print(f"Error: {str(exc)}")
+                cursor.close()
                 raise exc
-            print('Completed Processing YoY Chart Data')
+        cursor.close()
+        print('Completed Processing YoY Chart Data', flush=True)
 
     # TELEMETRICS LOGGING METHOD
 

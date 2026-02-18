@@ -88,6 +88,26 @@ class LookupsDBManager():
 
         return status
 
+    def get_telemetry_config(self):
+        """Get telemetry configuration from t_data_lookups. Returns True if document-level telemetry should be enabled."""
+        try:
+            cursor = self.dbConnection.cursor(
+                cursor_factory=psycopg2.extras.RealDictCursor)
+            sql = "select data_lookups_description from t_data_lookups where data_lookups_group = %s"
+            cursor.execute(sql, ('Telemetry_For_Each_Doc',))
+            rows = cursor.fetchone()
+            if rows:
+                # Convert to boolean: 'Y' or '1' or 'True' = enabled
+                value = rows['data_lookups_description'].strip().upper()
+                return value in ('Y', '1', 'TRUE', 'YES', 'ENABLED')
+            else:
+                # Default to False if not configured
+                return False
+        except Exception as exc:
+            print(f"Error getting telemetry config: {str(exc)}")
+            # Default to False on error
+            return False
+
     def get_insight_gen_status(self, insight_gen_type: str):
         if (insight_gen_type == Lookups().Exposure_Pathway_Dictionary_Type):
             filter_condition = 'Exposure_Pathway_Insights'

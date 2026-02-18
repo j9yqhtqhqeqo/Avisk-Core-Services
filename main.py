@@ -1,4 +1,4 @@
-from version import get_version_string, get_build_string, ENVIRONMENT
+from version import get_version_string, get_build_string, get_build_date_string, ENVIRONMENT
 from Utilities.Lookups import Lookups, Processing_Type
 from DBEntities.LookupsDBManager import LookupsDBManager
 import streamlit as st
@@ -192,12 +192,15 @@ def main():
 
     # Status bar at the bottom
     st.markdown("---")
-    footer_col1, footer_col2, footer_col3 = st.columns([1, 1, 1])
+    footer_col1, footer_col2, footer_col3, footer_col4 = st.columns([
+                                                                    1, 1, 1, 1])
     with footer_col1:
         st.caption(f"🏷️ {get_version_string()}")
     with footer_col2:
         st.caption(f"🔨 {get_build_string()}")
     with footer_col3:
+        st.caption(f"📅 {get_build_date_string()}")
+    with footer_col4:
         st.caption(f"🌍 Environment: {ENVIRONMENT.title()}")
 
 

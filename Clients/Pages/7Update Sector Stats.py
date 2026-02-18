@@ -1,6 +1,7 @@
-from Services.SingletonServiceMgr import update_sector_stats, get_sector_list, get_year_list
+from Services.SingletonServiceMgr import update_sector_stats, get_sector_list, get_year_list, get_pending_sector_updates
 from Dictionary.DictionaryManager import DictionaryManager
 import streamlit as st
+import pandas as pd
 import ast
 import sys
 from pathlib import Path
@@ -33,6 +34,21 @@ class StartUpClass:
                             generate_exp_int_mit_sector_insights=self.generate_exp_int_mit_sector_insights, update_all=self.update_all)
 
     def run_online_Mode(self):
+        # Display pending sector updates
+        st.subheader("📋 Pending Sector Updates")
+        pending_updates = get_pending_sector_updates()
+
+        if pending_updates and len(pending_updates) > 0:
+            # Convert to DataFrame for better display
+            data = [[item.SectorId, item.Year] for item in pending_updates]
+            df = pd.DataFrame(data, columns=['Sector ID', 'Year'])
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.info(f"📊 Total pending updates: {len(pending_updates)}")
+        else:
+            st.success("✅ No pending sector updates")
+
+        st.markdown("---")
+        st.subheader("🔧 Update Settings")
 
         self.dataset_sector_sl = get_sector_list()
         self.sl_sector = st.selectbox(

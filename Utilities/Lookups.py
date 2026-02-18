@@ -63,7 +63,7 @@ class DB_Connection:
         # First, try to get database name from environment variable (for local development)
         env_dbname = os.getenv('DB_NAME')
         if env_dbname:
-            print("✅ Using database name from environment variable")
+            # print("✅ Using database name from environment variable")
             return env_dbname
 
         # If no environment variable, try Secret Manager (for production)
