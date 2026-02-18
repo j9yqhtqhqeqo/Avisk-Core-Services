@@ -130,6 +130,11 @@ with tab1:
     if st.session_state.companies_df is not None:
         df = st.session_state.companies_df
 
+        # Store original index to preserve S&P 500 ranking order (Wikipedia lists by market cap)
+        if 'sp500_rank' not in df.columns:
+            df = df.reset_index(drop=True)
+            df['sp500_rank'] = df.index  # Original order = market cap ranking
+
         st.markdown("---")
         st.subheader("🔍 Filter & Select Companies")
 
@@ -158,8 +163,8 @@ with tab1:
             # Quick select options
             quick_select = st.selectbox(
                 "Quick Select",
-                ["Custom Selection", "All Companies", "Top 10", "Top 50",
-                    "Top 100", "Tech Companies", "Energy Companies"]
+                ["Custom Selection", "All Companies", "Top 10 (by Market Cap)", "Top 50 (by Market Cap)",
+                    "Top 100 (by Market Cap)", "Tech Companies", "Energy Companies"]
             )
 
         # Apply filters
@@ -178,13 +183,13 @@ with tab1:
             filtered_df = filtered_df[filtered_df[sector_col]
                                       == selected_sector]
 
-        # Apply quick select
-        if quick_select == "Top 10":
-            filtered_df = filtered_df.head(10)
-        elif quick_select == "Top 50":
-            filtered_df = filtered_df.head(50)
-        elif quick_select == "Top 100":
-            filtered_df = filtered_df.head(100)
+        # Apply quick select - always sort by S&P 500 rank (market cap order)
+        if quick_select == "Top 10 (by Market Cap)":
+            filtered_df = filtered_df.sort_values('sp500_rank').head(10)
+        elif quick_select == "Top 50 (by Market Cap)":
+            filtered_df = filtered_df.sort_values('sp500_rank').head(50)
+        elif quick_select == "Top 100 (by Market Cap)":
+            filtered_df = filtered_df.sort_values('sp500_rank').head(100)
         elif quick_select == "Tech Companies":
             sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
             if sector_col in df.columns:
@@ -196,22 +201,26 @@ with tab1:
                 filtered_df = filtered_df[filtered_df[sector_col].str.contains(
                     'Energy', case=False, na=False)]
 
-        st.markdown(f"**Showing {len(filtered_df)} companies**")
+        # Always sort by S&P 500 rank (market cap order) for display
+        filtered_df = filtered_df.sort_values('sp500_rank')
+
+        st.markdown(
+            f"**Showing {len(filtered_df)} companies** (sorted by market cap)")
 
         # Company selection with checkboxes
         col1, col2 = st.columns([3, 1])
 
         with col1:
-            # Multi-select for companies
+            # Multi-select for companies - include rank number
             company_options = filtered_df.apply(
-                lambda row: f"{row['Symbol']} - {row['Company']}", axis=1
+                lambda row: f"#{row['sp500_rank']+1} {row['Symbol']} - {row['Company']}", axis=1
             ).tolist()
 
             selected = st.multiselect(
                 "Select Companies to Download",
                 options=company_options,
                 default=st.session_state.selected_companies if st.session_state.selected_companies else [],
-                help="Select one or more companies"
+                help="Select one or more companies (ranked by market cap)"
             )
             st.session_state.selected_companies = selected
 
@@ -232,11 +241,17 @@ with tab1:
         # Preview selected companies
         if st.session_state.selected_companies:
             with st.expander("📋 View Selected Companies", expanded=False):
-                selected_symbols = [c.split(' - ')[0]
-                                    for c in st.session_state.selected_companies]
+                # Extract symbol from format: "#1 AAPL - Apple Inc."
+                selected_symbols = []
+                for c in st.session_state.selected_companies:
+                    # Split by ' - ' and take first part, then extract symbol after #rank
+                    parts = c.split(' - ')[0]  # "#1 AAPL"
+                    symbol = parts.split(' ')[-1]  # "AAPL"
+                    selected_symbols.append(symbol)
                 selected_df = df[df['Symbol'].isin(selected_symbols)]
                 st.dataframe(
-                    selected_df[['Symbol', 'Company']], use_container_width=True)
+                    selected_df[['sp500_rank', 'Symbol', 'Company']].rename(
+                        columns={'sp500_rank': 'Rank'}), use_container_width=True)
 
 with tab2:
     st.header("Select Years to Download")
@@ -398,7 +413,19 @@ with tab3:
             st.info(f"📅 Filtering downloads to years: {years_filter}")
 
         # Create progress containers
-        progress_bar = st.progress(0)
+        st.subheader("📊 Progress")
+
+        # Year progress (if filtering by years)
+        if years_filter and len(years_filter) > 1:
+            year_progress_label = st.empty()
+            year_progress_bar = st.progress(0)
+        else:
+            year_progress_label = None
+            year_progress_bar = None
+
+        # Company progress
+        company_progress_label = st.empty()
+        company_progress_bar = st.progress(0)
         status_text = st.empty()
 
         col1, col2, col3, col4 = st.columns(4)
@@ -410,45 +437,121 @@ with tab3:
         # Get selected companies data
         if st.session_state.companies_df is not None:
             df = st.session_state.companies_df
-            selected_symbols = [c.split(' - ')[0]
-                                for c in st.session_state.selected_companies]
+            # Extract symbol from format: "#1 AAPL - Apple Inc."
+            selected_symbols = []
+            for c in st.session_state.selected_companies:
+                parts = c.split(' - ')[0]  # "#1 AAPL"
+                symbol = parts.split(' ')[-1]  # "AAPL"
+                selected_symbols.append(symbol)
             companies_to_process = df[df['Symbol'].isin(selected_symbols)]
         else:
             st.error("Please load company list first")
             st.stop()
 
-        total = len(companies_to_process)
+        total_companies = len(companies_to_process)
+        total_years = len(years_filter) if years_filter else 1
         results = []
 
-        status_text.info(f"Processing {total} companies...")
+        status_text.info(
+            f"Processing {total_companies} companies across {total_years} year(s)...")
 
-        for idx, row in companies_to_process.iterrows():
-            symbol = row['Symbol']
-            company = row['Company']
+        # Process by year if filtering, otherwise process all at once
+        if years_filter and len(years_filter) > 1:
+            for year_idx, year in enumerate(sorted(years_filter)):
+                # Update year progress
+                year_progress = (year_idx) / total_years
+                year_progress_bar.progress(year_progress)
+                year_progress_label.markdown(
+                    f"**📅 Year Progress:** {year_idx}/{total_years} - Processing **{year}**")
 
-            # Get website
-            website = downloader.get_company_website(symbol, company)
+                # Create downloader for this specific year
+                year_downloader = SustainabilityReportDownloader(
+                    download_dir=output_dir,
+                    delay_seconds=delay_seconds,
+                    current_sector_id=current_sector_id,
+                    use_storage=use_storage,
+                    year_filter=[year]  # Single year
+                )
 
-            # Update progress
-            progress = (len(results) + 1) / total
-            progress_bar.progress(progress)
-            status_text.info(
-                f"Processing {len(results) + 1}/{total}: {company} ({symbol})")
+                for company_idx, (_, row) in enumerate(companies_to_process.iterrows()):
+                    symbol = row['Symbol']
+                    company = row['Company']
 
-            # Process company (year filtering happens automatically in downloader)
-            result = downloader.process_company(symbol, company, website)
-            results.append(result)
+                    # Get website
+                    website = year_downloader.get_company_website(
+                        symbol, company)
 
-            # Update metrics
-            metric_processed.metric("Processed", f"{len(results)}/{total}")
-            metric_found.metric("Reports Found", sum(
-                r.get('reports_found', 0) for r in results))
-            metric_downloaded.metric(
-                "Downloaded", len(downloader.downloaded_reports))
-            metric_failed.metric("Failed", len(downloader.failed_downloads))
+                    # Update company progress
+                    company_progress = (company_idx + 1) / total_companies
+                    company_progress_bar.progress(company_progress)
+                    company_progress_label.markdown(
+                        f"**🏢 Company Progress:** {company_idx + 1}/{total_companies}")
+                    status_text.info(
+                        f"Year {year} | Company {company_idx + 1}/{total_companies}: {company} ({symbol})")
+
+                    # Process company
+                    result = year_downloader.process_company(
+                        symbol, company, website)
+
+                    # Update metrics
+                    total_downloaded = len(year_downloader.downloaded_reports)
+                    total_failed = len(year_downloader.failed_downloads)
+                    metric_processed.metric(
+                        "Processed", f"{company_idx + 1}/{total_companies}")
+                    metric_found.metric("Year", year)
+                    metric_downloaded.metric("Downloaded", total_downloaded)
+                    metric_failed.metric("Failed", total_failed)
+
+                # Collect results from this year
+                for r in year_downloader.downloaded_reports:
+                    results.append(r)
+
+                # Update year progress to complete
+                year_progress_bar.progress((year_idx + 1) / total_years)
+
+                # Close year downloader
+                year_downloader.close()
+
+            # Final year progress
+            year_progress_bar.progress(1.0)
+            year_progress_label.markdown(
+                f"**📅 Year Progress:** {total_years}/{total_years} - ✅ Complete")
+
+        else:
+            # Original flow for single year or all years
+            for idx, row in companies_to_process.iterrows():
+                symbol = row['Symbol']
+                company = row['Company']
+
+                # Get website
+                website = downloader.get_company_website(symbol, company)
+
+                # Update progress
+                progress = (len(results) + 1) / total_companies
+                company_progress_bar.progress(progress)
+                company_progress_label.markdown(
+                    f"**🏢 Company Progress:** {len(results) + 1}/{total_companies}")
+                status_text.info(
+                    f"Processing {len(results) + 1}/{total_companies}: {company} ({symbol})")
+
+                # Process company (year filtering happens automatically in downloader)
+                result = downloader.process_company(symbol, company, website)
+                results.append(result)
+
+                # Update metrics
+                metric_processed.metric(
+                    "Processed", f"{len(results)}/{total_companies}")
+                metric_found.metric("Reports Found", sum(
+                    r.get('reports_found', 0) for r in results))
+                metric_downloaded.metric(
+                    "Downloaded", len(downloader.downloaded_reports))
+                metric_failed.metric("Failed", len(
+                    downloader.failed_downloads))
 
         # Complete
-        progress_bar.progress(1.0)
+        company_progress_bar.progress(1.0)
+        company_progress_label.markdown(
+            f"**🏢 Company Progress:** {total_companies}/{total_companies} - ✅ Complete")
         status_text.success("✅ Download complete!")
 
         # Save results
