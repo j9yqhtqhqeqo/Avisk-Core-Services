@@ -32,6 +32,12 @@ try:
 except ImportError:
     DB_AVAILABLE = False
 
+try:
+    from Utilities.PathConfiguration import PathConfiguration
+    PATH_CONFIG_AVAILABLE = True
+except ImportError:
+    PATH_CONFIG_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -243,19 +249,40 @@ class SustainabilityReportDownloader:
         'PNW': 'pinnaclewest.com',
     }
 
-    def __init__(self, download_dir: str = './sustainability_reports',
+    def __init__(self, download_dir: Optional[str] = None,
                  delay_seconds: float = 2.0,
-                 current_sector_id: Optional[int] = None):
+                 current_sector_id: Optional[int] = None,
+                 use_storage: bool = True):
         """
         Initialize the downloader.
 
         Args:
-            download_dir: Directory to save downloaded reports
+            download_dir: Directory to save downloaded reports (overrides PathConfiguration)
             delay_seconds: Delay between requests to be respectful to servers
             current_sector_id: The current sector ID being processed (e.g., 1007)
+            use_storage: If True, use PathConfiguration for Stage0SourcePDFFiles path
         """
-        self.download_dir = Path(download_dir)
-        self.download_dir.mkdir(parents=True, exist_ok=True)
+        # Initialize PathConfiguration for storage paths
+        self.path_config = None
+        self.use_storage = use_storage
+        
+        if use_storage and PATH_CONFIG_AVAILABLE:
+            self.path_config = PathConfiguration()
+            self.base_download_dir = Path(self.path_config.get_stage0_input_path())
+            logger.info(f"Using storage path: {self.base_download_dir}")
+        elif download_dir:
+            self.base_download_dir = Path(download_dir)
+        else:
+            self.base_download_dir = Path('./sustainability_reports')
+        
+        self.base_download_dir.mkdir(parents=True, exist_ok=True)
+        # Keep download_dir for backward compatibility (cache files, etc.)
+        self.download_dir = self.base_download_dir
+        
+        # Separate cache directory for progress files (not in PDF storage)
+        self.cache_dir = Path('./sustainability_cache')
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
         self.delay_seconds = delay_seconds
         self.current_sector_id = current_sector_id
 
@@ -736,7 +763,7 @@ class SustainabilityReportDownloader:
             })
 
             # Save for future use
-            cache_file = self.download_dir / 'sp500_companies.csv'
+            cache_file = self.cache_dir / 'sp500_companies.csv'
             df.to_csv(cache_file, index=False)
             logger.info(f"Saved company list to {cache_file}")
 
@@ -927,10 +954,10 @@ class SustainabilityReportDownloader:
                 url_hash = hash(url) % 10000
                 filename = f"{company_symbol}_report_{url_hash:04d}-{year_str}.pdf"
 
-            # Save file
-            company_dir = self.download_dir / company_symbol
-            company_dir.mkdir(exist_ok=True)
-            filepath = company_dir / filename
+            # Create yearly folder structure (e.g., Stage0SourcePDFFiles/2023/)
+            year_dir = self.base_download_dir / year_str
+            year_dir.mkdir(parents=True, exist_ok=True)
+            filepath = year_dir / filename
 
             # Check if file already exists with same content (skip duplicate downloads)
             if filepath.exists():
@@ -1087,7 +1114,7 @@ class SustainabilityReportDownloader:
 
     def _save_progress(self, results: List[Dict]):
         """Save download progress to CSV."""
-        progress_file = self.download_dir / 'download_progress.csv'
+        progress_file = self.cache_dir / 'download_progress.csv'
         pd.DataFrame(results).to_csv(progress_file, index=False)
         logger.debug(f"Saved progress to {progress_file}")
 
@@ -1095,7 +1122,7 @@ class SustainabilityReportDownloader:
         """Save download metadata."""
         # Save successful downloads
         if self.downloaded_reports:
-            downloads_file = self.download_dir / 'downloaded_reports.csv'
+            downloads_file = self.cache_dir / 'downloaded_reports.csv'
             pd.DataFrame(self.downloaded_reports).to_csv(
                 downloads_file, index=False)
             logger.info(
@@ -1103,7 +1130,7 @@ class SustainabilityReportDownloader:
 
         # Save failures
         if self.failed_downloads:
-            failures_file = self.download_dir / 'failed_downloads.csv'
+            failures_file = self.cache_dir / 'failed_downloads.csv'
             pd.DataFrame(self.failed_downloads).to_csv(
                 failures_file, index=False)
             logger.info(f"Saved {len(self.failed_downloads)} failure records")
