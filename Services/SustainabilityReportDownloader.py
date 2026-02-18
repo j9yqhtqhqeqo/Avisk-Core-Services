@@ -267,24 +267,25 @@ class SustainabilityReportDownloader:
         # Initialize PathConfiguration for storage paths
         self.path_config = None
         self.use_storage = use_storage
-        
+
         if use_storage and PATH_CONFIG_AVAILABLE:
             self.path_config = PathConfiguration()
-            self.base_download_dir = Path(self.path_config.get_stage0_input_path())
+            self.base_download_dir = Path(
+                self.path_config.get_stage0_input_path())
             logger.info(f"Using storage path: {self.base_download_dir}")
         elif download_dir:
             self.base_download_dir = Path(download_dir)
         else:
             self.base_download_dir = Path('./sustainability_reports')
-        
+
         self.base_download_dir.mkdir(parents=True, exist_ok=True)
         # Keep download_dir for backward compatibility (cache files, etc.)
         self.download_dir = self.base_download_dir
-        
+
         # Separate cache directory for progress files (not in PDF storage)
         self.cache_dir = Path('./sustainability_cache')
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.delay_seconds = delay_seconds
         self.current_sector_id = current_sector_id
         self.year_filter = year_filter  # List of years to download, or None for all
@@ -615,9 +616,11 @@ class SustainabilityReportDownloader:
             return None
 
         # Check if entry already exists
-        existing_id = self._data_source_exists(company_name, year, document_name)
+        existing_id = self._data_source_exists(
+            company_name, year, document_name)
         if existing_id:
-            logger.info(f"Data source already exists for {document_name} (id: {existing_id}) - skipping insert")
+            logger.info(
+                f"Data source already exists for {document_name} (id: {existing_id}) - skipping insert")
             return existing_id
 
         # Ensure company exists in t_sec_company first (with sector mapping)
@@ -936,42 +939,44 @@ class SustainabilityReportDownloader:
         """
         Filter URLs to only include those matching the year filter.
         This is done by checking if any year from the filter appears in the URL.
-        
+
         Args:
             urls: List of URLs to filter
-            
+
         Returns:
             Filtered list of URLs matching the year filter
         """
         if self.year_filter is None:
             return urls
-        
+
         filtered_urls = []
         year_patterns = [str(year) for year in self.year_filter]
-        
+
         for url in urls:
             # Check if any of the target years appear in the URL
             url_lower = url.lower()
             year_found = False
-            
+
             for year in year_patterns:
                 if year in url_lower:
                     filtered_urls.append(url)
                     year_found = True
                     break
-            
+
             # If no year found in URL, we can't pre-filter - include it for PDF check
             if not year_found:
                 # Check if URL has ANY year pattern (20xx)
                 year_match = re.search(r'20\d{2}', url)
                 if year_match:
                     # URL has a year but it's not in our filter - skip it
-                    logger.debug(f"Skipping {url} - year {year_match.group()} not in filter {self.year_filter}")
+                    logger.debug(
+                        f"Skipping {url} - year {year_match.group()} not in filter {self.year_filter}")
                 else:
                     # No year in URL - include for PDF metadata check
                     filtered_urls.append(url)
-        
-        logger.info(f"Year filter applied: {len(filtered_urls)}/{len(urls)} URLs match years {self.year_filter}")
+
+        logger.info(
+            f"Year filter applied: {len(filtered_urls)}/{len(urls)} URLs match years {self.year_filter}")
         return filtered_urls
 
     def download_report(self, url: str, company_symbol: str,
@@ -1020,10 +1025,12 @@ class SustainabilityReportDownloader:
                 try:
                     report_year = int(year_str)
                     if report_year not in self.year_filter:
-                        logger.info(f"Skipping {url} - year {year_str} not in filter {self.year_filter}")
+                        logger.info(
+                            f"Skipping {url} - year {year_str} not in filter {self.year_filter}")
                         return None
                 except ValueError:
-                    logger.warning(f"Could not parse year from {year_str}, skipping filter check")
+                    logger.warning(
+                        f"Could not parse year from {year_str}, skipping filter check")
 
             # Use original filename if it's a valid PDF name, otherwise generate one
             if original_filename and original_filename.lower().endswith('.pdf'):
@@ -1131,11 +1138,11 @@ class SustainabilityReportDownloader:
             # Search for reports
             logger.info(f"Processing {company_name} ({symbol})")
             report_urls = self.search_company_website(company_name, website)
-            
+
             # Apply year filter to URLs before downloading (optimization)
             if self.year_filter:
                 report_urls = self._filter_urls_by_year(report_urls)
-            
+
             result['reports_found'] = len(report_urls)
 
             # Download reports
