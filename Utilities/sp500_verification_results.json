@@ -1,0 +1,713 @@
+{
+  "summary": {
+    "total_companies": 50,
+    "companies_with_known_patterns": 15,
+    "companies_with_working_patterns": 2,
+    "companies_with_pdfs_found": 13,
+    "companies_without_reports": 37,
+    "coverage_percentage": 26.0
+  },
+  "companies_needing_patterns": [
+    {
+      "symbol": "KO",
+      "company": "The Coca-Cola Company",
+      "found_pdfs": [
+        "https://www.coca-colacompany.com/content/dam/company/us/en/reports/2024-environmental-update/2024-environmental-update.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.coca-colacompany.com/content/dam/company/us/en/reports/{year}-environmental-update/{year}-environmental-update.pdf"
+      ]
+    },
+    {
+      "symbol": "LRCX",
+      "company": "Lam Research Corp",
+      "found_pdfs": [
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-2024-Global-Impact-Report.pdf",
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-2024-Impact-Frameworks.pdf#page=2"
+      ],
+      "suggested_patterns": [
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-{year}-Global-Impact-Report.pdf",
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-{year}-Impact-Frameworks.pdf#page=2"
+      ]
+    },
+    {
+      "symbol": "MRK",
+      "company": "Merck & Company Inc",
+      "found_pdfs": [
+        "https://www.merck.com/wp-content/uploads/sites/124/2025/08/PurposeforProgressMerckImpactReport2024-2025.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.merck.com/wp-content/uploads/sites/124/2025/08/PurposeforProgressMerckImpactReport{year}-2025.pdf"
+      ]
+    },
+    {
+      "symbol": "MS",
+      "company": "Morgan Stanley",
+      "found_pdfs": [
+        "https://www.morganstanley.com/content/dam/msdotcom/en/assets/pdfs/Morgan_Stanley_2024_Sustainability_Report.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.morganstanley.com/content/dam/msdotcom/en/assets/pdfs/Morgan_Stanley_{year}_Sustainability_Report.pdf"
+      ]
+    },
+    {
+      "symbol": "PEP",
+      "company": "PepsiCo Inc",
+      "found_pdfs": [
+        "https://www.pepsico.com/docs/pepsico-5v9wci20/media/Files/esg-topics/2024-pepsico-modern-slavery-and-human-trafficking-statement.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.pepsico.com/docs/pepsico-5v9wci20/media/Files/esg-topics/{year}-pepsico-modern-slavery-and-human-trafficking-statement.pdf"
+      ]
+    },
+    {
+      "symbol": "KLAC",
+      "company": "KLA-Tencor Corporation",
+      "found_pdfs": [
+        "https://www.kla-tencor.com/wp-content/uploads/2024-KLA-Global-Impact-Report.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.kla-tencor.com/wp-content/uploads/{year}-KLA-Global-Impact-Report.pdf"
+      ]
+    }
+  ],
+  "suggested_new_patterns": {
+    "KO": [
+      "https://www.coca-colacompany.com/content/dam/company/us/en/reports/{year}-environmental-update/{year}-environmental-update.pdf"
+    ],
+    "LRCX": [
+      "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-{year}-Global-Impact-Report.pdf",
+      "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-{year}-Impact-Frameworks.pdf#page=2"
+    ],
+    "MRK": [
+      "https://www.merck.com/wp-content/uploads/sites/124/2025/08/PurposeforProgressMerckImpactReport{year}-2025.pdf"
+    ],
+    "MS": [
+      "https://www.morganstanley.com/content/dam/msdotcom/en/assets/pdfs/Morgan_Stanley_{year}_Sustainability_Report.pdf"
+    ],
+    "PEP": [
+      "https://www.pepsico.com/docs/pepsico-5v9wci20/media/Files/esg-topics/{year}-pepsico-modern-slavery-and-human-trafficking-statement.pdf"
+    ],
+    "KLAC": [
+      "https://www.kla-tencor.com/wp-content/uploads/{year}-KLA-Global-Impact-Report.pdf"
+    ]
+  },
+  "all_results": [
+    {
+      "symbol": "NVDA",
+      "company": "NVIDIA Corporation",
+      "website": "https://www.nvidia.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://www.nvidia.com/en-us/csr/",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "AAPL",
+      "company": "Apple Inc",
+      "website": "https://www.apple.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://www.apple.com/environment/",
+      "pdf_urls_found": [
+        "https://www.apple.com/environment/pdf/Apple_CDP-Climate-Change-Questionnaire_2024.pdf",
+        "https://www.apple.com/environment/pdf/Apple_Environmental_Progress_Report_2024.pdf",
+        "https://www.apple.com/environment/pdf/products/watch/Apple_Watch_Carbon_Neutral_Report_Bands_Sept2024.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.apple.com/environment/pdf/products/watch/Apple_Watch_Carbon_Neutral_Report_Bands_Sept{year}.pdf",
+        "https://www.apple.com/environment/pdf/Apple_Environmental_Progress_Report_{year}.pdf",
+        "https://www.apple.com/environment/pdf/Apple_CDP-Climate-Change-Questionnaire_{year}.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "GOOG",
+      "company": "Alphabet Inc Class C",
+      "website": "https://www.google.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://www.google.com/sustainability",
+      "pdf_urls_found": [
+        "https://www.gstatic.com/gumdrop/sustainability/alphabet-2024-cdp-climate-change-response.pdf",
+        "https://www.gstatic.com/gumdrop/sustainability/google-2024-environmental-report.pdf",
+        "https://www.gstatic.com/gumdrop/sustainability/google-2024-supplier-responsibility-report.pdf",
+        "https://www.gstatic.com/gumdrop/sustainability/2024-google-statement-against-modern-slavery.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.gstatic.com/gumdrop/sustainability/alphabet-{year}-cdp-climate-change-response.pdf",
+        "https://www.gstatic.com/gumdrop/sustainability/{year}-google-statement-against-modern-slavery.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "MSFT",
+      "company": "Microsoft Corporation",
+      "website": "https://www.microsoft.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://www.microsoft.com/en-us/corporate-responsibility/reports-hub",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "AMZN",
+      "company": "Amazon.com Inc",
+      "website": "https://www.amazon.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://sustainability.aboutamazon.com/reporting",
+      "pdf_urls_found": [
+        "https://sustainability.aboutamazon.com/2024-amazon-sustainability-report-aws-summary.pdf",
+        "https://sustainability.aboutamazon.com/2024-amazon-sustainability-report.pdf",
+        "https://sustainability.aboutamazon.com/2024-sustainability-executive-summary.pdf"
+      ],
+      "suggested_patterns": [
+        "https://sustainability.aboutamazon.com/{year}-amazon-sustainability-report-aws-summary.pdf",
+        "https://sustainability.aboutamazon.com/{year}-amazon-sustainability-report.pdf",
+        "https://sustainability.aboutamazon.com/{year}-sustainability-executive-summary.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "META",
+      "company": "Meta Platforms Inc.",
+      "website": "https://www.meta.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "TSLA",
+      "company": "Tesla Inc",
+      "website": "https://www.tesla.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "LLY",
+      "company": "Eli Lilly and Company",
+      "website": "https://www.lilly.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.lilly.com/impact",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "JPM",
+      "company": "JPMorgan Chase & Co",
+      "website": "https://www.jpmorganchase.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://www.jpmorganchase.com/about/governance/esg",
+      "pdf_urls_found": [
+        "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/documents/sustainable-bond-annual-report-2024.pdf",
+        "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/documents/Climate-Report-2024.pdf",
+        "https://www.jpmorganchase.com/content/dam/jpmorganchase/documents/about/jpmc-sustainability-report-2024.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.jpmorganchase.com/content/dam/jpmorganchase/documents/about/jpmc-sustainability-report-{year}.pdf",
+        "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/documents/sustainable-bond-annual-report-{year}.pdf",
+        "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/documents/Climate-Report-{year}.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "XOM",
+      "company": "Exxon Mobil Corp",
+      "website": "https://corporate.exxonmobil.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "JNJ",
+      "company": "Johnson & Johnson",
+      "website": "https://www.jnj.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.jnj.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "V",
+      "company": "Visa Inc. Class A",
+      "website": "https://usa.visa.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://usa.visa.com/about-visa/esg.html",
+      "pdf_urls_found": [
+        "https://usa.visa.com/content/dam/VCOM/corporate/about-visa/documents/2024-visa-corporate-responsibility-and-sustainability-report.pdf"
+      ],
+      "suggested_patterns": [
+        "https://usa.visa.com/content/dam/VCOM/corporate/about-visa/documents/{year}-visa-corporate-responsibility-and-sustainability-report.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "MA",
+      "company": "Mastercard Inc",
+      "website": "https://www.mastercard.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "MU",
+      "company": "Micron Technology Inc",
+      "website": "https://www.microntechnology.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "COST",
+      "company": "Costco Wholesale Corp",
+      "website": "https://www.costco.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "ABBV",
+      "company": "AbbVie Inc",
+      "website": "https://www.abbvie.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.abbvie.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "BAC",
+      "company": "Bank of America Corp",
+      "website": "https://www.bankofamerica.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://about.bankofamerica.com/en/making-an-impact/esg-reporting",
+      "pdf_urls_found": [
+        "https://about.bankofamerica.com/content/dam/about/report-center/2024/Bank-of-America-2024-Annual-Report.pdf"
+      ],
+      "suggested_patterns": [],
+      "status": "known_patterns_work"
+    },
+    {
+      "symbol": "HD",
+      "company": "The Home Depot Inc",
+      "website": "https://www.homedepot.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "GE",
+      "company": "GE Aerospace",
+      "website": "https://www.ge.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.ge.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "PG",
+      "company": "Procter & Gamble Company",
+      "website": "https://us.pg.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://us.pg.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "AMD",
+      "company": "Advanced Micro Devices Inc",
+      "website": "https://www.amd.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.amd.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "CVX",
+      "company": "Chevron Corp",
+      "website": "https://www.chevron.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://www.chevron.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "PLTR",
+      "company": "Palantir Technologies Inc. Class A Common Stock",
+      "website": "https://www.palantirtechnologies.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "NFLX",
+      "company": "Netflix Inc",
+      "website": "https://www.netflix.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "KO",
+      "company": "The Coca-Cola Company",
+      "website": "https://www.coca-colacompany.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.coca-colacompany.com/sustainability",
+      "pdf_urls_found": [
+        "https://www.coca-colacompany.com/content/dam/company/us/en/reports/2024-environmental-update/2024-environmental-update.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.coca-colacompany.com/content/dam/company/us/en/reports/{year}-environmental-update/{year}-environmental-update.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "CSCO",
+      "company": "Cisco Systems Inc",
+      "website": "https://www.cisco.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "LRCX",
+      "company": "Lam Research Corp",
+      "website": "https://www.lamresearch.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.lamresearch.com/esg",
+      "pdf_urls_found": [
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-2024-Global-Impact-Report.pdf",
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-2024-Impact-Frameworks.pdf#page=2"
+      ],
+      "suggested_patterns": [
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-{year}-Global-Impact-Report.pdf",
+        "https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-{year}-Impact-Frameworks.pdf#page=2"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "PM",
+      "company": "Philip Morris International Inc",
+      "website": "https://www.philipmorrisinternat.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "WFC",
+      "company": "Wells Fargo & Company",
+      "website": "https://www.wellsfargo.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": "https://www.wellsfargo.com/about/corporate-responsibility/",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "AMAT",
+      "company": "Applied Materials Inc",
+      "website": "https://www.appliedmaterials.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "CAT",
+      "company": "Caterpillar Inc",
+      "website": "https://www.caterpillar.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "ORCL",
+      "company": "Oracle Corporation",
+      "website": "https://www.oracle.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.oracle.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "UNH",
+      "company": "UnitedHealth Group Incorporated",
+      "website": "https://www.unitedhealthgroup.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.unitedhealthgroup.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "MRK",
+      "company": "Merck & Company Inc",
+      "website": "https://www.merck.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.merck.com/corporate-responsibility",
+      "pdf_urls_found": [
+        "https://www.merck.com/wp-content/uploads/sites/124/2025/08/PurposeforProgressMerckImpactReport2024-2025.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.merck.com/wp-content/uploads/sites/124/2025/08/PurposeforProgressMerckImpactReport{year}-2025.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "IBM",
+      "company": "International Business Machines",
+      "website": "https://www.ibm.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.ibm.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "GS",
+      "company": "Goldman Sachs Group Inc",
+      "website": "https://www.goldmansachs.com",
+      "year": 2024,
+      "has_known_patterns": true,
+      "sustainability_page": null,
+      "pdf_urls_found": [
+        "https://www.goldmansachs.com/a/pgs/sustainability-report-2024.pdf"
+      ],
+      "suggested_patterns": [],
+      "status": "known_patterns_work"
+    },
+    {
+      "symbol": "RTX",
+      "company": "Raytheon Technologies Corp",
+      "website": "https://www.rtx.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.rtx.com/sustainability-report",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "MCD",
+      "company": "McDonald\u2019s Corporation",
+      "website": "https://corporate.mcdonalds.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "LIN",
+      "company": "Linde plc Ordinary Shares",
+      "website": "https://www.lindeplcordinaryshar.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "MS",
+      "company": "Morgan Stanley",
+      "website": "https://www.morganstanley.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.morganstanley.com/sustainability",
+      "pdf_urls_found": [
+        "https://www.morganstanley.com/content/dam/msdotcom/en/assets/pdfs/Morgan_Stanley_2024_Sustainability_Report.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.morganstanley.com/content/dam/msdotcom/en/assets/pdfs/Morgan_Stanley_{year}_Sustainability_Report.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "C",
+      "company": "Citigroup Inc",
+      "website": "https://www.citigroup.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "PEP",
+      "company": "PepsiCo Inc",
+      "website": "https://www.pepsico.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.pepsico.com/sustainability",
+      "pdf_urls_found": [
+        "https://www.pepsico.com/docs/pepsico-5v9wci20/media/Files/esg-topics/2024-pepsico-modern-slavery-and-human-trafficking-statement.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.pepsico.com/docs/pepsico-5v9wci20/media/Files/esg-topics/{year}-pepsico-modern-slavery-and-human-trafficking-statement.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "ABT",
+      "company": "Abbott Laboratories",
+      "website": "https://www.abbott.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.abbott.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "TMO",
+      "company": "Thermo Fisher Scientific Inc",
+      "website": "https://www.thermofisher.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.thermofisher.com/sustainability",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "DIS",
+      "company": "Walt Disney Company",
+      "website": "https://thewaltdisneycompany.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://thewaltdisneycompany.com/impact",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "AXP",
+      "company": "American Express Company",
+      "website": "https://www.americanexpress.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "KLAC",
+      "company": "KLA-Tencor Corporation",
+      "website": "https://www.kla-tencor.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.kla-tencor.com/csr",
+      "pdf_urls_found": [
+        "https://www.kla-tencor.com/wp-content/uploads/2024-KLA-Global-Impact-Report.pdf"
+      ],
+      "suggested_patterns": [
+        "https://www.kla-tencor.com/wp-content/uploads/{year}-KLA-Global-Impact-Report.pdf"
+      ],
+      "status": "pdfs_found_on_page"
+    },
+    {
+      "symbol": "GILD",
+      "company": "Gilead Sciences Inc",
+      "website": "https://www.gileadsciences.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "T",
+      "company": "AT&T Inc",
+      "website": "https://www.att.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": "https://www.att.com/environment",
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    },
+    {
+      "symbol": "AMGN",
+      "company": "Amgen Inc",
+      "website": "https://www.amgen.com",
+      "year": 2024,
+      "has_known_patterns": false,
+      "sustainability_page": null,
+      "pdf_urls_found": [],
+      "suggested_patterns": [],
+      "status": "no_reports_found"
+    }
+  ]
+}

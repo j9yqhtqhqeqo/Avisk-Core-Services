@@ -1,0 +1,51 @@
+symbol,company,has_known_patterns,status,pdfs_found,sustainability_page
+NVDA,NVIDIA Corporation,True,no_reports_found,0,https://www.nvidia.com/en-us/csr/
+AAPL,Apple Inc,True,pdfs_found_on_page,3,https://www.apple.com/environment/
+GOOG,Alphabet Inc Class C,True,pdfs_found_on_page,4,https://www.google.com/sustainability
+MSFT,Microsoft Corporation,True,no_reports_found,0,https://www.microsoft.com/en-us/corporate-responsibility/reports-hub
+AMZN,Amazon.com Inc,True,pdfs_found_on_page,3,https://sustainability.aboutamazon.com/reporting
+META,Meta Platforms Inc.,True,no_reports_found,0,
+TSLA,Tesla Inc,True,no_reports_found,0,
+LLY,Eli Lilly and Company,False,no_reports_found,0,https://www.lilly.com/impact
+JPM,JPMorgan Chase & Co,True,pdfs_found_on_page,3,https://www.jpmorganchase.com/about/governance/esg
+XOM,Exxon Mobil Corp,True,no_reports_found,0,
+JNJ,Johnson & Johnson,False,no_reports_found,0,https://www.jnj.com/sustainability
+V,Visa Inc. Class A,True,pdfs_found_on_page,1,https://usa.visa.com/about-visa/esg.html
+MA,Mastercard Inc,True,no_reports_found,0,
+MU,Micron Technology Inc,False,no_reports_found,0,
+COST,Costco Wholesale Corp,False,no_reports_found,0,
+ABBV,AbbVie Inc,False,no_reports_found,0,https://www.abbvie.com/sustainability
+BAC,Bank of America Corp,True,known_patterns_work,1,https://about.bankofamerica.com/en/making-an-impact/esg-reporting
+HD,The Home Depot Inc,False,no_reports_found,0,
+GE,GE Aerospace,False,no_reports_found,0,https://www.ge.com/sustainability
+PG,Procter & Gamble Company,False,no_reports_found,0,https://us.pg.com/sustainability
+AMD,Advanced Micro Devices Inc,False,no_reports_found,0,https://www.amd.com/sustainability
+CVX,Chevron Corp,True,no_reports_found,0,https://www.chevron.com/sustainability
+PLTR,Palantir Technologies Inc. Class A Common Stock,False,no_reports_found,0,
+NFLX,Netflix Inc,False,no_reports_found,0,
+KO,The Coca-Cola Company,False,pdfs_found_on_page,1,https://www.coca-colacompany.com/sustainability
+CSCO,Cisco Systems Inc,False,no_reports_found,0,
+LRCX,Lam Research Corp,False,pdfs_found_on_page,2,https://www.lamresearch.com/esg
+PM,Philip Morris International Inc,False,no_reports_found,0,
+WFC,Wells Fargo & Company,True,no_reports_found,0,https://www.wellsfargo.com/about/corporate-responsibility/
+AMAT,Applied Materials Inc,False,no_reports_found,0,
+CAT,Caterpillar Inc,False,no_reports_found,0,
+ORCL,Oracle Corporation,False,no_reports_found,0,https://www.oracle.com/sustainability
+UNH,UnitedHealth Group Incorporated,False,no_reports_found,0,https://www.unitedhealthgroup.com/sustainability
+MRK,Merck & Company Inc,False,pdfs_found_on_page,1,https://www.merck.com/corporate-responsibility
+IBM,International Business Machines,False,no_reports_found,0,https://www.ibm.com/sustainability
+GS,Goldman Sachs Group Inc,True,known_patterns_work,1,
+RTX,Raytheon Technologies Corp,False,no_reports_found,0,https://www.rtx.com/sustainability-report
+MCD,McDonald’s Corporation,False,no_reports_found,0,
+LIN,Linde plc Ordinary Shares,False,no_reports_found,0,
+MS,Morgan Stanley,False,pdfs_found_on_page,1,https://www.morganstanley.com/sustainability
+C,Citigroup Inc,False,no_reports_found,0,
+PEP,PepsiCo Inc,False,pdfs_found_on_page,1,https://www.pepsico.com/sustainability
+ABT,Abbott Laboratories,False,no_reports_found,0,https://www.abbott.com/sustainability
+TMO,Thermo Fisher Scientific Inc,False,no_reports_found,0,https://www.thermofisher.com/sustainability
+DIS,Walt Disney Company,False,no_reports_found,0,https://thewaltdisneycompany.com/impact
+AXP,American Express Company,False,no_reports_found,0,
+KLAC,KLA-Tencor Corporation,False,pdfs_found_on_page,1,https://www.kla-tencor.com/csr
+GILD,Gilead Sciences Inc,False,no_reports_found,0,
+T,AT&T Inc,False,no_reports_found,0,https://www.att.com/environment
+AMGN,Amgen Inc,False,no_reports_found,0,
