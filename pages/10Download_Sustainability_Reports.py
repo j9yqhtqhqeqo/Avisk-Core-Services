@@ -468,7 +468,7 @@ with tab3:
         if years_filter:
             year_progress_label.markdown(
                 f"**📅 Years:** {min(years_filter)}-{max(years_filter)} ({total_years} years)")
-            
+
             # Create single downloader with ALL years
             multi_year_downloader = SustainabilityReportDownloader(
                 download_dir=output_dir,
@@ -477,7 +477,7 @@ with tab3:
                 use_storage=use_storage,
                 year_filter=years_filter  # ALL years at once
             )
-            
+
             for company_idx, (_, row) in enumerate(companies_to_process.iterrows()):
                 symbol = row['Symbol']
                 company = row['Company']
@@ -500,11 +500,13 @@ with tab3:
                 results.append(result)
 
                 # Update metrics
-                total_downloaded = len(multi_year_downloader.downloaded_reports)
+                total_downloaded = len(
+                    multi_year_downloader.downloaded_reports)
                 total_failed = len(multi_year_downloader.failed_downloads)
                 metric_processed.metric(
                     "Processed", f"{company_idx + 1}/{total_companies}")
-                metric_found.metric("Years", f"{min(years_filter)}-{max(years_filter)}")
+                metric_found.metric(
+                    "Years", f"{min(years_filter)}-{max(years_filter)}")
                 metric_downloaded.metric("Downloaded", total_downloaded)
                 metric_failed.metric("Failed", total_failed)
 
