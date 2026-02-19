@@ -332,6 +332,7 @@ class SustainabilityReportDownloader:
         ],
         'ABT': [
             'https://www.abbott.com/responsibility/sustainability.html',
+            'https://www.abbott.com/en-us/responsibility/sustainability/sustainability-reporting',
         ],
         'AMGN': [
             'https://www.amgen.com/responsibility',
@@ -1530,7 +1531,7 @@ class SustainabilityReportDownloader:
             # Deduplicate and validate URLs
             pdf_urls = list(set(pdf_urls))
             logger.info(
-                f"DuckDuckGo search for {company_name} found {len(pdf_urls)} PDFs")
+                f"DuckDuckGo search for {company_name}, year {year_str} found {len(pdf_urls)} PDFs")
 
         except Exception as e:
             logger.error(f"DuckDuckGo search failed for {company_name}: {e}")
