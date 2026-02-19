@@ -39,10 +39,15 @@ except ImportError:
     PATH_CONFIG_AVAILABLE = False
 
 try:
-    from duckduckgo_search import DDGS
+    from ddgs import DDGS
     DDGS_AVAILABLE = True
 except ImportError:
-    DDGS_AVAILABLE = False
+    try:
+        # Fallback to old package name
+        from duckduckgo_search import DDGS
+        DDGS_AVAILABLE = True
+    except ImportError:
+        DDGS_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(
@@ -718,7 +723,7 @@ class SustainabilityReportDownloader:
     }
 
     def __init__(self, download_dir: Optional[str] = None,
-                 delay_seconds: float = 2.0,
+                 delay_seconds: float = 4.0,
                  current_sector_id: Optional[int] = None,
                  use_storage: bool = True,
                  year_filter: Optional[List[int]] = None):
@@ -769,10 +774,20 @@ class SustainabilityReportDownloader:
         self.db_connection = None
         self._init_db_connection()
 
-        # Session for connection pooling
+        # Session for connection pooling with browser-like headers
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/pdf',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
         })
 
     def _init_db_connection(self):
@@ -1481,12 +1496,12 @@ class SustainabilityReportDownloader:
         pdf_urls = []
 
         try:
-            # Build search query
+            # Build search queries
             year_str = str(year) if year else ""
             search_terms = [
                 f'"{company_name}" sustainability report {year_str} filetype:pdf',
                 f'"{company_name}" ESG report {year_str} filetype:pdf',
-                f'"{company_name}" environmental report {year_str} filetype:pdf',
+                f'"{company_name}" corporate responsibility report {year_str} filetype:pdf',
             ]
 
             # Use duckduckgo-search library if available (handles bot detection)
@@ -1494,15 +1509,36 @@ class SustainabilityReportDownloader:
                 for query in search_terms:
                     try:
                         with DDGS() as ddgs:
-                            results = list(ddgs.text(query, max_results=10))
+                            results = list(ddgs.text(query, max_results=15))
                             for result in results:
                                 url = result.get('href', '')
-                                if url.lower().endswith('.pdf'):
-                                    pdf_urls.append(url)
-                                    logger.info(f"DuckDuckGo (DDGS) found PDF: {url}")
-                        time.sleep(self.delay_seconds)
+                                if not url:
+                                    continue
+                                    
+                                # Check if URL is a PDF (by extension or content)
+                                is_pdf = url.lower().endswith('.pdf')
+                                
+                                # Also check if URL contains pdf in path (some CDNs)
+                                if not is_pdf and '/pdf/' in url.lower():
+                                    is_pdf = True
+                                
+                                if is_pdf:
+                                    # If year filter, verify year is in URL
+                                    if year_str:
+                                        if year_str in url:
+                                            pdf_urls.append(url)
+                                            logger.info(f"DuckDuckGo found PDF for {year_str}: {url}")
+                                        else:
+                                            logger.debug(f"Skipping PDF (year {year_str} not in URL): {url}")
+                                    else:
+                                        pdf_urls.append(url)
+                                        logger.info(f"DuckDuckGo found PDF: {url}")
+                        # Longer delay between searches to avoid rate limiting
+                        time.sleep(self.delay_seconds * 2)
                     except Exception as e:
                         logger.debug(f"DDGS search error for '{query}': {e}")
+                        # Extra delay on error (rate limiting)
+                        time.sleep(self.delay_seconds * 3)
                         continue
             else:
                 # Fallback to HTML scraping (may be blocked by CAPTCHA)
@@ -1689,28 +1725,82 @@ class SustainabilityReportDownloader:
 
     def download_report(self, url: str, company_symbol: str,
                         company_name: Optional[str] = None,
-                        year: Optional[int] = None) -> Optional[str]:
+                        year: Optional[int] = None,
+                        max_retries: int = 3) -> Optional[str]:
         """
-        Download a report PDF.
+        Download a report PDF with retry logic for transient errors.
 
         Args:
             url: URL of the PDF
             company_symbol: Stock symbol of the company
             company_name: Name of the company (for database tracking)
             year: Year of the report (optional)
+            max_retries: Maximum number of retry attempts for 5xx errors
 
         Returns:
             Path to downloaded file, or None if failed
         """
+        # Check if already in DATABASE BEFORE making HTTP request
+        # (only checks DB, not file system - allows re-registering existing files)
+        if company_name and self._is_url_in_database(url, company_name):
+            return None  # Skip - already tracked in database
+
+        response = None
+        last_error = None
+        
+        # Add dynamic Referer header based on the URL's domain
+        parsed_url = urlparse(url)
+        referer = f"{parsed_url.scheme}://{parsed_url.netloc}/"
+        request_headers = {'Referer': referer}
+        
+        # Retry logic for transient server errors (502, 503, 504)
+        for attempt in range(max_retries):
+            try:
+                response = self.session.get(url, timeout=30, headers=request_headers)
+                response.raise_for_status()
+                break  # Success - exit retry loop
+            except requests.exceptions.HTTPError as e:
+                status_code = e.response.status_code if e.response else 0
+                # Retry on 502, 503, 504 (transient server errors)
+                if status_code in (502, 503, 504) and attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 3  # 3s, 6s, 9s
+                    logger.warning(f"HTTP {status_code} for {url}, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    last_error = e
+                    continue
+                else:
+                    # Non-retryable error or max retries reached
+                    logger.error(f"Failed to download {url}: {e}")
+                    self.failed_downloads.append({
+                        'symbol': company_symbol,
+                        'url': url,
+                        'error': str(e),
+                        'timestamp': datetime.now().isoformat()
+                    })
+                    return None
+            except Exception as e:
+                # Non-HTTP errors (SSL, timeout, etc.) - don't retry
+                logger.error(f"Failed to download {url}: {e}")
+                self.failed_downloads.append({
+                    'symbol': company_symbol,
+                    'url': url,
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                })
+                return None
+        
+        # If we exhausted retries without success
+        if response is None:
+            logger.error(f"Failed to download {url} after {max_retries} retries: {last_error}")
+            self.failed_downloads.append({
+                'symbol': company_symbol,
+                'url': url,
+                'error': str(last_error),
+                'timestamp': datetime.now().isoformat()
+            })
+            return None
+
         try:
-            # Check if already in DATABASE BEFORE making HTTP request
-            # (only checks DB, not file system - allows re-registering existing files)
-            if company_name and self._is_url_in_database(url, company_name):
-                return None  # Skip - already tracked in database
-
-            response = self.session.get(url, timeout=30)
-            response.raise_for_status()
-
             # Extract original filename from URL
             url_path = urlparse(url).path
             original_filename = os.path.basename(url_path)
@@ -1817,10 +1907,13 @@ class SustainabilityReportDownloader:
                 'db_id': db_id
             })
 
+            # Add delay after successful download to avoid rate limiting
+            time.sleep(self.delay_seconds)
+
             return str(filepath)
 
         except Exception as e:
-            logger.error(f"Failed to download {url}: {e}")
+            logger.error(f"Failed to process downloaded file {url}: {e}")
             self.failed_downloads.append({
                 'symbol': company_symbol,
                 'url': url,
@@ -1861,39 +1954,50 @@ class SustainabilityReportDownloader:
             if not website.startswith('http'):
                 website = f'https://{website}'
 
-            # First, try known direct PDF URLs for major companies
             report_urls = []
+            
+            # PRIMARY: Use DuckDuckGo search (most reliable for finding PDFs)
+            if self.year_filter and DDGS_AVAILABLE:
+                logger.info(f"Searching DuckDuckGo for {company_name} reports (years: {self.year_filter})")
+                for year in self.year_filter:
+                    ddg_urls = self.search_duckduckgo(company_name, year)
+                    report_urls.extend(ddg_urls)
+                logger.info(f"DuckDuckGo found {len(report_urls)} reports for {company_name}")
+            
+            # SECONDARY: Try known direct PDF URLs for major companies (fast, reliable)
             if self.year_filter and symbol in self.KNOWN_REPORT_URL_PATTERNS:
-                logger.info(f"Trying known report URLs for {symbol}")
+                logger.info(f"Checking known report URLs for {symbol}")
                 for year in self.year_filter:
                     known_urls = self.try_known_report_urls(symbol, year)
                     report_urls.extend(known_urls)
-                logger.info(
-                    f"Found {len(report_urls)} reports from known URLs for {symbol}")
-
-            # Search company website for additional reports
-            logger.info(f"Processing {company_name} ({symbol})")
-            website_urls = self.search_company_website(
-                company_name, website, symbol)
-
-            # Apply year filter to URLs before downloading (optimization)
+            
+            # Remove duplicates
+            report_urls = list(set(report_urls))
+            
+            # TERTIARY: If still missing years, crawl company website
             if self.year_filter:
-                website_urls = self._filter_urls_by_year(website_urls)
-
-            report_urls.extend(website_urls)
-
-            # Fallback to DuckDuckGo search if no reports found
-            if not report_urls:
-                logger.info(
-                    f"No reports found on website, trying DuckDuckGo search for {company_name}")
-                if self.year_filter:
-                    # Search for each year
-                    for year in self.year_filter:
-                        ddg_urls = self.search_duckduckgo(company_name, year)
-                        report_urls.extend(ddg_urls)
+                years_found = set()
+                for url in report_urls:
+                    year_match = re.search(r'20\d{2}', url)
+                    if year_match:
+                        years_found.add(int(year_match.group()))
+                
+                missing_years = [y for y in self.year_filter if y not in years_found]
+                if missing_years:
+                    logger.info(f"Years found: {sorted(years_found)}, missing: {sorted(missing_years)} - crawling website")
+                    website_urls = self.search_company_website(company_name, website, symbol)
+                    website_urls = self._filter_urls_by_year(website_urls)
+                    report_urls.extend(website_urls)
                 else:
-                    # Search without year filter
-                    report_urls = self.search_duckduckgo(company_name)
+                    logger.info(f"All requested years found for {symbol}: {sorted(years_found)}")
+            else:
+                # No year filter - search DuckDuckGo generally
+                if DDGS_AVAILABLE:
+                    ddg_urls = self.search_duckduckgo(company_name)
+                    report_urls.extend(ddg_urls)
+                # Also crawl website
+                website_urls = self.search_company_website(company_name, website, symbol)
+                report_urls.extend(website_urls)
 
             # Remove duplicates
             report_urls = list(set(report_urls))
