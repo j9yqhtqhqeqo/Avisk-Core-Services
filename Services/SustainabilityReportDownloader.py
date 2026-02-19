@@ -38,6 +38,12 @@ try:
 except ImportError:
     PATH_CONFIG_AVAILABLE = False
 
+try:
+    from duckduckgo_search import DDGS
+    DDGS_AVAILABLE = True
+except ImportError:
+    DDGS_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -458,6 +464,8 @@ class SustainabilityReportDownloader:
         'NVDA': [
             'https://images.nvidia.com/aem-dam/Solutions/documents/NVIDIA-Sustainability-Report-Fiscal-Year-{year}.pdf',
             'https://images.nvidia.com/aem-dam/Solutions/documents/FY{year}-NVIDIA-Corporate-Responsibility-Report.pdf',
+            'https://images.nvidia.com/content/crr/{year}/sustainability-report/pdf/nvidia-{year}-sustainabilityreport-final-v2.pdf',
+            'https://images.nvidia.com/content/crr/{year}/sustainability-report/pdf/nvidia-{year}-sustainability-report.pdf',
             # NVIDIA uses fiscal years - FY25 = calendar 2024
         ],
         'GOOG': [
@@ -1481,52 +1489,70 @@ class SustainabilityReportDownloader:
                 f'"{company_name}" environmental report {year_str} filetype:pdf',
             ]
 
-            for query in search_terms:
-                try:
-                    # Use DuckDuckGo HTML search (no API key needed)
-                    encoded_query = requests.utils.quote(query)
-                    url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+            # Use duckduckgo-search library if available (handles bot detection)
+            if DDGS_AVAILABLE:
+                for query in search_terms:
+                    try:
+                        with DDGS() as ddgs:
+                            results = list(ddgs.text(query, max_results=10))
+                            for result in results:
+                                url = result.get('href', '')
+                                if url.lower().endswith('.pdf'):
+                                    pdf_urls.append(url)
+                                    logger.info(f"DuckDuckGo (DDGS) found PDF: {url}")
+                        time.sleep(self.delay_seconds)
+                    except Exception as e:
+                        logger.debug(f"DDGS search error for '{query}': {e}")
+                        continue
+            else:
+                # Fallback to HTML scraping (may be blocked by CAPTCHA)
+                logger.warning("duckduckgo-search library not available, using HTML fallback (may be blocked)")
+                for query in search_terms:
+                    try:
+                        # Use DuckDuckGo HTML search (no API key needed)
+                        encoded_query = requests.utils.quote(query)
+                        url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
 
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                    }
+                        headers = {
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        }
 
-                    response = self.session.get(
-                        url, headers=headers, timeout=15)
+                        response = self.session.get(
+                            url, headers=headers, timeout=15)
 
-                    if response.status_code == 200:
-                        soup = BeautifulSoup(response.content, 'html.parser')
+                        if response.status_code == 200:
+                            soup = BeautifulSoup(response.content, 'html.parser')
 
-                        # Find result links
-                        for result in soup.find_all('a', class_='result__a'):
-                            href = result.get('href', '')
-                            # DuckDuckGo wraps URLs, extract actual URL
-                            if 'uddg=' in href:
-                                # Extract the actual URL from DuckDuckGo's redirect
-                                import urllib.parse
-                                parsed = urllib.parse.parse_qs(
-                                    urllib.parse.urlparse(href).query)
-                                if 'uddg' in parsed:
-                                    actual_url = parsed['uddg'][0]
-                                    if actual_url.lower().endswith('.pdf'):
-                                        pdf_urls.append(actual_url)
-                                        logger.info(
-                                            f"DuckDuckGo found PDF: {actual_url}")
-                            elif href.lower().endswith('.pdf'):
-                                pdf_urls.append(href)
-                                logger.info(f"DuckDuckGo found PDF: {href}")
+                            # Find result links
+                            for result in soup.find_all('a', class_='result__a'):
+                                href = result.get('href', '')
+                                # DuckDuckGo wraps URLs, extract actual URL
+                                if 'uddg=' in href:
+                                    # Extract the actual URL from DuckDuckGo's redirect
+                                    import urllib.parse
+                                    parsed = urllib.parse.parse_qs(
+                                        urllib.parse.urlparse(href).query)
+                                    if 'uddg' in parsed:
+                                        actual_url = parsed['uddg'][0]
+                                        if actual_url.lower().endswith('.pdf'):
+                                            pdf_urls.append(actual_url)
+                                            logger.info(
+                                                f"DuckDuckGo found PDF: {actual_url}")
+                                elif href.lower().endswith('.pdf'):
+                                    pdf_urls.append(href)
+                                    logger.info(f"DuckDuckGo found PDF: {href}")
 
-                        # Also check result snippets for PDF links
-                        for result in soup.find_all('a', class_='result__url'):
-                            href = result.get('href', '')
-                            if href.lower().endswith('.pdf'):
-                                pdf_urls.append(href)
+                            # Also check result snippets for PDF links
+                            for result in soup.find_all('a', class_='result__url'):
+                                href = result.get('href', '')
+                                if href.lower().endswith('.pdf'):
+                                    pdf_urls.append(href)
 
-                    time.sleep(self.delay_seconds)  # Be respectful
+                        time.sleep(self.delay_seconds)  # Be respectful
 
-                except Exception as e:
-                    logger.debug(f"DuckDuckGo search error for '{query}': {e}")
-                    continue
+                    except Exception as e:
+                        logger.debug(f"DuckDuckGo search error for '{query}': {e}")
+                        continue
 
             # Deduplicate and validate URLs
             pdf_urls = list(set(pdf_urls))
