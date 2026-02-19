@@ -249,6 +249,465 @@ class SustainabilityReportDownloader:
         'PNW': 'pinnaclewest.com',
     }
 
+    # Companies with special sustainability report page URLs
+    # These companies host reports on non-standard pages
+    CUSTOM_SUSTAINABILITY_PAGES = {
+        # Top Tech
+        'NVDA': [
+            'https://www.nvidia.com/en-us/csr/',
+            'https://www.nvidia.com/en-us/sustainability/',
+        ],
+        'MSFT': [
+            'https://www.microsoft.com/en-us/corporate-responsibility/reports-hub',
+            'https://www.microsoft.com/en-us/corporate-responsibility/sustainability/report',
+        ],
+        'AAPL': [
+            'https://www.apple.com/environment/',
+            'https://www.apple.com/environment/reports/',
+        ],
+        'GOOGL': [
+            'https://sustainability.google/reports/',
+        ],
+        'GOOG': [
+            'https://sustainability.google/reports/',
+        ],
+        'AMZN': [
+            'https://sustainability.aboutamazon.com/',
+            'https://sustainability.aboutamazon.com/reporting',
+        ],
+        'META': [
+            'https://sustainability.fb.com/',
+            'https://sustainability.fb.com/reports/',
+        ],
+        'TSLA': [
+            'https://www.tesla.com/impact',
+            'https://www.tesla.com/impact-report',
+        ],
+        # Financial Services
+        'JPM': [
+            'https://www.jpmorganchase.com/about/governance/esg',
+            'https://www.jpmorganchase.com/impact/environmental-sustainability',
+        ],
+        'V': [
+            'https://usa.visa.com/about-visa/esg.html',
+            'https://corporate.visa.com/en/esg.html',
+        ],
+        'MA': [
+            'https://www.mastercard.us/en-us/vision/corp-responsibility.html',
+        ],
+        'BAC': [
+            'https://about.bankofamerica.com/en/making-an-impact/esg-reporting',
+        ],
+        'WFC': [
+            'https://www.wellsfargo.com/about/corporate-responsibility/',
+        ],
+        'GS': [
+            'https://www.goldmansachs.com/our-firm/sustainability/',
+        ],
+        'MS': [
+            'https://www.morganstanley.com/about-us-governance/sustainability-at-morgan-stanley',
+        ],
+        'C': [
+            'https://www.citigroup.com/global/our-impact/sustainability',
+        ],
+        # Healthcare
+        'LLY': [
+            'https://www.lilly.com/impact',
+            'https://esg.lilly.com/',
+        ],
+        'JNJ': [
+            'https://www.jnj.com/about-jnj/environmental-social-governance-esg',
+        ],
+        'UNH': [
+            'https://www.unitedhealthgroup.com/what-we-do/sustainability.html',
+        ],
+        'ABBV': [
+            'https://www.abbvie.com/our-impact/environmental-social-governance.html',
+        ],
+        'MRK': [
+            'https://www.merck.com/company-overview/esg/',
+        ],
+        'TMO': [
+            'https://corporate.thermofisher.com/us/en/index/corporate-social-responsibility.html',
+        ],
+        'ABT': [
+            'https://www.abbott.com/responsibility/sustainability.html',
+        ],
+        'AMGN': [
+            'https://www.amgen.com/responsibility',
+        ],
+        # Energy
+        'XOM': [
+            'https://corporate.exxonmobil.com/sustainability-report',
+        ],
+        'CVX': [
+            'https://www.chevron.com/sustainability',
+        ],
+        # Consumer
+        'COST': [
+            'https://www.costco.com/sustainability.html',
+        ],
+        'HD': [
+            'https://corporate.homedepot.com/responsibility',
+        ],
+        'PG': [
+            'https://us.pg.com/sustainability-reports/',
+        ],
+        'KO': [
+            'https://www.coca-colacompany.com/sustainability',
+        ],
+        'PEP': [
+            'https://www.pepsico.com/our-impact/sustainability',
+        ],
+        'MCD': [
+            'https://corporate.mcdonalds.com/corpmcd/our-purpose-and-impact.html',
+        ],
+        'DIS': [
+            'https://thewaltdisneycompany.com/csr/',
+        ],
+        'NFLX': [
+            'https://about.netflix.com/en/sustainability',
+        ],
+        # Technology & Communications
+        'ORCL': [
+            'https://www.oracle.com/corporate/citizenship/',
+        ],
+        'IBM': [
+            'https://www.ibm.com/impact/environment/',
+        ],
+        'CSCO': [
+            'https://www.cisco.com/c/m/en_us/about/csr/esg-hub/report.html',
+        ],
+        'CRM': [
+            'https://www.salesforce.com/company/stakeholder-impact-report/',
+        ],
+        'INTC': [
+            'https://www.intel.com/content/www/us/en/corporate-responsibility/corporate-responsibility.html',
+        ],
+        'AMD': [
+            'https://www.amd.com/en/corporate-responsibility.html',
+        ],
+        'T': [
+            'https://about.att.com/csr/home.html',
+        ],
+        'VZ': [
+            'https://www.verizon.com/about/responsibility/',
+        ],
+        # Industrials
+        'CAT': [
+            'https://www.caterpillar.com/en/company/sustainability.html',
+        ],
+        'BA': [
+            'https://www.boeing.com/principles/sustainability',
+        ],
+        'GE': [
+            'https://www.ge.com/sustainability',
+        ],
+        'RTX': [
+            'https://www.rtx.com/our-responsibility/sustainability',
+        ],
+        'LIN': [
+            'https://www.linde.com/about-linde/sustainability',
+        ],
+        'PM': [
+            'https://www.pmi.com/sustainability',
+        ],
+        # Semiconductor Equipment
+        'LRCX': [
+            'https://www.lamresearch.com/company/esg-impact/',
+        ],
+        'KLAC': [
+            'https://www.kla-tencor.com/company/corporate-responsibility',
+        ],
+        'AMAT': [
+            'https://www.appliedmaterials.com/company/corporate-responsibility',
+        ],
+        'MU': [
+            'https://www.micron.com/about/sustainability',
+        ],
+        # Additional top companies
+        'GILD': [
+            'https://www.gilead.com/purpose/esg',
+        ],
+        'AXP': [
+            'https://about.americanexpress.com/corporate-sustainability',
+        ],
+        'NEE': [
+            'https://www.nexteraenergy.com/sustainability.html',
+        ],
+        'HON': [
+            'https://www.honeywell.com/us/en/company/sustainability',
+        ],
+        'LOW': [
+            'https://corporate.lowes.com/our-responsibilities',
+        ],
+        'BLK': [
+            'https://www.blackrock.com/corporate/sustainability',
+        ],
+        'SPGI': [
+            'https://www.spglobal.com/en/who-we-are/corporate-responsibility',
+        ],
+    }
+
+    # Direct PDF URL patterns for major companies
+    # Format: symbol -> {year -> [list of PDF URLs]}
+    # Use {year} as placeholder for the year
+    KNOWN_REPORT_URL_PATTERNS = {
+        # Top Tech Companies
+        'NVDA': [
+            'https://images.nvidia.com/aem-dam/Solutions/documents/NVIDIA-Sustainability-Report-Fiscal-Year-{year}.pdf',
+            'https://images.nvidia.com/aem-dam/Solutions/documents/FY{year}-NVIDIA-Corporate-Responsibility-Report.pdf',
+            # NVIDIA uses fiscal years - FY25 = calendar 2024
+        ],
+        'GOOG': [
+            'https://www.gstatic.com/gumdrop/sustainability/google-{year}-environmental-report.pdf',
+            'https://www.gstatic.com/gumdrop/sustainability/google-{year}-supplier-responsibility-report.pdf',
+            'https://www.gstatic.com/gumdrop/sustainability/{year}-google-statement-against-modern-slavery.pdf',
+            'https://www.gstatic.com/gumdrop/sustainability/alphabet-{year}-cdp-climate-change-response.pdf',
+        ],
+        'GOOGL': [
+            'https://www.gstatic.com/gumdrop/sustainability/google-{year}-environmental-report.pdf',
+            'https://www.gstatic.com/gumdrop/sustainability/google-{year}-supplier-responsibility-report.pdf',
+            'https://www.gstatic.com/gumdrop/sustainability/{year}-google-statement-against-modern-slavery.pdf',
+            'https://www.gstatic.com/gumdrop/sustainability/alphabet-{year}-cdp-climate-change-response.pdf',
+        ],
+        'AMZN': [
+            'https://sustainability.aboutamazon.com/{year}-amazon-sustainability-report.pdf',
+            'https://sustainability.aboutamazon.com/{year}-sustainability-executive-summary.pdf',
+            'https://sustainability.aboutamazon.com/{year}-amazon-sustainability-report-aws-summary.pdf',
+            'https://sustainability.aboutamazon.com/{year}-sustainability-reporting-framework-summary.pdf',
+        ],
+        'MSFT': [
+            'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RE5b38N',  # 2024 report
+            'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RE4RwfV',  # 2023 report
+        ],
+        'AAPL': [
+            'https://www.apple.com/environment/pdf/Apple_Environmental_Progress_Report_{year}.pdf',
+            'https://www.apple.com/environment/pdf/Apple_CDP-Climate-Change-Questionnaire_{year}.pdf',
+        ],
+        'META': [
+            'https://sustainability.fb.com/wp-content/uploads/{year}/07/Meta-{year}-Sustainability-Report.pdf',
+        ],
+        'TSLA': [
+            'https://www.tesla.com/ns_videos/Tesla-Impact-Report-{year}.pdf',
+            'https://www.tesla.com/ns_videos/{year}-tesla-impact-report.pdf',
+        ],
+        # Financial Services
+        'JPM': [
+            'https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/documents/{year}-esg-report.pdf',
+            'https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/documents/jpmc-{year}-annual-report.pdf',
+        ],
+        'V': [
+            'https://usa.visa.com/content/dam/VCOM/regional/na/us/about-visa/documents/visa-{year}-esg-report.pdf',
+        ],
+        'MA': [
+            'https://www.mastercard.com/content/dam/public/mastercardcom/na/global-site/documents/mastercard-{year}-sustainability-report.pdf',
+        ],
+        'BAC': [
+            'https://about.bankofamerica.com/content/dam/about/report-center/{year}/Bank-of-America-{year}-Annual-Report.pdf',
+        ],
+        'WFC': [
+            'https://www08.wellsfargomedia.com/assets/pdf/about/corporate-responsibility/environmental-social-governance-report-{year}.pdf',
+        ],
+        'GS': [
+            'https://www.goldmansachs.com/a/pgs/sustainability-report-{year}.pdf',
+        ],
+        'MS': [
+            'https://www.morganstanley.com/content/dam/msdotcom/sustainability/{year}-sustainability-report.pdf',
+            'https://www.morganstanley.com/content/dam/msdotcom/en/assets/pdfs/Morgan_Stanley_{year}_Sustainability_Report.pdf',
+        ],
+        'C': [
+            'https://www.citigroup.com/global/assets/pdf/citi-{year}-esg-report.pdf',
+        ],
+        # Healthcare
+        'LLY': [
+            'https://esg.lilly.com/_assets/pdf/lilly-{year}-esg-report.pdf',
+        ],
+        'JNJ': [
+            'https://www.jnj.com/sites/default/files/{year}-health-for-humanity-report.pdf',
+        ],
+        'UNH': [
+            'https://www.unitedhealthgroup.com/content/dam/UHG/{year}/sustainability-report-{year}.pdf',
+        ],
+        'ABBV': [
+            'https://www.abbvie.com/content/dam/abbvie-dotcom/uploads/PDFs/{year}-abbvie-esg-report.pdf',
+        ],
+        'MRK': [
+            'https://www.merck.com/assets/pdfs/{year}-esg-progress-report.pdf',
+            'https://www.merck.com/wp-content/uploads/sites/124/2025/08/PurposeforProgressMerckImpactReport{year}-2025.pdf',
+        ],
+        'TMO': [
+            'https://corporate.thermofisher.com/content/dam/tfcorpsite/documents/csr-report/{year}-corporate-social-responsibility-report.pdf',
+        ],
+        'ABT': [
+            'https://www.abbott.com/content/dam/corp/abbott/en-us/documents/pdfs/{year}-global-sustainability-report.pdf',
+        ],
+        'AMGN': [
+            'https://www.amgen.com/-/media/amgen/full/www-amgen-com/downloads/responsibility/{year}-amgen-esg-report.pdf',
+        ],
+        # Energy
+        'XOM': [
+            'https://corporate.exxonmobil.com/-/media/Global/Files/sustainability-report/publication/{year}-sustainability-report.pdf',
+        ],
+        'CVX': [
+            'https://www.chevron.com/-/media/chevron/sustainability/documents/{year}-corporate-sustainability-report.pdf',
+        ],
+        # Consumer
+        'COST': [
+            'https://www.costco.com/wcsstore/CostcoUSBCCatalogAssetStore/sustainability-reports/{year}-sustainability-report.pdf',
+        ],
+        'HD': [
+            'https://ir.homedepot.com/~/media/Files/H/HomeDepot-IR/documents/governance/{year}-esg-report.pdf',
+        ],
+        'PG': [
+            'https://us.pg.com/-/media/PGCOMUS/Documents/PDF/Sustainability_Reports/PG-Citizenship-Report-{year}.pdf',
+        ],
+        'KO': [
+            'https://www.coca-colacompany.com/content/dam/company/us/en/reports/{year}-business-environmental-social-governance-report.pdf',
+            'https://www.coca-colacompany.com/content/dam/company/us/en/reports/{year}-environmental-update/{year}-environmental-update.pdf',
+        ],
+        'PEP': [
+            'https://www.pepsico.com/docs/default-source/sustainability-and-esg-topics/pepsico-{year}-esg-summary.pdf',
+            'https://www.pepsico.com/docs/pepsico-5v9wci20/media/Files/esg-topics/{year}-pepsico-modern-slavery-and-human-trafficking-statement.pdf',
+        ],
+        'MCD': [
+            'https://corporate.mcdonalds.com/content/dam/gwscorp/assets/sustainability/{year}-purpose-impact-report.pdf',
+        ],
+        'DIS': [
+            'https://thewaltdisneycompany.com/app/uploads/{year}/disney-{year}-csr-report.pdf',
+        ],
+        'NFLX': [
+            'https://s22.q4cdn.com/959853165/files/doc_downloads/ESG/{year}/Netflix-Environmental-Social-Governance-{year}-Report.pdf',
+        ],
+        # Technology & Communications
+        'ORCL': [
+            'https://www.oracle.com/a/ocom/docs/corporate/citizenship/oracle-{year}-corporate-citizenship-report.pdf',
+        ],
+        'IBM': [
+            'https://www.ibm.com/ibm/environment/annual/{year}-ibm-corporate-environmental-report.pdf',
+        ],
+        'CSCO': [
+            'https://www.cisco.com/c/dam/m/en_us/about/csr/esg-hub/_pdf/{year}-cisco-purpose-report.pdf',
+        ],
+        'CRM': [
+            'https://www.salesforce.com/content/dam/web/en_us/www/documents/reports/sustainability/salesforce-{year}-stakeholder-impact-report.pdf',
+        ],
+        'INTC': [
+            'https://csrreportbuilder.intel.com/pdfbuilder/pdfs/CSR-{year}-Full-Report.pdf',
+        ],
+        'AMD': [
+            'https://www.amd.com/content/dam/amd/en/documents/corporate/cr/{year}-corporate-responsibility-summary.pdf',
+        ],
+        'T': [
+            'https://about.att.com/content/dam/csr/PDFs/ATT{year}ESGSummary.pdf',
+        ],
+        'VZ': [
+            'https://www.verizon.com/about/sites/default/files/Verizon-{year}-ESG-Report.pdf',
+        ],
+        # Industrials
+        'CAT': [
+            'https://www.caterpillar.com/en/company/sustainability/sustainability-report/current-report/{year}-sustainability-report.pdf',
+        ],
+        'BA': [
+            'https://www.boeing.com/content/dam/boeing/boeingdotcom/principles/sustainability/{year}_boeing_sustainability_report.pdf',
+        ],
+        'GE': [
+            'https://www.ge.com/sites/default/files/{year}-ge-aerospace-sustainability-report.pdf',
+        ],
+        'RTX': [
+            'https://www.rtx.com/-/media/rtx/sustainability/pdf/{year}-esg-report.pdf',
+        ],
+        'LIN': [
+            'https://www.linde.com/-/media/linde/sustainability/documents/{year}-sustainable-development-report.pdf',
+        ],
+        'PM': [
+            'https://www.pmi.com/resources/docs/default-source/sustainability-reports-and-publications/pmi-integrated-report-{year}.pdf',
+        ],
+        # Semiconductor Equipment (verified working)
+        'LRCX': [
+            'https://www.lamresearch.com/wp-content/uploads/2025/07/Lam-Research-{year}-Global-Impact-Report.pdf',
+        ],
+        'KLAC': [
+            'https://www.kla-tencor.com/wp-content/uploads/{year}-KLA-Global-Impact-Report.pdf',
+        ],
+        'AMAT': [
+            'https://www.appliedmaterials.com/content/dam/site/company/csr/{year}-sustainability-report.pdf',
+        ],
+        'MU': [
+            'https://www.micron.com/-/media/client/global/documents/sustainability/{year}-sustainability-report.pdf',
+        ],
+        # Additional Top 100 Companies
+        'GILD': [
+            'https://www.gilead.com/-/media/files/pdfs/{year}-esg-report.pdf',
+        ],
+        'AXP': [
+            'https://s29.q4cdn.com/330303330/files/doc_downloads/ESG/{year}/American-Express-{year}-ESG-Report.pdf',
+        ],
+        'TJX': [
+            'https://www.tjx.com/docs/default-source/corporate-responsibility/{year}-tjx-corporate-responsibility-report.pdf',
+        ],
+        'ISRG': [
+            'https://isrg.intuitive.com/static-files/{year}-sustainability-report.pdf',
+        ],
+        'APH': [
+            'https://www.amphenol.com/sites/default/files/{year}-sustainability-report.pdf',
+        ],
+        'NEE': [
+            'https://www.nexteraenergy.com/content/dam/nee/us/en/pdf/{year}-environmental-social-governance-report.pdf',
+        ],
+        'HON': [
+            'https://www.honeywell.com/content/dam/honeywell/files/ESG/{year}-sustainability-report.pdf',
+        ],
+        'LOW': [
+            'https://corporate.lowes.com/sites/lowes-corp/files/2025-04/{year}-Lowes-Corporate-Responsibility-Report.pdf',
+        ],
+        'UNP': [
+            'https://www.up.com/cs/groups/public/@uprr/@corprel/documents/up_pdf_nativedocs/{year}-building-america-report.pdf',
+        ],
+        'SPGI': [
+            'https://www.spglobal.com/corporate-responsibility/pdfs/{year}-Corporate-Responsibility-Report.pdf',
+        ],
+        'BLK': [
+            'https://www.blackrock.com/corporate/literature/continuous-disclosure-and-important-information/{year}-annual-sustainability-report.pdf',
+        ],
+        'ADP': [
+            'https://www.adp.com/-/media/adp/resource-center/pdf/{year}-adp-esg-report.pdf',
+        ],
+        'BKNG': [
+            'https://www.bookingholdings.com/wp-content/uploads/{year}/04/Booking-Holdings-{year}-Sustainability-Report.pdf',
+        ],
+        'SYK': [
+            'https://www.stryker.com/content/dam/stryker/about/sustainability/{year}-sustainability-report.pdf',
+        ],
+        'MDLZ': [
+            'https://www.mondelezinternational.com/-/media/Mondelez/Snacking-Made-Right/{year}-ESG-Report.pdf',
+        ],
+        'REGN': [
+            'https://www.regeneron.com/downloads/{year}-sustainability-report.pdf',
+        ],
+        'VRTX': [
+            'https://www.vrtx.com/sites/default/files/{year}-vertex-corporate-responsibility-report.pdf',
+        ],
+        'CME': [
+            'https://www.cmegroup.com/content/dam/cmegroup/company/corporate-responsibility/{year}-cme-group-corporate-responsibility-report.pdf',
+        ],
+        'PLD': [
+            'https://www.prologis.com/sites/default/files/{year}-ESG-Impact-Report.pdf',
+        ],
+        'CI': [
+            'https://www.cigna.com/static/www-cigna-com/docs/{year}-corporate-responsibility-report.pdf',
+        ],
+        'WM': [
+            'https://sustainability.wm.com/downloads/{year}-sustainability-report.pdf',
+        ],
+        'DE': [
+            'https://www.deere.com/assets/pdfs/common/sustainability/{year}-sustainability-report.pdf',
+        ],
+        'MMC': [
+            'https://www.mmc.com/content/dam/mmc-web/Files/ESG/{year}-ESG-Report.pdf',
+        ],
+    }
+
     def __init__(self, download_dir: Optional[str] = None,
                  delay_seconds: float = 2.0,
                  current_sector_id: Optional[int] = None,
@@ -869,13 +1328,14 @@ class SustainabilityReportDownloader:
             raise
 
     def search_company_website(self, company_name: str,
-                               base_url: str) -> List[str]:
+                               base_url: str, symbol: str = None) -> List[str]:
         """
         Search company website for sustainability report links.
 
         Args:
             company_name: Name of the company
             base_url: Base URL of company website
+            symbol: Stock symbol (optional, for custom URL lookup)
 
         Returns:
             List of potential report URLs
@@ -883,26 +1343,70 @@ class SustainabilityReportDownloader:
         potential_urls = []
 
         try:
+            # Check for custom sustainability pages first (for companies like Microsoft, Apple, etc.)
+            custom_pages = []
+            if symbol and symbol in self.CUSTOM_SUSTAINABILITY_PAGES:
+                custom_pages = self.CUSTOM_SUSTAINABILITY_PAGES[symbol]
+                logger.info(
+                    f"Using custom sustainability pages for {symbol}: {custom_pages}")
+
+            # Try custom pages first
+            for custom_url in custom_pages:
+                try:
+                    response = self.session.get(
+                        custom_url, timeout=15, allow_redirects=True)
+                    if response.status_code == 200:
+                        logger.info(
+                            f"Found custom sustainability page: {custom_url}")
+                        soup = BeautifulSoup(response.content, 'html.parser')
+                        pdf_links = self._extract_pdf_links(soup, custom_url)
+                        potential_urls.extend(pdf_links)
+                        logger.info(
+                            f"Found {len(pdf_links)} PDFs on custom page {custom_url}")
+                except requests.RequestException as e:
+                    logger.debug(f"Custom page not found: {custom_url} - {e}")
+                time.sleep(self.delay_seconds / 2)
+
             # Try common sustainability page patterns
             search_paths = [
                 '',  # Homepage first
                 '/sustainability',
                 '/sustainability-report',
                 '/sustainability-reports',
+                '/sustainability/reports',
                 '/esg',
                 '/esg-report',
+                '/esg-reports',
+                '/esg/reports',
                 '/corporate-responsibility',
+                '/corporate-responsibility/reports',
                 '/about/sustainability',
                 '/about/esg',
+                '/about/responsibility',
                 '/investors/esg',
                 '/investors/sustainability',
+                '/investor-relations/esg',
                 '/responsibility',
+                '/responsibility/reports',
                 '/impact',
                 '/impact-report',
-                '/environment',
                 '/our-impact',
+                '/our-impact/reports',
+                '/environment',
+                '/environmental',
                 '/csr',
                 '/corporate-social-responsibility',
+                '/governance/esg',
+                '/citizenship',
+                '/corporate-citizenship',
+                '/social-impact',
+                '/reports',
+                '/annual-report',
+                '/annual-reports',
+                '/company/sustainability',
+                '/who-we-are/sustainability',
+                '/our-story/sustainability',
+                '/about-us/sustainability',
             ]
 
             for path in search_paths:
@@ -953,6 +1457,130 @@ class SustainabilityReportDownloader:
             logger.error(f"Error searching {company_name} website: {e}")
 
         return list(set(potential_urls))  # Remove duplicates
+
+    def search_duckduckgo(self, company_name: str, year: Optional[int] = None) -> List[str]:
+        """
+        Search DuckDuckGo for sustainability reports as a fallback.
+
+        Args:
+            company_name: Name of the company
+            year: Optional year to filter results
+
+        Returns:
+            List of PDF URLs found
+        """
+        pdf_urls = []
+
+        try:
+            # Build search query
+            year_str = str(year) if year else ""
+            search_terms = [
+                f'"{company_name}" sustainability report {year_str} filetype:pdf',
+                f'"{company_name}" ESG report {year_str} filetype:pdf',
+                f'"{company_name}" environmental report {year_str} filetype:pdf',
+            ]
+
+            for query in search_terms:
+                try:
+                    # Use DuckDuckGo HTML search (no API key needed)
+                    encoded_query = requests.utils.quote(query)
+                    url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+
+                    response = self.session.get(
+                        url, headers=headers, timeout=15)
+
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.content, 'html.parser')
+
+                        # Find result links
+                        for result in soup.find_all('a', class_='result__a'):
+                            href = result.get('href', '')
+                            # DuckDuckGo wraps URLs, extract actual URL
+                            if 'uddg=' in href:
+                                # Extract the actual URL from DuckDuckGo's redirect
+                                import urllib.parse
+                                parsed = urllib.parse.parse_qs(
+                                    urllib.parse.urlparse(href).query)
+                                if 'uddg' in parsed:
+                                    actual_url = parsed['uddg'][0]
+                                    if actual_url.lower().endswith('.pdf'):
+                                        pdf_urls.append(actual_url)
+                                        logger.info(
+                                            f"DuckDuckGo found PDF: {actual_url}")
+                            elif href.lower().endswith('.pdf'):
+                                pdf_urls.append(href)
+                                logger.info(f"DuckDuckGo found PDF: {href}")
+
+                        # Also check result snippets for PDF links
+                        for result in soup.find_all('a', class_='result__url'):
+                            href = result.get('href', '')
+                            if href.lower().endswith('.pdf'):
+                                pdf_urls.append(href)
+
+                    time.sleep(self.delay_seconds)  # Be respectful
+
+                except Exception as e:
+                    logger.debug(f"DuckDuckGo search error for '{query}': {e}")
+                    continue
+
+            # Deduplicate and validate URLs
+            pdf_urls = list(set(pdf_urls))
+            logger.info(
+                f"DuckDuckGo search for {company_name} found {len(pdf_urls)} PDFs")
+
+        except Exception as e:
+            logger.error(f"DuckDuckGo search failed for {company_name}: {e}")
+
+        return pdf_urls
+
+    def try_known_report_urls(self, symbol: str, year: int) -> List[str]:
+        """
+        Try known direct PDF URLs for major companies.
+
+        Major tech companies like Google, Amazon, Microsoft have predictable
+        URL patterns for their sustainability reports.
+
+        Args:
+            symbol: Stock symbol (e.g., 'GOOG', 'AMZN')
+            year: Year to search for
+
+        Returns:
+            List of valid PDF URLs that exist
+        """
+        valid_urls = []
+
+        if symbol not in self.KNOWN_REPORT_URL_PATTERNS:
+            return valid_urls
+
+        patterns = self.KNOWN_REPORT_URL_PATTERNS[symbol]
+        logger.info(
+            f"Trying {len(patterns)} known URL patterns for {symbol} {year}")
+
+        for pattern in patterns:
+            url = pattern.replace('{year}', str(year))
+            try:
+                # HEAD request to check if PDF exists
+                response = self.session.head(
+                    url, timeout=10, allow_redirects=True)
+                if response.status_code == 200:
+                    content_type = response.headers.get(
+                        'content-type', '').lower()
+                    if 'pdf' in content_type or url.lower().endswith('.pdf'):
+                        logger.info(f"Found known report: {url}")
+                        valid_urls.append(url)
+                else:
+                    logger.debug(
+                        f"Known URL not found (status {response.status_code}): {url}")
+            except requests.RequestException as e:
+                logger.debug(f"Failed to check known URL: {url} - {e}")
+
+            time.sleep(0.5)  # Brief delay between checks
+
+        return valid_urls
 
     def _extract_pdf_links(self, soup: BeautifulSoup, base_url: str) -> List[str]:
         """
@@ -1206,13 +1834,42 @@ class SustainabilityReportDownloader:
             if not website.startswith('http'):
                 website = f'https://{website}'
 
-            # Search for reports
+            # First, try known direct PDF URLs for major companies
+            report_urls = []
+            if self.year_filter and symbol in self.KNOWN_REPORT_URL_PATTERNS:
+                logger.info(f"Trying known report URLs for {symbol}")
+                for year in self.year_filter:
+                    known_urls = self.try_known_report_urls(symbol, year)
+                    report_urls.extend(known_urls)
+                logger.info(
+                    f"Found {len(report_urls)} reports from known URLs for {symbol}")
+
+            # Search company website for additional reports
             logger.info(f"Processing {company_name} ({symbol})")
-            report_urls = self.search_company_website(company_name, website)
+            website_urls = self.search_company_website(
+                company_name, website, symbol)
 
             # Apply year filter to URLs before downloading (optimization)
             if self.year_filter:
-                report_urls = self._filter_urls_by_year(report_urls)
+                website_urls = self._filter_urls_by_year(website_urls)
+
+            report_urls.extend(website_urls)
+
+            # Fallback to DuckDuckGo search if no reports found
+            if not report_urls:
+                logger.info(
+                    f"No reports found on website, trying DuckDuckGo search for {company_name}")
+                if self.year_filter:
+                    # Search for each year
+                    for year in self.year_filter:
+                        ddg_urls = self.search_duckduckgo(company_name, year)
+                        report_urls.extend(ddg_urls)
+                else:
+                    # Search without year filter
+                    report_urls = self.search_duckduckgo(company_name)
+
+            # Remove duplicates
+            report_urls = list(set(report_urls))
 
             result['reports_found'] = len(report_urls)
 
