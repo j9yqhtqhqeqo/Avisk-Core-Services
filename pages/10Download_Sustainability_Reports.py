@@ -625,6 +625,42 @@ with tab3:
 with tab4:
     st.header("Downloaded Files")
 
+    # Function to classify report type based on filename
+    def classify_report_type(filename: str) -> str:
+        """Classify a report as Sustainability, Annual/10K, or Other based on filename."""
+        filename_lower = filename.lower()
+
+        # Annual Report / 10K patterns
+        annual_patterns = [
+            '10k', '10-k', 'annual_report', 'annual-report', 'annualreport',
+            'form10k', 'form-10k', 'form_10k', '_ar_', '-ar-', '_ar.', '-ar.',
+            'proxy', 'def14a', '10q', '10-q', 'quarterly'
+        ]
+
+        # Sustainability / ESG patterns
+        sustainability_patterns = [
+            'sustainability', 'esg', 'csr', 'corporate_responsibility',
+            'corporate-responsibility', 'corporateresponsibility',
+            'environmental', 'social_responsibility', 'social-responsibility',
+            'impact_report', 'impact-report', 'impactreport',
+            'citizenship', 'climate', 'carbon', 'emissions',
+            'responsible', 'stewardship', 'green', 'progress_report',
+            'progress-report', 'cdp', 'tcfd', 'sasb', 'gri'
+        ]
+
+        # Check sustainability first (prioritize if both match)
+        for pattern in sustainability_patterns:
+            if pattern in filename_lower:
+                return "🌱 Sustainability/ESG"
+
+        # Check annual/10K
+        for pattern in annual_patterns:
+            if pattern in filename_lower:
+                return "📊 Annual/10K"
+
+        # Default to Other
+        return "📄 Other"
+
     # Get the storage path
     if use_storage:
         try:
@@ -640,53 +676,189 @@ with tab4:
 
     if output_path.exists():
         # Show yearly folder structure
-        st.subheader("📁 Yearly Folders")
+        st.subheader("📁 Filter Downloaded Reports")
 
         year_folders = sorted([f for f in output_path.iterdir() if f.is_dir() and f.name.isdigit()],
                               key=lambda x: x.name, reverse=True)
 
         if year_folders:
-            # Summary metrics
-            total_files = sum(len(list(f.glob("*.pdf"))) for f in year_folders)
-            st.success(
-                f"Found **{total_files}** reports across **{len(year_folders)}** years")
-
-            # Year filter
-            selected_years = st.multiselect(
-                "Filter by Year",
-                options=[f.name for f in year_folders],
-                # Show recent 3 years by default
-                default=[f.name for f in year_folders[:3]]
-            )
-
-            # Display by year
+            # Collect all PDF files first
+            all_files = []
             for folder in year_folders:
-                if folder.name not in selected_years:
-                    continue
+                for pdf_file in folder.glob("*.pdf"):
+                    # Extract company symbol from filename (format: SYMBOL_filename.pdf or SYMBOL-filename.pdf)
+                    filename = pdf_file.name
+                    symbol = filename.split('_')[0].split('-')[0].upper()
+                    report_type = classify_report_type(filename)
+                    all_files.append({
+                        'year': folder.name,
+                        'symbol': symbol,
+                        'filename': filename,
+                        'path': pdf_file,
+                        'size_mb': pdf_file.stat().st_size / (1024 * 1024),
+                        'report_type': report_type
+                    })
 
-                pdf_files = list(folder.glob("*.pdf"))
+            # Get unique symbols, years, and report types
+            unique_symbols = sorted(set(f['symbol'] for f in all_files))
+            unique_years = sorted(set(f['year']
+                                  for f in all_files), reverse=True)
+            unique_types = sorted(set(f['report_type'] for f in all_files))
 
-                with st.expander(f"📅 {folder.name} ({len(pdf_files)} reports)", expanded=False):
-                    if pdf_files:
-                        for file in sorted(pdf_files):
-                            col1, col2, col3 = st.columns([3, 1, 1])
-                            with col1:
-                                st.text(
-                                    file.name[:50] + "..." if len(file.name) > 50 else file.name)
-                            with col2:
-                                size_mb = file.stat().st_size / (1024 * 1024)
-                                st.text(f"{size_mb:.2f} MB")
-                            with col3:
-                                with open(file, 'rb') as f:
-                                    st.download_button(
-                                        label="⬇️",
-                                        data=f,
-                                        file_name=file.name,
-                                        mime="application/pdf",
-                                        key=str(file)
-                                    )
+            # Count by type
+            type_counts = {}
+            for t in unique_types:
+                type_counts[t] = len(
+                    [f for f in all_files if f['report_type'] == t])
+
+            # Summary metrics
+            st.success(
+                f"Found **{len(all_files)}** reports across **{len(year_folders)}** years from **{len(unique_symbols)}** companies")
+
+            # Show type breakdown
+            type_cols = st.columns(len(unique_types))
+            for i, report_type in enumerate(unique_types):
+                with type_cols[i]:
+                    st.metric(report_type, type_counts[report_type])
+
+            # Filter controls
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                # Company filter - use selected companies from tab1 as default if available
+                selected_companies_symbols = []
+                if st.session_state.selected_companies:
+                    selected_companies_symbols = [
+                        c['symbol'] for c in st.session_state.selected_companies if c['symbol'] in unique_symbols]
+
+                filter_by_company = st.checkbox(
+                    "🏢 Filter by Selected Companies",
+                    value=len(selected_companies_symbols) > 0,
+                    help="Show only files for companies selected in the 'Select Companies' tab"
+                )
+
+                if filter_by_company:
+                    if selected_companies_symbols:
+                        company_filter = st.multiselect(
+                            "Companies",
+                            options=unique_symbols,
+                            default=selected_companies_symbols,
+                            help="Filter files by company symbol"
+                        )
                     else:
-                        st.caption("No PDF files in this folder")
+                        company_filter = st.multiselect(
+                            "Companies",
+                            options=unique_symbols,
+                            default=[],
+                            help="Select companies to filter (or select companies in the 'Select Companies' tab first)"
+                        )
+                else:
+                    company_filter = unique_symbols  # Show all
+
+            with col2:
+                # Year filter - use selected years from tab2 as default if available
+                years_from_session = st.session_state.get(
+                    'years_to_download', None)
+                if years_from_session:
+                    default_years = [
+                        str(y) for y in years_from_session if str(y) in unique_years]
+                else:
+                    # Default to recent 3 years
+                    default_years = unique_years[:3]
+
+                filter_by_year = st.checkbox(
+                    "📅 Filter by Selected Years",
+                    value=years_from_session is not None,
+                    help="Show only files for years selected in the 'Select Years' tab"
+                )
+
+                if filter_by_year:
+                    year_filter = st.multiselect(
+                        "Years",
+                        options=unique_years,
+                        default=default_years if default_years else unique_years[:3],
+                        help="Filter files by year"
+                    )
+                else:
+                    year_filter = unique_years  # Show all
+
+            with col3:
+                # Report type filter
+                filter_by_type = st.checkbox(
+                    "📋 Filter by Report Type",
+                    value=False,
+                    help="Show only specific report types"
+                )
+
+                if filter_by_type:
+                    type_filter = st.multiselect(
+                        "Report Types",
+                        options=unique_types,
+                        default=[
+                            "🌱 Sustainability/ESG"] if "🌱 Sustainability/ESG" in unique_types else unique_types,
+                        help="Filter by report type"
+                    )
+                else:
+                    type_filter = unique_types  # Show all
+
+            # Apply filters
+            filtered_files = [
+                f for f in all_files
+                if f['symbol'] in company_filter and f['year'] in year_filter and f['report_type'] in type_filter
+            ]
+
+            st.markdown("---")
+
+            if filtered_files:
+                st.subheader(
+                    f"📄 Showing {len(filtered_files)} of {len(all_files)} reports")
+
+                # Group by year for display
+                from collections import defaultdict
+                files_by_year = defaultdict(list)
+                for f in filtered_files:
+                    files_by_year[f['year']].append(f)
+
+                # Display by year
+                for year in sorted(files_by_year.keys(), reverse=True):
+                    year_files = files_by_year[year]
+
+                    with st.expander(f"📅 {year} ({len(year_files)} reports)", expanded=len(files_by_year) <= 3):
+                        # Group by company within year
+                        files_by_company = defaultdict(list)
+                        for f in year_files:
+                            files_by_company[f['symbol']].append(f)
+
+                        for symbol in sorted(files_by_company.keys()):
+                            company_files = files_by_company[symbol]
+                            st.markdown(
+                                f"**{symbol}** ({len(company_files)} file{'s' if len(company_files) > 1 else ''})")
+
+                            for file_info in sorted(company_files, key=lambda x: x['filename']):
+                                col1, col2, col3, col4 = st.columns(
+                                    [3, 1, 1, 1])
+                                with col1:
+                                    display_name = file_info['filename']
+                                    st.text(
+                                        display_name[:55] + "..." if len(display_name) > 55 else display_name)
+                                with col2:
+                                    # Show report type badge
+                                    st.caption(file_info['report_type'])
+                                with col3:
+                                    st.text(f"{file_info['size_mb']:.2f} MB")
+                                with col4:
+                                    with open(file_info['path'], 'rb') as f:
+                                        st.download_button(
+                                            label="⬇️",
+                                            data=f,
+                                            file_name=file_info['filename'],
+                                            mime="application/pdf",
+                                            key=str(file_info['path'])
+                                        )
+                            st.markdown("")  # Add spacing between companies
+            else:
+                st.warning(
+                    "No files match the selected filters. Try adjusting your company or year selection.")
         else:
             st.info(
                 "No yearly folders found yet. Download reports to see them organized by year.")

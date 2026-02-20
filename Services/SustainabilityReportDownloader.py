@@ -100,6 +100,62 @@ class SustainabilityReportDownloader:
         r'responsibility.*report',
     ]
 
+    @staticmethod
+    def classify_content_type(filename: str, source_url: str = None) -> int:
+        """
+        Classify a report's content type based on filename and URL.
+        
+        Args:
+            filename: Name of the PDF file
+            source_url: Optional URL where file was downloaded from
+        
+        Returns:
+            1 = Sustainability/ESG report
+            2 = Annual Report/10K
+            3 = Other
+        """
+        # Combine filename and URL for pattern matching
+        text_to_check = filename.lower()
+        if source_url:
+            text_to_check += ' ' + source_url.lower()
+        
+        # Annual Report / 10K patterns (check first - more specific)
+        annual_patterns = [
+            '10k', '10-k', 'form10k', 'form-10k', 'form_10k',
+            'annual_report', 'annual-report', 'annualreport',
+            '_ar_', '-ar-', '_ar.', '-ar.',
+            'proxy', 'def14a', '10q', '10-q', 'quarterly',
+            '/investor-relations/', '/investors/', '/sec-filings/',
+            'earnings', 'financial_report', 'financial-report'
+        ]
+        
+        # Sustainability / ESG patterns
+        sustainability_patterns = [
+            'sustainability', 'esg', 'csr',
+            'corporate_responsibility', 'corporate-responsibility', 'corporateresponsibility',
+            'environmental', 'social_responsibility', 'social-responsibility',
+            'impact_report', 'impact-report', 'impactreport',
+            'citizenship', 'climate', 'carbon', 'emissions',
+            'responsible', 'stewardship', 'green',
+            'progress_report', 'progress-report',
+            'cdp', 'tcfd', 'sasb', 'gri',
+            '/sustainability/', '/esg/', '/responsibility/',
+            'net-zero', 'net_zero', 'decarbonization'
+        ]
+        
+        # Check sustainability first (prioritize if ambiguous)
+        for pattern in sustainability_patterns:
+            if pattern in text_to_check:
+                return 1  # Sustainability/ESG
+        
+        # Check annual/10K
+        for pattern in annual_patterns:
+            if pattern in text_to_check:
+                return 2  # Annual/10K
+        
+        # Default to Other
+        return 3
+
     # Known company website mappings (symbol -> domain)
     COMPANY_WEBSITES = {
         'AAPL': 'apple.com',
@@ -1134,7 +1190,8 @@ class SustainabilityReportDownloader:
         return False
 
     def _add_to_data_source(self, company_name: str, year: int, source_url: str,
-                            document_name: str, filepath: str) -> Optional[int]:
+                            document_name: str, filepath: str,
+                            content_type: int = None) -> Optional[int]:
         """
         Add a downloaded report entry to t_data_source table.
 
@@ -1144,6 +1201,7 @@ class SustainabilityReportDownloader:
             source_url: URL where the report was downloaded from
             document_name: Name of the document file
             filepath: Local file path where document is saved
+            content_type: 1=Sustainability/ESG, 2=Annual/10K, 3=Other (auto-detected if None)
 
         Returns:
             unique_id of the inserted record, or None if failed/already exists
@@ -1162,11 +1220,17 @@ class SustainabilityReportDownloader:
         # Ensure company exists in t_sec_company first (with sector mapping)
         self._ensure_company_exists(company_name)
 
+        # Auto-detect content_type if not provided
+        if content_type is None:
+            content_type = self.classify_content_type(document_name, source_url)
+            content_type_names = {1: 'Sustainability/ESG', 2: 'Annual/10K', 3: 'Other'}
+            logger.debug(f"Auto-detected content_type={content_type} ({content_type_names.get(content_type)}) for {document_name}")
+
         try:
             cursor = self.db_connection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
 
-            # content_type 1 = Sustainability Report
+            # content_type: 1=Sustainability/ESG, 2=Annual/10K, 3=Other
             # source_type = 'file' for downloaded files
             insert_sql = """
                 INSERT INTO t_data_source 
@@ -1179,7 +1243,7 @@ class SustainabilityReportDownloader:
             cursor.execute(insert_sql, (
                 company_name,
                 int(year),
-                1,  # content_type: Sustainability Report
+                content_type,  # content_type: 1=Sustainability, 2=Annual/10K, 3=Other
                 'file',  # source_type: file
                 document_name,  # source_url stores the filename
                 0,  # processed_ind: Not yet processed
