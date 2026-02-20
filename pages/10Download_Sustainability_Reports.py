@@ -50,7 +50,7 @@ def get_market_cap_rank(symbol: str) -> int:
 
 # Page configuration
 st.set_page_config(
-    page_title="Sustainability Report Downloader",
+    page_title="Document Downloader",
     page_icon="📊",
     layout="wide"
 )
@@ -64,11 +64,45 @@ if 'download_results' not in st.session_state:
     st.session_state.download_results = None
 
 # Title
-st.title("📊 Sustainability Report Downloader")
-st.markdown("Download sustainability/ESG reports from S&P 500 company websites")
+st.title("📊 Document Downloader")
+st.markdown("Download sustainability reports, annual reports/10K filings, and earnings transcripts from S&P 500 companies")
 
 # Sidebar configuration
 st.sidebar.header("⚙️ Configuration")
+
+# Content Type Selection
+st.sidebar.subheader("📄 Content Types to Download")
+download_sustainability = st.sidebar.checkbox(
+    "🌱 Sustainability/ESG Reports",
+    value=True,
+    help="Download sustainability reports, ESG reports, corporate responsibility reports"
+)
+download_annual = st.sidebar.checkbox(
+    "📊 Annual Reports/10K Filings",
+    value=False,
+    help="Download annual reports, 10-K SEC filings"
+)
+download_transcripts = st.sidebar.checkbox(
+    "🎙️ Earnings Call Transcripts",
+    value=False,
+    help="Download earnings call transcripts, investor call transcripts"
+)
+
+# Build content_types list based on selections
+content_types = []
+if download_sustainability:
+    content_types.append(1)
+if download_annual:
+    content_types.append(2)
+if download_transcripts:
+    content_types.append(4)  # 4 = Earnings Transcripts
+
+# Warn if nothing selected
+if not content_types:
+    st.sidebar.warning("⚠️ Please select at least one content type")
+    content_types = [1]  # Default to sustainability
+
+st.sidebar.markdown("---")
 
 # Use storage path toggle
 use_storage = st.sidebar.checkbox(
@@ -357,7 +391,7 @@ with tab3:
     # Summary of selections
     st.subheader("📋 Download Summary")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         company_count = len(
@@ -373,6 +407,18 @@ with tab3:
             st.metric("Years Selected", "All Available")
 
     with col3:
+        # Show content types
+        content_type_names = []
+        if 1 in content_types:
+            content_type_names.append("🌱 ESG")
+        if 2 in content_types:
+            content_type_names.append("📊 10K")
+        if 4 in content_types:
+            content_type_names.append("🎙️ Transcripts")
+        st.metric("Content Types", len(content_types))
+        st.caption(" ".join(content_type_names))
+
+    with col4:
         st.metric(
             "Sector ID", current_sector_id if enable_sector_mapping else "Not Set")
 
@@ -409,17 +455,24 @@ with tab3:
         # Get year filter from session state
         years_filter = st.session_state.get('years_to_download')
 
-        # Initialize downloader with year filter
+        # Initialize downloader with year filter and content types
         downloader = SustainabilityReportDownloader(
             download_dir=output_dir,
             delay_seconds=delay_seconds,
             current_sector_id=current_sector_id,
             use_storage=use_storage,
-            year_filter=years_filter
+            year_filter=years_filter,
+            content_types=content_types
         )
 
         if years_filter:
             st.info(f"📅 Filtering downloads to years: {years_filter}")
+
+        # Show content types being downloaded
+        type_names = {1: 'Sustainability/ESG',
+                      2: 'Annual/10K', 3: 'Other', 4: 'Earnings Transcripts'}
+        selected_types = [type_names.get(ct, f'Type {ct}') for ct in content_types]
+        st.info(f"📄 Downloading: {', '.join(selected_types)}")
 
         # Create progress containers
         st.subheader("📊 Progress")
@@ -469,13 +522,14 @@ with tab3:
             year_progress_label.markdown(
                 f"**📅 Years:** {min(years_filter)}-{max(years_filter)} ({total_years} years)")
 
-            # Create single downloader with ALL years
+            # Create single downloader with ALL years and content types
             multi_year_downloader = SustainabilityReportDownloader(
                 download_dir=output_dir,
                 delay_seconds=delay_seconds,
                 current_sector_id=current_sector_id,
                 use_storage=use_storage,
-                year_filter=years_filter  # ALL years at once
+                year_filter=years_filter,  # ALL years at once
+                content_types=content_types
             )
 
             for company_idx, (_, row) in enumerate(companies_to_process.iterrows()):
@@ -726,10 +780,15 @@ with tab4:
 
             with col1:
                 # Company filter - use selected companies from tab1 as default if available
+                # selected_companies format: "#1 AAPL - Apple Inc."
                 selected_companies_symbols = []
                 if st.session_state.selected_companies:
-                    selected_companies_symbols = [
-                        c['symbol'] for c in st.session_state.selected_companies if c['symbol'] in unique_symbols]
+                    for c in st.session_state.selected_companies:
+                        # Extract symbol from format: "#1 AAPL - Company Name"
+                        parts = c.split(' - ')[0]  # "#1 AAPL"
+                        symbol = parts.split(' ')[-1]  # "AAPL"
+                        if symbol in unique_symbols:
+                            selected_companies_symbols.append(symbol)
 
                 filter_by_company = st.checkbox(
                     "🏢 Filter by Selected Companies",

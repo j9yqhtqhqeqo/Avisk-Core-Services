@@ -113,20 +113,31 @@ class SustainabilityReportDownloader:
             1 = Sustainability/ESG report
             2 = Annual Report/10K
             3 = Other
+            4 = Earnings/Investor Transcripts
         """
         # Combine filename and URL for pattern matching
         text_to_check = filename.lower()
         if source_url:
             text_to_check += ' ' + source_url.lower()
         
-        # Annual Report / 10K patterns (check first - more specific)
+        # Earnings/Investor Transcript patterns (check first - most specific)
+        transcript_patterns = [
+            'transcript', 'earnings_call', 'earnings-call', 'earningscall',
+            'investor_call', 'investor-call', 'investorcall',
+            'conference_call', 'conference-call', 'conferencecall',
+            'q1_call', 'q2_call', 'q3_call', 'q4_call',
+            'q1-call', 'q2-call', 'q3-call', 'q4-call',
+            'quarterly_call', 'quarterly-call'
+        ]
+        
+        # Annual Report / 10K patterns
         annual_patterns = [
             '10k', '10-k', 'form10k', 'form-10k', 'form_10k',
             'annual_report', 'annual-report', 'annualreport',
             '_ar_', '-ar-', '_ar.', '-ar.',
             'proxy', 'def14a', '10q', '10-q', 'quarterly',
             '/investor-relations/', '/investors/', '/sec-filings/',
-            'earnings', 'financial_report', 'financial-report'
+            'financial_report', 'financial-report'
         ]
         
         # Sustainability / ESG patterns
@@ -143,7 +154,12 @@ class SustainabilityReportDownloader:
             'net-zero', 'net_zero', 'decarbonization'
         ]
         
-        # Check sustainability first (prioritize if ambiguous)
+        # Check transcripts first (most specific)
+        for pattern in transcript_patterns:
+            if pattern in text_to_check:
+                return 4  # Earnings/Investor Transcripts
+        
+        # Check sustainability (prioritize if ambiguous)
         for pattern in sustainability_patterns:
             if pattern in text_to_check:
                 return 1  # Sustainability/ESG
@@ -782,7 +798,8 @@ class SustainabilityReportDownloader:
                  delay_seconds: float = 4.0,
                  current_sector_id: Optional[int] = None,
                  use_storage: bool = True,
-                 year_filter: Optional[List[int]] = None):
+                 year_filter: Optional[List[int]] = None,
+                 content_types: Optional[List[int]] = None):
         """
         Initialize the downloader.
 
@@ -792,6 +809,8 @@ class SustainabilityReportDownloader:
             current_sector_id: The current sector ID being processed (e.g., 1007)
             use_storage: If True, use PathConfiguration for Stage0SourcePDFFiles path
             year_filter: List of years to download (e.g., [2024, 2023]). If None, download all years.
+            content_types: List of content types to download (1=Sustainability, 2=Annual/10K, 3=Other, 4=Transcripts).
+                          If None, defaults to [1] (Sustainability only for backward compatibility).
         """
         # Initialize PathConfiguration for storage paths
         self.path_config = None
@@ -818,6 +837,12 @@ class SustainabilityReportDownloader:
         self.delay_seconds = delay_seconds
         self.current_sector_id = current_sector_id
         self.year_filter = year_filter  # List of years to download, or None for all
+        
+        # Content types to download: 1=Sustainability/ESG, 2=Annual/10K, 3=Other, 4=Earnings Transcripts
+        # Default to sustainability only for backward compatibility
+        self.content_types = content_types if content_types else [1]
+        content_type_names = {1: 'Sustainability/ESG', 2: 'Annual/10K', 3: 'Other', 4: 'Earnings Transcripts'}
+        logger.info(f"Content types to download: {[content_type_names.get(ct, ct) for ct in self.content_types]}")
 
         # Track progress
         self.downloaded_reports = []
@@ -1201,7 +1226,7 @@ class SustainabilityReportDownloader:
             source_url: URL where the report was downloaded from
             document_name: Name of the document file
             filepath: Local file path where document is saved
-            content_type: 1=Sustainability/ESG, 2=Annual/10K, 3=Other (auto-detected if None)
+            content_type: 1=Sustainability/ESG, 2=Annual/10K, 3=Other, 4=Transcripts (auto-detected if None)
 
         Returns:
             unique_id of the inserted record, or None if failed/already exists
@@ -1223,14 +1248,14 @@ class SustainabilityReportDownloader:
         # Auto-detect content_type if not provided
         if content_type is None:
             content_type = self.classify_content_type(document_name, source_url)
-            content_type_names = {1: 'Sustainability/ESG', 2: 'Annual/10K', 3: 'Other'}
+            content_type_names = {1: 'Sustainability/ESG', 2: 'Annual/10K', 3: 'Other', 4: 'Transcripts'}
             logger.debug(f"Auto-detected content_type={content_type} ({content_type_names.get(content_type)}) for {document_name}")
 
         try:
             cursor = self.db_connection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
 
-            # content_type: 1=Sustainability/ESG, 2=Annual/10K, 3=Other
+            # content_type: 1=Sustainability/ESG, 2=Annual/10K, 3=Other, 4=Transcripts
             # source_type = 'file' for downloaded files
             insert_sql = """
                 INSERT INTO t_data_source 
@@ -1548,7 +1573,7 @@ class SustainabilityReportDownloader:
 
     def search_duckduckgo(self, company_name: str, year: Optional[int] = None) -> List[str]:
         """
-        Search DuckDuckGo for sustainability reports as a fallback.
+        Search DuckDuckGo for reports based on configured content types.
 
         Args:
             company_name: Name of the company
@@ -1560,13 +1585,33 @@ class SustainabilityReportDownloader:
         pdf_urls = []
 
         try:
-            # Build search queries
+            # Build search queries based on content types
             year_str = str(year) if year else ""
-            search_terms = [
-                f'"{company_name}" sustainability report {year_str} filetype:pdf',
-                f'"{company_name}" ESG report {year_str} filetype:pdf',
-                f'"{company_name}" corporate responsibility report {year_str} filetype:pdf',
-            ]
+            search_terms = []
+            
+            # Sustainability/ESG searches (content_type = 1)
+            if 1 in self.content_types:
+                search_terms.extend([
+                    f'"{company_name}" sustainability report {year_str} filetype:pdf',
+                    f'"{company_name}" ESG report {year_str} filetype:pdf',
+                    f'"{company_name}" corporate responsibility report {year_str} filetype:pdf',
+                ])
+            
+            # Annual Report/10K searches (content_type = 2)
+            if 2 in self.content_types:
+                search_terms.extend([
+                    f'"{company_name}" annual report {year_str} filetype:pdf',
+                    f'"{company_name}" 10-K {year_str} filetype:pdf',
+                    f'"{company_name}" form 10-K SEC filing {year_str} filetype:pdf',
+                ])
+            
+            # Earnings Call Transcripts searches (content_type = 4)
+            if 4 in self.content_types:
+                search_terms.extend([
+                    f'"{company_name}" earnings call transcript {year_str} filetype:pdf',
+                    f'"{company_name}" investor call transcript {year_str} filetype:pdf',
+                    f'"{company_name}" quarterly earnings transcript {year_str} filetype:pdf',
+                ])
 
             # Use duckduckgo-search library if available (handles bot detection)
             if DDGS_AVAILABLE:
