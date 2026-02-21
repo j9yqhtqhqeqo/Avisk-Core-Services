@@ -9,6 +9,7 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import re
 import sys
 import os
 
@@ -48,6 +49,19 @@ def get_market_cap_rank(symbol: str) -> int:
         return 999  # Not in top 150
 
 
+@st.cache_data(show_spinner=False)
+def _read_file_bytes(path: str) -> bytes:
+    """
+    Read a file from disk and cache the result across Streamlit re-runs.
+
+    Using @st.cache_data ensures that Streamlit registers the media file once
+    and reuses the same content hash, preventing MediaFileStorageError when
+    the page re-runs while a download button is still visible in the browser.
+    """
+    with open(path, 'rb') as f:
+        return f.read()
+
+
 # Page configuration
 st.set_page_config(
     page_title="Document Downloader",
@@ -62,6 +76,10 @@ if 'selected_companies' not in st.session_state:
     st.session_state.selected_companies = []
 if 'download_results' not in st.session_state:
     st.session_state.download_results = None
+if 'is_downloading' not in st.session_state:
+    st.session_state.is_downloading = False
+if 'download_complete' not in st.session_state:
+    st.session_state.download_complete = False
 
 # Title
 st.title("📊 Document Downloader")
@@ -74,7 +92,7 @@ st.sidebar.header("⚙️ Configuration")
 st.sidebar.subheader("📄 Content Types to Download")
 download_sustainability = st.sidebar.checkbox(
     "🌱 Sustainability/ESG Reports",
-    value=True,
+    value=False,
     help="Download sustainability reports, ESG reports, corporate responsibility reports"
 )
 download_annual = st.sidebar.checkbox(
@@ -88,6 +106,16 @@ download_transcripts = st.sidebar.checkbox(
     help="Download earnings call transcripts, investor call transcripts"
 )
 
+# Reload mode — shown indented under Investor Transcripts
+reload_mode = st.sidebar.radio(
+    "Reload",
+    options=["Skip existing", "Re-download existing"],
+    index=0,
+    help="Skip existing: skip companies/years already in the database (default). "
+         "Re-download existing: force re-download even when records already exist.",
+)
+force_reload = reload_mode == "Re-download existing"
+
 # Build content_types list based on selections
 content_types = []
 if download_sustainability:
@@ -100,7 +128,6 @@ if download_transcripts:
 # Warn if nothing selected
 if not content_types:
     st.sidebar.warning("⚠️ Please select at least one content type")
-    content_types = [1]  # Default to sustainability
 
 st.sidebar.markdown("---")
 
@@ -322,7 +349,7 @@ with tab2:
                 "Start Year",
                 min_value=2000,
                 max_value=current_year,
-                value=current_year - 5,
+                value=2012,
                 help="Download reports from this year onwards"
             )
 
@@ -431,26 +458,43 @@ with tab3:
             "⚠️ No companies selected. Go to 'Select Companies' tab to select companies.")
         can_download = False
 
+    if not content_types:
+        warnings.append(
+            "⚠️ No content type selected. Please tick at least one option "
+            "(Sustainability/ESG, Annual Reports/10K, or Earnings Call Transcripts) in the sidebar.")
+        can_download = False
+
     for warning in warnings:
         st.warning(warning)
 
     # Download button
     st.markdown("---")
 
-    if can_download:
+    if st.session_state.is_downloading:
+        st.info("⏳ Download in progress — please wait...")
+    elif can_download:
         col1, col2 = st.columns([2, 1])
-
         with col1:
             st.markdown("""
             **Ready to download!** Click the button below to start downloading sustainability reports 
             for the selected companies.
             """)
-
         with col2:
             estimated_time = company_count * delay_seconds * 10  # rough estimate
             st.caption(f"⏱️ Estimated time: ~{estimated_time/60:.1f} minutes")
 
-    if st.button("🚀 Start Download", type="primary", use_container_width=True, disabled=not can_download):
+    # Button click only sets state and triggers a rerun so the button
+    # renders as disabled BEFORE the (blocking) download loop starts.
+    if st.button("🚀 Start Download", type="primary", use_container_width=True,
+                 disabled=not can_download or st.session_state.is_downloading):
+        st.session_state.is_downloading = True
+        st.session_state.download_complete = False
+        st.rerun()
+
+    # Run the download on the render where is_downloading=True and the
+    # button is already shown as disabled.
+    if st.session_state.is_downloading and not st.session_state.download_complete:
+        download_banner = st.empty()  # placeholder cleared when done
 
         # Get year filter from session state
         years_filter = st.session_state.get('years_to_download')
@@ -462,7 +506,8 @@ with tab3:
             current_sector_id=current_sector_id,
             use_storage=use_storage,
             year_filter=years_filter,
-            content_types=content_types
+            content_types=content_types,
+            force_reload=force_reload
         )
 
         if years_filter:
@@ -520,8 +565,11 @@ with tab3:
         # OPTIMIZED: Process each company ONCE and filter for ALL years at once
         # This avoids re-crawling the same website for each year
         if years_filter:
+            years_filter_sorted = sorted(years_filter)
             year_progress_label.markdown(
-                f"**📅 Years:** {min(years_filter)}-{max(years_filter)} ({total_years} years)")
+                f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
+                f"({total_years} years) — 0/{total_years} complete")
+            year_progress_bar.progress(0)
 
             # Create single downloader with ALL years and content types
             multi_year_downloader = SustainabilityReportDownloader(
@@ -530,8 +578,11 @@ with tab3:
                 current_sector_id=current_sector_id,
                 use_storage=use_storage,
                 year_filter=years_filter,  # ALL years at once
-                content_types=content_types
+                content_types=content_types,
+                force_reload=force_reload
             )
+
+            years_seen: set = set()  # years that have appeared in at least one download
 
             for company_idx, (_, row) in enumerate(companies_to_process.iterrows()):
                 symbol = row['Symbol']
@@ -541,18 +592,40 @@ with tab3:
                 website = multi_year_downloader.get_company_website(
                     symbol, company)
 
-                # Update progress
-                progress = (company_idx + 1) / total_companies
-                company_progress_bar.progress(progress)
+                # Update company progress
+                company_progress_bar.progress(
+                    (company_idx + 1) / total_companies)
                 company_progress_label.markdown(
                     f"**🏢 Company Progress:** {company_idx + 1}/{total_companies}")
                 status_text.info(
-                    f"Processing {company_idx + 1}/{total_companies}: {company} ({symbol}) - Searching for years {min(years_filter)}-{max(years_filter)}")
+                    f"Processing {company_idx + 1}/{total_companies}: {company} ({symbol}) "
+                    f"— years {years_filter_sorted[0]}-{years_filter_sorted[-1]}")
 
                 # Process company ONCE for ALL years
                 result = multi_year_downloader.process_company(
                     symbol, company, website)
                 results.append(result)
+
+                # ── Year progress: scan downloaded reports for newly covered years ──
+                for report in multi_year_downloader.downloaded_reports:
+                    fp_parent = Path(report.get('filepath', '')).parent.name
+                    if re.fullmatch(r'20\d{2}', fp_parent):
+                        years_seen.add(int(fp_parent))
+
+                # Count how many of the requested years are now covered
+                years_covered = [y for y in years_filter if y in years_seen]
+                year_pct = len(years_covered) / \
+                    total_years if total_years > 0 else 1.0
+                year_progress_bar.progress(min(year_pct, 1.0))
+                if years_covered:
+                    year_progress_label.markdown(
+                        f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
+                        f"— {len(years_covered)}/{total_years} complete "
+                        f"({', '.join(str(y) for y in sorted(years_covered))})")
+                else:
+                    year_progress_label.markdown(
+                        f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
+                        f"({total_years} years) — searching...")
 
                 # Update metrics
                 total_downloaded = len(
@@ -561,19 +634,22 @@ with tab3:
                 metric_processed.metric(
                     "Processed", f"{company_idx + 1}/{total_companies}")
                 metric_found.metric(
-                    "Years", f"{min(years_filter)}-{max(years_filter)}")
+                    "Years covered", f"{len(years_covered)}/{total_years}")
                 metric_downloaded.metric("Downloaded", total_downloaded)
                 metric_failed.metric("Failed", total_failed)
 
-            # Collect all results
-            for r in multi_year_downloader.downloaded_reports:
-                if r not in results:
-                    pass  # Results already tracked via process_company
-
-            # Final progress
+            # Final year progress
             year_progress_bar.progress(1.0)
+            years_covered_final = sorted(
+                y for y in years_filter if y in years_seen)
+            missing_years = sorted(
+                y for y in years_filter if y not in years_seen)
+            summary = f"{len(years_covered_final)}/{total_years} years with downloads"
+            if missing_years:
+                summary += f" (no files found for: {', '.join(str(y) for y in missing_years)})"
             year_progress_label.markdown(
-                f"**📅 Years:** {min(years_filter)}-{max(years_filter)} ({total_years} years) - ✅ Complete")
+                f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
+                f"— ✅ {summary}")
 
             # Close downloader
             multi_year_downloader.close()
@@ -636,6 +712,10 @@ with tab3:
             f"**🏢 Company Progress:** {total_companies}/{total_companies} - ✅ Complete")
         status_text.success("✅ Download complete!")
 
+        st.session_state.is_downloading = False
+        st.session_state.download_complete = True
+        download_banner.empty()
+
         # Save results
         downloader._save_metadata()
         st.session_state.download_results = pd.DataFrame(results)
@@ -670,6 +750,13 @@ with tab3:
 
         # Close downloader
         downloader.close()
+
+    # Completion banner (persists across re-runs until a new download starts)
+    if st.session_state.download_complete and not st.session_state.is_downloading:
+        st.success(
+            "✅ **Download complete!** All selected companies have been processed. "
+            "Check the results table above or switch to the 📁 Files tab to view downloaded reports."
+        )
 
     # Show previous results if available
     elif st.session_state.download_results is not None:
@@ -873,49 +960,55 @@ with tab4:
                 st.subheader(
                     f"📄 Showing {len(filtered_files)} of {len(all_files)} reports")
 
-                # Group by year for display
-                from collections import defaultdict
-                files_by_year = defaultdict(list)
-                for f in filtered_files:
-                    files_by_year[f['year']].append(f)
+                # ── Flat table (no per-row download buttons → no media file
+                # registration on every re-run, eliminating MediaFileStorageError)
+                table_rows = [
+                    {
+                        "Year": f["year"],
+                        "Symbol": f["symbol"],
+                        "Filename": f["filename"],
+                        "Type": f["report_type"],
+                        "Size (MB)": round(f["size_mb"], 2),
+                    }
+                    for f in sorted(
+                        filtered_files,
+                        key=lambda x: (x["year"], x["symbol"], x["filename"]),
+                        reverse=True,
+                    )
+                ]
+                files_df = pd.DataFrame(table_rows)
+                st.dataframe(files_df, use_container_width=True,
+                             hide_index=True)
 
-                # Display by year
-                for year in sorted(files_by_year.keys(), reverse=True):
-                    year_files = files_by_year[year]
+                # ── Single on-demand download: user selects one file at a time.
+                # Only ONE media file is ever registered in Streamlit's
+                # MediaFileStorage, which eliminates the race-condition error.
+                st.markdown("---")
+                st.markdown("#### ⬇️ Download a File")
 
-                    with st.expander(f"📅 {year} ({len(year_files)} reports)", expanded=len(files_by_year) <= 3):
-                        # Group by company within year
-                        files_by_company = defaultdict(list)
-                        for f in year_files:
-                            files_by_company[f['symbol']].append(f)
-
-                        for symbol in sorted(files_by_company.keys()):
-                            company_files = files_by_company[symbol]
-                            st.markdown(
-                                f"**{symbol}** ({len(company_files)} file{'s' if len(company_files) > 1 else ''})")
-
-                            for file_info in sorted(company_files, key=lambda x: x['filename']):
-                                col1, col2, col3, col4 = st.columns(
-                                    [3, 1, 1, 1])
-                                with col1:
-                                    display_name = file_info['filename']
-                                    st.text(
-                                        display_name[:55] + "..." if len(display_name) > 55 else display_name)
-                                with col2:
-                                    # Show report type badge
-                                    st.caption(file_info['report_type'])
-                                with col3:
-                                    st.text(f"{file_info['size_mb']:.2f} MB")
-                                with col4:
-                                    with open(file_info['path'], 'rb') as f:
-                                        st.download_button(
-                                            label="⬇️",
-                                            data=f,
-                                            file_name=file_info['filename'],
-                                            mime="application/pdf",
-                                            key=str(file_info['path'])
-                                        )
-                            st.markdown("")  # Add spacing between companies
+                file_options = {
+                    f"{f['year']} / {f['symbol']} / {f['filename']}": f
+                    for f in sorted(
+                        filtered_files,
+                        key=lambda x: (x["year"], x["symbol"], x["filename"]),
+                    )
+                }
+                selected_label = st.selectbox(
+                    "Select a file to download",
+                    options=list(file_options.keys()),
+                    index=None,
+                    placeholder="Choose a file…",
+                )
+                if selected_label:
+                    chosen = file_options[selected_label]
+                    st.download_button(
+                        label=f"⬇️ Download {chosen['filename']}",
+                        data=_read_file_bytes(str(chosen["path"])),
+                        file_name=chosen["filename"],
+                        mime="application/pdf",
+                        type="primary",
+                        use_container_width=True,
+                    )
             else:
                 st.warning(
                     "No files match the selected filters. Try adjusting your company or year selection.")

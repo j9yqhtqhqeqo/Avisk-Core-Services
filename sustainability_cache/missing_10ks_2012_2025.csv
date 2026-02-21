@@ -1,0 +1,2 @@
+symbol,company,sector,missing_count,present_count,years_missing,years_present,in_db,on_disk,checked_at
+NVDA,NVIDIA Corporation,Technology,14,0,"2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025",,,,2026-02-21 16:11 UTC

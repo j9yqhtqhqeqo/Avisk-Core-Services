@@ -17,7 +17,7 @@ import re
 from urllib.parse import urljoin, urlparse
 from io import StringIO, BytesIO
 import logging
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Set
 
 try:
     import fitz  # PyMuPDF
@@ -891,12 +891,27 @@ class SustainabilityReportDownloader:
         ],
     }
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # SEC EDGAR constants
+    # ──────────────────────────────────────────────────────────────────────────
+    # SEC requires a descriptive User-Agent that identifies the caller
+    EDGAR_USER_AGENT = 'Avisk Research contact@avisk.com'
+    EDGAR_SUBMISSIONS_URL = 'https://data.sec.gov/submissions/CIK{cik:010d}.json'
+    EDGAR_COMPANY_TICKERS_URL = 'https://www.sec.gov/files/company_tickers.json'
+    EDGAR_ARCHIVES_BASE = 'https://www.sec.gov/Archives/edgar/data/'
+    # 10-K form variants accepted as annual reports
+    EDGAR_10K_FORMS = {'10-K', '10-K405', '10-KSB', '10-KT'}
+
+    # Class-level cache shared across instances (populated on first use)
+    _edgar_ticker_map: Optional[Dict] = None
+
     def __init__(self, download_dir: Optional[str] = None,
                  delay_seconds: float = 4.0,
                  current_sector_id: Optional[int] = None,
                  use_storage: bool = True,
                  year_filter: Optional[List[int]] = None,
-                 content_types: Optional[List[int]] = None):
+                 content_types: Optional[List[int]] = None,
+                 force_reload: bool = False):
         """
         Initialize the downloader.
 
@@ -908,6 +923,9 @@ class SustainabilityReportDownloader:
             year_filter: List of years to download (e.g., [2024, 2023]). If None, download all years.
             content_types: List of content types to download (1=Sustainability, 2=Annual/10K, 3=Other, 4=Transcripts).
                           If None, defaults to [1] (Sustainability only for backward compatibility).
+            force_reload: If True, re-download even when a DB entry already exists for the
+                          (company, content_type, year) combination.  Defaults to False so
+                          that existing records are skipped automatically.
         """
         # Initialize PathConfiguration for storage paths
         self.path_config = None
@@ -934,6 +952,7 @@ class SustainabilityReportDownloader:
         self.delay_seconds = delay_seconds
         self.current_sector_id = current_sector_id
         self.year_filter = year_filter  # List of years to download, or None for all
+        self.force_reload = force_reload  # Re-download even when DB entry exists
 
         # Content types to download: 1=Sustainability/ESG, 2=Annual/10K, 3=Other, 4=Earnings Transcripts
         # Default to sustainability only for backward compatibility
@@ -1348,6 +1367,35 @@ class SustainabilityReportDownloader:
             logger.debug(f"Duplicate hash check failed: {e}")
 
         return None
+
+    def _has_db_entry_for_year(self, company_name: str, year: int,
+                               content_type: int) -> bool:
+        """
+        Return True if t_data_source already has at least one row for the given
+        (company_name, year, content_type) combination.
+
+        Used to skip downloads when force_reload=False.
+        """
+        if not self.db_connection:
+            return False
+        try:
+            cursor = self.db_connection.cursor()
+            cursor.execute(
+                """
+                SELECT 1 FROM t_data_source
+                WHERE company_name ILIKE %s
+                  AND year = %s
+                  AND content_type = %s
+                LIMIT 1
+                """,
+                (company_name, year, content_type)
+            )
+            found = cursor.fetchone() is not None
+            cursor.close()
+            return found
+        except Exception as e:
+            logger.debug(f"DB year-entry check failed: {e}")
+            return False
 
     def _add_to_data_source(self, company_name: str, year: int, source_url: str,
                             document_name: str, filepath: str,
@@ -2270,6 +2318,381 @@ class SustainabilityReportDownloader:
             })
             return None
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # SEC EDGAR helpers
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def _get_edgar_session_headers(self) -> dict:
+        """Return HTTP headers required by SEC EDGAR APIs."""
+        return {
+            'User-Agent': self.EDGAR_USER_AGENT,
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+        }
+
+    def _load_edgar_ticker_map(self) -> Dict:
+        """
+        Load (and cache) the SEC EDGAR company-ticker → CIK mapping.
+
+        Fetches https://www.sec.gov/files/company_tickers.json once per
+        session and caches it to disk for up to 7 days.
+
+        Returns:
+            dict mapping uppercase ticker symbol to zero-padded 10-digit CIK string
+        """
+        import json
+
+        if SustainabilityReportDownloader._edgar_ticker_map is not None:
+            return SustainabilityReportDownloader._edgar_ticker_map
+
+        cache_file = self.cache_dir / 'edgar_company_tickers.json'
+
+        # Use disk cache if < 7 days old
+        if cache_file.exists():
+            age_days = (datetime.now().timestamp() -
+                        cache_file.stat().st_mtime) / 86400
+            if age_days < 7:
+                try:
+                    with open(cache_file, 'r') as f:
+                        raw = json.load(f)
+                    ticker_map = {
+                        v['ticker'].upper(): str(v['cik_str']).zfill(10)
+                        for v in raw.values()
+                    }
+                    SustainabilityReportDownloader._edgar_ticker_map = ticker_map
+                    logger.info(
+                        f"Loaded EDGAR ticker map from cache ({len(ticker_map)} companies)")
+                    return ticker_map
+                except Exception as e:
+                    logger.warning(f"Failed to load EDGAR ticker cache: {e}")
+
+        # Fetch fresh from SEC
+        try:
+            headers = self._get_edgar_session_headers()
+            resp = requests.get(
+                self.EDGAR_COMPANY_TICKERS_URL, headers=headers, timeout=30)
+            resp.raise_for_status()
+            raw = resp.json()
+            ticker_map = {
+                v['ticker'].upper(): str(v['cik_str']).zfill(10)
+                for v in raw.values()
+            }
+            with open(cache_file, 'w') as f:
+                json.dump(raw, f)
+            SustainabilityReportDownloader._edgar_ticker_map = ticker_map
+            logger.info(
+                f"Fetched EDGAR ticker map from SEC ({len(ticker_map)} companies)")
+            return ticker_map
+        except Exception as e:
+            logger.error(f"Failed to fetch EDGAR ticker map: {e}")
+            return {}
+
+    def get_cik_for_symbol(self, symbol: str) -> Optional[str]:
+        """
+        Look up the SEC CIK number for a ticker symbol.
+
+        Args:
+            symbol: Stock ticker (e.g., 'AAPL')
+
+        Returns:
+            Zero-padded 10-digit CIK string, or None if not found
+        """
+        ticker_map = self._load_edgar_ticker_map()
+        cik = ticker_map.get(symbol.upper())
+        if cik:
+            logger.info(f"CIK for {symbol}: {cik}")
+        else:
+            logger.warning(f"No CIK found for symbol {symbol}")
+        return cik
+
+    def get_edgar_10k_filings(self, cik: str, company_name: str) -> List[Dict]:
+        """
+        Fetch the list of 10-K filings for a company from SEC EDGAR.
+
+        Uses the EDGAR submissions API:
+          https://data.sec.gov/submissions/CIK{cik}.json
+
+        Paginates through older filings automatically.
+
+        Args:
+            cik: Zero-padded 10-digit CIK string
+            company_name: Company name (for logging)
+
+        Returns:
+            List of dicts with keys:
+              accession_number, filing_date, report_date,
+              primary_document, filing_url, form
+        """
+        filings: List[Dict] = []
+        cik_int = int(cik)
+        headers = self._get_edgar_session_headers()
+        headers['Host'] = 'data.sec.gov'
+
+        def _parse_filings_block(block: dict) -> None:
+            forms = block.get('form', [])
+            accessions = block.get('accessionNumber', [])
+            filing_dates = block.get('filingDate', [])
+            report_dates = block.get('reportDate', [])
+            primary_docs = block.get('primaryDocument', [])
+            for i, form in enumerate(forms):
+                if form in self.EDGAR_10K_FORMS:
+                    accession = accessions[i]
+                    accession_nodash = accession.replace('-', '')
+                    filing_date = filing_dates[i] if i < len(
+                        filing_dates) else ''
+                    report_date = report_dates[i] if i < len(
+                        report_dates) else ''
+                    primary_doc = primary_docs[i] if i < len(
+                        primary_docs) else ''
+                    filing_url = (
+                        f"{self.EDGAR_ARCHIVES_BASE}{cik_int}/"
+                        f"{accession_nodash}/{primary_doc}"
+                    )
+                    filings.append({
+                        'accession_number': accession,
+                        'filing_date': filing_date,
+                        'report_date': report_date,
+                        'primary_document': primary_doc,
+                        'filing_url': filing_url,
+                        'form': form,
+                    })
+
+        try:
+            url = self.EDGAR_SUBMISSIONS_URL.format(cik=cik_int)
+            resp = requests.get(url, headers=headers, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Parse the most-recent filings block
+            _parse_filings_block(data.get('filings', {}).get('recent', {}))
+
+            # Paginate through older filing archives if present
+            for older_file in data.get('filings', {}).get('files', []):
+                older_url = f"https://data.sec.gov/{older_file['name']}"
+                try:
+                    older_resp = requests.get(
+                        older_url, headers=headers, timeout=30)
+                    older_resp.raise_for_status()
+                    _parse_filings_block(older_resp.json())
+                    time.sleep(0.2)  # Be respectful to SEC servers
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to fetch older filings from {older_url}: {e}")
+
+            logger.info(
+                f"Found {len(filings)} 10-K filing(s) for {company_name} (CIK: {cik})")
+        except Exception as e:
+            logger.error(
+                f"Failed to get EDGAR filings for {company_name} (CIK: {cik}): {e}")
+
+        return filings
+
+    def _get_edgar_filing_best_url(self, cik: str, accession_number: str,
+                                   primary_document: str) -> str:
+        """
+        Resolve the best downloadable document URL for an EDGAR 10-K filing.
+
+        Tries the filing index JSON first to find a PDF variant.  Falls back
+        to the primary document URL if no PDF is listed.
+
+        Args:
+            cik: CIK as string
+            accession_number: Accession number with dashes (e.g., '0000320193-22-000108')
+            primary_document: Primary document filename from submissions JSON
+
+        Returns:
+            Direct URL to the best document
+        """
+        cik_int = int(cik)
+        accession_nodash = accession_number.replace('-', '')
+        base_url = f"{self.EDGAR_ARCHIVES_BASE}{cik_int}/{accession_nodash}/"
+
+        try:
+            headers = self._get_edgar_session_headers()
+            headers['Host'] = 'www.sec.gov'
+            index_json_url = f"{base_url}{accession_nodash}-index.json"
+            resp = requests.get(index_json_url, headers=headers, timeout=15)
+            if resp.status_code == 200:
+                documents = resp.json().get('documents', [])
+                # Prefer a PDF variant of the 10-K
+                for doc in documents:
+                    if (doc.get('type') in self.EDGAR_10K_FORMS
+                            and doc.get('filename', '').lower().endswith('.pdf')):
+                        return f"{base_url}{doc['filename']}"
+        except Exception as e:
+            logger.debug(
+                f"Filing index lookup failed for {accession_number}: {e}")
+
+        # Fall back to primary document (usually .htm)
+        return f"{base_url}{primary_document}"
+
+    def download_edgar_10k(self, symbol: str, company_name: str,
+                           year_filter_override: Optional[List[int]] = None) -> List[str]:
+        """
+        Download 10-K filings for a company directly from SEC EDGAR.
+
+        Workflow:
+          1. Resolve ticker → CIK via company_tickers.json
+          2. Fetch filing list from EDGAR submissions API
+          3. Filter filings by year_filter_override (if supplied) else self.year_filter
+          4. Download each filing, deduplicating by content hash
+          5. Save to the year-based folder structure and record in t_data_source
+
+        SEC rate-limit guidance: max 10 requests/second; we stay well below
+        that by honouring self.delay_seconds between downloads.
+
+        Args:
+            symbol: Stock ticker symbol (e.g., 'AAPL')
+            company_name: Human-readable company name
+            year_filter_override: If provided, use this year list instead of self.year_filter.
+                                  Allows process_company() to pass a narrowed year list after
+                                  the DB-skip check without mutating self.year_filter.
+
+        Returns:
+            List of local file paths for successfully downloaded 10-Ks
+        """
+        downloaded_paths: List[str] = []
+
+        # 1. CIK look-up
+        cik = self.get_cik_for_symbol(symbol)
+        if not cik:
+            logger.warning(
+                f"Cannot download EDGAR 10-K for {symbol}: CIK not found")
+            return downloaded_paths
+
+        # 2. Retrieve filing list
+        filings = self.get_edgar_10k_filings(cik, company_name)
+        if not filings:
+            logger.info(
+                f"No 10-K filings found on EDGAR for {company_name} ({symbol})")
+            return downloaded_paths
+
+        # 3. Apply year filter (prefer override so process_company can pass a narrowed list)
+        effective_year_filter = year_filter_override if year_filter_override is not None else self.year_filter
+        if effective_year_filter:
+            filtered = []
+            for filing in filings:
+                date_str = (filing.get('report_date')
+                            or filing.get('filing_date', ''))
+                year_match = re.search(r'(20\d{2})', date_str)
+                if year_match and int(year_match.group(1)) in effective_year_filter:
+                    filtered.append(filing)
+            logger.info(
+                f"EDGAR filings after year filter {effective_year_filter}: "
+                f"{len(filtered)}/{len(filings)} for {company_name}")
+            filings = filtered
+
+        # 4. Download each filing
+        sec_headers = self._get_edgar_session_headers()
+        sec_headers['Host'] = 'www.sec.gov'
+
+        for filing in filings:
+            accession = filing['accession_number']
+            primary_doc = filing['primary_document']
+            report_date = filing.get('report_date', '')
+            filing_date = filing.get('filing_date', '')
+            year_str = (report_date or filing_date)[:4]
+
+            doc_url = self._get_edgar_filing_best_url(
+                cik, accession, primary_doc)
+
+            # Skip if already in database
+            if company_name and self._is_url_in_database(doc_url, company_name):
+                logger.info(
+                    f"Skipping EDGAR filing (already in DB): {doc_url}")
+                continue
+
+            logger.info(
+                f"Downloading EDGAR 10-K [{filing_date}] for {symbol}: {doc_url}")
+            try:
+                resp = requests.get(doc_url, headers=sec_headers, timeout=60)
+                resp.raise_for_status()
+            except Exception as e:
+                logger.error(
+                    f"Failed to download EDGAR filing {doc_url}: {e}")
+                self.failed_downloads.append({
+                    'symbol': symbol,
+                    'url': doc_url,
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat(),
+                })
+                time.sleep(1)
+                continue
+
+            content = resp.content
+            content_hash = self.calculate_file_hash(content)
+
+            # Duplicate content check
+            existing_doc = self._is_duplicate_content(
+                content_hash, company_name)
+            if existing_doc:
+                logger.info(
+                    f"Skipping EDGAR filing - duplicate content already stored "
+                    f"as '{existing_doc}'")
+                continue
+
+            # Build a stable filename
+            ext = 'pdf' if doc_url.lower().endswith('.pdf') else 'htm'
+            accession_short = accession.replace('-', '')
+            filename = (
+                f"{symbol}_10K_{report_date or filing_date}_"
+                f"{accession_short}.{ext}"
+            )
+
+            year_dir = self.base_download_dir / (year_str or 'unknown')
+            year_dir.mkdir(parents=True, exist_ok=True)
+            filepath = year_dir / filename
+
+            # Write file (skip if byte-identical copy already exists)
+            if filepath.exists():
+                existing_hash = self.calculate_file_hash(filepath.read_bytes())
+                if existing_hash == content_hash:
+                    logger.debug(f"EDGAR 10-K already on disk: {filepath}")
+                else:
+                    with open(filepath, 'wb') as f:
+                        f.write(content)
+                    logger.info(f"Updated EDGAR 10-K on disk: {filepath}")
+            else:
+                with open(filepath, 'wb') as f:
+                    f.write(content)
+                logger.info(f"Downloaded EDGAR 10-K: {filepath}")
+
+            # Record in t_data_source
+            db_id = self._add_to_data_source(
+                company_name=company_name,
+                year=int(year_str) if year_str.isdigit() else 0,
+                source_url=doc_url,
+                document_name=filename,
+                filepath=str(filepath),
+                content_type=2,          # Annual/10-K
+                file_content=content,
+                original_source_url=doc_url,
+                http_response_code=resp.status_code,
+                company_symbol=symbol,
+            )
+
+            self.downloaded_reports.append({
+                'symbol': symbol,
+                'company_name': company_name,
+                'url': doc_url,
+                'filepath': str(filepath),
+                'download_date': datetime.now().isoformat(),
+                'file_size': len(content),
+                'db_id': db_id,
+                'source': 'EDGAR',
+            })
+
+            downloaded_paths.append(str(filepath))
+
+            # Respect SEC rate limit (max 10 req/sec; we stay conservative)
+            time.sleep(max(self.delay_seconds, 0.15))
+
+        logger.info(
+            f"EDGAR download complete for {company_name}: "
+            f"{len(downloaded_paths)} 10-K(s) saved")
+        return downloaded_paths
+
     def process_company(self, symbol: str, company_name: str,
                         website: Optional[str] = None) -> Dict:
         """
@@ -2292,80 +2715,238 @@ class SustainabilityReportDownloader:
             'status': 'pending'
         }
 
-        if not website:
+        if not website and 2 not in self.content_types:
             result['status'] = 'no_website'
             logger.warning(f"No website for {company_name} ({symbol})")
             return result
 
         try:
-            # Normalize website URL
-            if not website.startswith('http'):
+            report_urls = []
+            downloaded_count = 0
+
+            # Normalize website URL if provided
+            if website and not website.startswith('http'):
                 website = f'https://{website}'
 
-            report_urls = []
+            # Determine which content types need which sources
+            needs_10k = 2 in self.content_types
+            needs_other = any(ct != 2 for ct in self.content_types)
 
-            # PRIMARY: Use DuckDuckGo search (most reliable for finding PDFs)
-            if self.year_filter and DDGS_AVAILABLE:
-                logger.info(
-                    f"Searching DuckDuckGo for {company_name} reports (years: {self.year_filter})")
-                for year in self.year_filter:
-                    ddg_urls = self.search_duckduckgo(company_name, year)
-                    report_urls.extend(ddg_urls)
-                logger.info(
-                    f"DuckDuckGo found {len(report_urls)} reports for {company_name}")
-
-            # SECONDARY: Try known direct PDF URLs for major companies (fast, reliable)
-            if self.year_filter and symbol in self.KNOWN_REPORT_URL_PATTERNS:
-                logger.info(f"Checking known report URLs for {symbol}")
-                for year in self.year_filter:
-                    known_urls = self.try_known_report_urls(symbol, year)
-                    report_urls.extend(known_urls)
-
-            # Remove duplicates
-            report_urls = list(set(report_urls))
-
-            # TERTIARY: If still missing years, crawl company website
-            if self.year_filter:
-                years_found = set()
-                for url in report_urls:
-                    year_match = re.search(r'20\d{2}', url)
-                    if year_match:
-                        years_found.add(int(year_match.group()))
-
-                missing_years = [
-                    y for y in self.year_filter if y not in years_found]
-                if missing_years:
+            # ── DB-SKIP: determine which years already have entries (when force_reload=False) ──
+            years_already_in_db: Set[int] = set()
+            if not self.force_reload and self.year_filter and self.db_connection:
+                for yr in self.year_filter:
+                    for ct in self.content_types:
+                        if self._has_db_entry_for_year(company_name, yr, ct):
+                            years_already_in_db.add(yr)
+                            break  # one content_type match is enough to mark the year
+                if years_already_in_db:
                     logger.info(
-                        f"Years found: {sorted(years_found)}, missing: {sorted(missing_years)} - crawling website")
-                    website_urls = self.search_company_website(
-                        company_name, website, symbol)
-                    website_urls = self._filter_urls_by_year(website_urls)
-                    report_urls.extend(website_urls)
+                        f"[Skip] {symbol}: years {sorted(years_already_in_db)} already in DB "
+                        f"— enable 'Reload' to re-download")
+
+            # Years that actually need downloading
+            if self.year_filter is not None:
+                years_needed: Optional[List[int]] = [
+                    y for y in self.year_filter if y not in years_already_in_db]
+            else:
+                # no filter → download everything (EDGAR handles dedup)
+                years_needed = None
+
+            # If every requested year is already covered, return early
+            if self.year_filter and years_needed == []:
+                result['status'] = 'skipped_existing'
+                result['reports_found'] = len(years_already_in_db)
+                logger.info(
+                    f"[Skip] All requested years for {symbol} already in DB — nothing to download")
+                return result
+
+            # ── PRIMARY FOR 10-K: SEC EDGAR (authoritative, structured, no DDG noise) ──
+            edgar_count = 0
+            edgar_paths: List[str] = []
+            if needs_10k:
+                logger.info(
+                    f"[EDGAR] Fetching 10-K filings from SEC EDGAR for {company_name} ({symbol})")
+                edgar_paths = self.download_edgar_10k(
+                    symbol, company_name, year_filter_override=years_needed)
+                edgar_count = len(edgar_paths)
+                downloaded_count += edgar_count
+                result['reports_found'] += edgar_count
+                logger.info(
+                    f"[EDGAR] Downloaded {edgar_count} 10-K filing(s) for {symbol}")
+            result['edgar_10k_downloaded'] = edgar_count
+
+            # ── EDGAR FALLBACK: DDG → Known URLs → Website for years EDGAR missed ──
+            if needs_10k:
+                # Determine which years EDGAR actually covered from returned paths
+                edgar_years_found: Set[int] = set()
+                for p in edgar_paths:
+                    year_part = Path(p).parent.name
+                    if re.fullmatch(r'20\d{2}', year_part):
+                        edgar_years_found.add(int(year_part))
+
+                if self.year_filter:
+                    fallback_years: List[int] = [
+                        y for y in self.year_filter
+                        if y not in edgar_years_found
+                        and y not in years_already_in_db
+                    ]
+                else:
+                    # No year filter: fall back if EDGAR found nothing at all
+                    fallback_years = [] if edgar_years_found else [
+                        datetime.now().year - 1]
+
+                if fallback_years:
+                    logger.info(
+                        f"[EDGAR Fallback] EDGAR missed year(s) {fallback_years} for "
+                        f"{symbol} — trying DDG / known URLs / website")
+                    fallback_urls: List[str] = []
+
+                    # 1. DuckDuckGo search per missing year
+                    for yr in fallback_years:
+                        if DDGS_AVAILABLE:
+                            ddg_urls = self.search_duckduckgo(company_name, yr)
+                            fallback_urls.extend(ddg_urls)
+                            logger.info(
+                                f"[EDGAR Fallback] DDG found {len(ddg_urls)} URL(s) "
+                                f"for {symbol} {yr}")
+
+                    # 2. Known direct-PDF URL patterns
+                    for yr in fallback_years:
+                        if symbol in self.KNOWN_REPORT_URL_PATTERNS:
+                            known_urls = self.try_known_report_urls(symbol, yr)
+                            fallback_urls.extend(known_urls)
+                            logger.info(
+                                f"[EDGAR Fallback] Known URLs found {len(known_urls)} "
+                                f"for {symbol} {yr}")
+
+                    # 3. Company website crawl — only useful for ESG/other content types;
+                    #    sustainability pages will not contain 10-K filings.
+                    if needs_other:
+                        fallback_website = website or self.get_company_website(
+                            symbol, company_name)
+                        if fallback_website:
+                            if not fallback_website.startswith('http'):
+                                fallback_website = f'https://{fallback_website}'
+                            ws_urls = self.search_company_website(
+                                company_name, fallback_website, symbol)
+                            ws_urls = self._filter_urls_by_year(ws_urls)
+                            fallback_urls.extend(ws_urls)
+                            logger.info(
+                                f"[EDGAR Fallback] Website crawl found {len(ws_urls)} "
+                                f"URL(s) for {symbol}")
+                    else:
+                        logger.info(
+                            f"[EDGAR Fallback] Skipping website crawl for {symbol} "
+                            f"— 10-K only mode (website crawl returns sustainability pages)")
+
+                    fallback_urls = list(set(fallback_urls))
+
+                    # For 10-K-only mode, drop URLs that look like sustainability/ESG reports
+                    if not needs_other and fallback_urls:
+                        _10k_keywords = (
+                            '10-k', '10k', 'annual', 'form10', 'sec', 'edgar',
+                            'filing', 'proxy', 'ar20', '-ar-', '_ar_'
+                        )
+                        _esg_keywords = (
+                            'sustainab', 'esg', 'csr', 'responsibility',
+                            'environment', 'impact', 'citizenship'
+                        )
+                        filtered = []
+                        for u in fallback_urls:
+                            u_lower = u.lower()
+                            has_10k = any(
+                                kw in u_lower for kw in _10k_keywords)
+                            has_esg = any(
+                                kw in u_lower for kw in _esg_keywords)
+                            if has_10k or not has_esg:  # keep if looks like 10-K or neutral
+                                filtered.append(u)
+                            else:
+                                logger.info(
+                                    f"[EDGAR Fallback] Skipping ESG URL in 10-K-only mode: {u}")
+                        fallback_urls = filtered
+
+                    result['reports_found'] += len(fallback_urls)
+                    logger.info(
+                        f"[EDGAR Fallback] Attempting {len(fallback_urls)} URL(s) "
+                        f"for {symbol} years {fallback_years}")
+
+                    for url in fallback_urls:
+                        filepath = self.download_report(
+                            url, symbol, company_name)
+                        if filepath:
+                            downloaded_count += 1
+                        time.sleep(self.delay_seconds)
                 else:
                     logger.info(
-                        f"All requested years found for {symbol}: {sorted(years_found)}")
-            else:
-                # No year filter - search DuckDuckGo generally
-                if DDGS_AVAILABLE:
-                    ddg_urls = self.search_duckduckgo(company_name)
-                    report_urls.extend(ddg_urls)
-                # Also crawl website
-                website_urls = self.search_company_website(
-                    company_name, website, symbol)
-                report_urls.extend(website_urls)
+                        f"[EDGAR] All requested years covered for {symbol}: "
+                        f"{sorted(edgar_years_found)}")
 
-            # Remove duplicates
-            report_urls = list(set(report_urls))
+            # ── Web search only for non-10K content types (ESG/Sustainability, Other, Transcripts) ──
+            if needs_other:
+                # PRIMARY web: Use DuckDuckGo search
+                if self.year_filter and DDGS_AVAILABLE:
+                    logger.info(
+                        f"Searching DuckDuckGo for {company_name} reports (years: {self.year_filter})")
+                    for year in self.year_filter:
+                        ddg_urls = self.search_duckduckgo(company_name, year)
+                        report_urls.extend(ddg_urls)
+                    logger.info(
+                        f"DuckDuckGo found {len(report_urls)} URLs for {company_name}")
 
-            result['reports_found'] = len(report_urls)
+                # SECONDARY web: Try known direct PDF URLs for major companies
+                if self.year_filter and symbol in self.KNOWN_REPORT_URL_PATTERNS:
+                    logger.info(f"Checking known report URLs for {symbol}")
+                    for year in self.year_filter:
+                        known_urls = self.try_known_report_urls(symbol, year)
+                        report_urls.extend(known_urls)
 
-            # Download reports
-            downloaded_count = 0
-            for url in report_urls:
-                filepath = self.download_report(url, symbol, company_name)
-                if filepath:
-                    downloaded_count += 1
-                time.sleep(self.delay_seconds)
+                # Remove duplicates
+                report_urls = list(set(report_urls))
+
+                # TERTIARY web: If still missing years, crawl company website
+                if self.year_filter:
+                    years_found = set()
+                    for url in report_urls:
+                        year_match = re.search(r'20\d{2}', url)
+                        if year_match:
+                            years_found.add(int(year_match.group()))
+
+                    missing_years = [
+                        y for y in self.year_filter if y not in years_found]
+                    if missing_years:
+                        logger.info(
+                            f"Years found: {sorted(years_found)}, missing: {sorted(missing_years)} - crawling website")
+                        if website:
+                            website_urls = self.search_company_website(
+                                company_name, website, symbol)
+                            website_urls = self._filter_urls_by_year(
+                                website_urls)
+                            report_urls.extend(website_urls)
+                    else:
+                        logger.info(
+                            f"All requested years found for {symbol}: {sorted(years_found)}")
+                else:
+                    # No year filter - search DuckDuckGo generally
+                    if DDGS_AVAILABLE:
+                        ddg_urls = self.search_duckduckgo(company_name)
+                        report_urls.extend(ddg_urls)
+                    # Also crawl website if one is available
+                    if website:
+                        website_urls = self.search_company_website(
+                            company_name, website, symbol)
+                        report_urls.extend(website_urls)
+
+                # Remove duplicates
+                report_urls = list(set(report_urls))
+                result['reports_found'] += len(report_urls)
+
+                # Download reports found via web search / known URLs
+                for url in report_urls:
+                    filepath = self.download_report(url, symbol, company_name)
+                    if filepath:
+                        downloaded_count += 1
+                    time.sleep(self.delay_seconds)
 
             result['reports_downloaded'] = downloaded_count
             result['status'] = 'completed'
