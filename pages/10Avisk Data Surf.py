@@ -150,8 +150,8 @@ else:
     current_sector_id = None
 
 # Main content
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files", "📊 Today's Downloads"])
 
 with tab1:
     st.header("Select Companies to Download")
@@ -471,7 +471,8 @@ with tab3:
         # Show content types being downloaded
         type_names = {1: 'Sustainability/ESG',
                       2: 'Annual/10K', 3: 'Other', 4: 'Earnings Transcripts'}
-        selected_types = [type_names.get(ct, f'Type {ct}') for ct in content_types]
+        selected_types = [type_names.get(
+            ct, f'Type {ct}') for ct in content_types]
         st.info(f"📄 Downloading: {', '.join(selected_types)}")
 
         # Create progress containers
@@ -925,6 +926,158 @@ with tab4:
         st.warning(
             f"Output directory does not exist yet. Start a download to create it.")
 
+
+# --- Today's Downloads Tab ---
+with tab5:
+    st.header("📊 Today's Downloads Summary")
+    today = datetime.now().date()
+
+    col_refresh, col_spacer = st.columns([1, 8])
+    with col_refresh:
+        refresh_today = st.button("🔄 Refresh", key="refresh_today")
+
+    # ── 1. Try database first ────────────────────────────────────────────────
+    db_rows = None
+    db_error = None
+    try:
+        import psycopg2
+        import psycopg2.extras
+        from Utilities.Lookups import DB_Connection
+        conn_str = DB_Connection().DB_CONNECTION_STRING
+        if conn_str:
+            _conn = psycopg2.connect(conn_str)
+            _cur = _conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            _cur.execute("""
+                SELECT
+                    ds.unique_id,
+                    ds.company_name,
+                    ds.year,
+                    ds.content_type,
+                    COALESCE(dl.data_lookups_description, ds.content_type::TEXT) AS content_type_label,
+                    ds.source_url                   AS document_name,
+                    ds.source_domain,
+                    ds.is_official_source,
+                    ds.source_confidence_score,
+                    ds.verification_status,
+                    ds.file_size_bytes,
+                    ds.http_response_code,
+                    ds.original_source_url,
+                    ds.sec_verified,
+                    ds.download_timestamp
+                FROM t_data_source ds
+                LEFT JOIN t_data_lookups dl
+                    ON dl.data_lookups_id = ds.content_type
+                WHERE ds.download_timestamp >= %s
+                  AND ds.download_timestamp <  %s
+                ORDER BY ds.download_timestamp DESC
+            """, (today, today + __import__('datetime').timedelta(days=1)))
+            db_rows = _cur.fetchall()
+            _cur.close()
+            _conn.close()
+    except Exception as _db_exc:
+        db_error = str(_db_exc)
+
+    VERIFICATION_LABELS = {
+        0: "⬜ Unverified",
+        1: "✅ Auto-Verified",
+        2: "🔵 Manually Verified",
+        3: "⚠️ Flagged",
+        4: "❌ Rejected",
+    }
+    CONTENT_TYPE_LABELS = {
+        1: "🌱 Sustainability/ESG",
+        2: "📊 Annual/10K",
+        3: "📄 Other",
+        4: "🎙️ Transcripts",
+    }
+
+    if db_rows is not None:
+        # ── DB path ─────────────────────────────────────────────────────────
+        if db_rows:
+            total = len(db_rows)
+            official = sum(1 for r in db_rows if r['is_official_source'])
+            avg_conf = sum(r['source_confidence_score']
+                           or 0 for r in db_rows) / total
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("📥 Total Downloads", total)
+            m2.metric("🏛️ Official Sources", f"{official} / {total}")
+            m3.metric("⭐ Avg Confidence", f"{avg_conf:.0f} / 100")
+            m4.metric("📅 Date", today.strftime("%b %d, %Y"))
+
+            st.markdown("---")
+
+            rows_display = []
+            for r in db_rows:
+                conf = r['source_confidence_score'] or 0
+                conf_display = (
+                    f"🟢 {conf}" if conf >= 70 else
+                    f"🟡 {conf}" if conf >= 50 else
+                    f"🔴 {conf}"
+                )
+                rows_display.append({
+                    "Time": r['download_timestamp'].strftime('%H:%M:%S') if r['download_timestamp'] else "—",
+                    "Company": r['company_name'] or "—",
+                    "Year": r['year'] or "—",
+                    "Content Type": CONTENT_TYPE_LABELS.get(r['content_type'],
+                                                            r['content_type_label'] or "—"),
+                    "Document": r['document_name'] or "—",
+                    "Domain": r['source_domain'] or "—",
+                    "Official": "✅" if r['is_official_source'] else "—",
+                    "Confidence": conf_display,
+                    "Status": VERIFICATION_LABELS.get(r['verification_status'], "—"),
+                    "Size (MB)": f"{r['file_size_bytes'] / 1024 / 1024:.2f}" if r['file_size_bytes'] else "—",
+                    "HTTP": r['http_response_code'] or "—",
+                    "SEC ✓": "✅" if r['sec_verified'] else "—",
+                })
+
+            df_today = pd.DataFrame(rows_display)
+            st.dataframe(df_today, hide_index=True, use_container_width=True)
+
+            # Download CSV
+            csv_data = df_today.to_csv(index=False)
+            st.download_button(
+                label="⬇️ Export to CSV",
+                data=csv_data,
+                file_name=f"downloads_{today}.csv",
+                mime="text/csv",
+            )
+        else:
+            st.info(
+                f"No downloads recorded in the database for {today.strftime('%B %d, %Y')}.")
+            if db_error is None:
+                st.caption(
+                    "Downloads are logged automatically when you use the Download tab.")
+
+    else:
+        # ── Filesystem fallback ──────────────────────────────────────────────
+        if db_error:
+            st.warning(
+                f"⚠️ Could not connect to database ({db_error}). Falling back to filesystem scan.")
+
+        output_path = Path(output_dir) if output_dir else Path('.')
+        today_files = []
+        if output_path.exists():
+            for pdf in output_path.rglob('*.pdf'):
+                try:
+                    mtime = datetime.fromtimestamp(pdf.stat().st_mtime)
+                    if mtime.date() == today:
+                        today_files.append({
+                            "Time": mtime.strftime('%H:%M:%S'),
+                            "Filename": pdf.name,
+                            "Size (MB)": f"{pdf.stat().st_size / 1024 / 1024:.2f}",
+                            "Path": str(pdf.relative_to(output_path)),
+                        })
+                except Exception:
+                    continue
+
+        if today_files:
+            st.dataframe(pd.DataFrame(today_files),
+                         hide_index=True, use_container_width=True)
+            st.success(f"{len(today_files)} file(s) found on disk for today.")
+        else:
+            st.info(f"No downloads found for {today.strftime('%B %d, %Y')}.")
+
 # Footer
 st.markdown("---")
 st.markdown("""
@@ -933,6 +1086,7 @@ st.markdown("""
 - Optionally filter by year range in the **Select Years** tab
 - Start the download in the **Download** tab
 - View organized files in the **Files** tab
+- See today's downloads in the **Today's Downloads** tab
 
 **Note:** This tool searches company websites for publicly available sustainability reports.
 Please respect website terms of service and rate limits.

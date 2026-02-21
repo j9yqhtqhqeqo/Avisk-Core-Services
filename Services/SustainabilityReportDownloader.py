@@ -10,7 +10,8 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import os
 import time
-from datetime import datetime
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 from urllib.parse import urljoin, urlparse
@@ -104,11 +105,11 @@ class SustainabilityReportDownloader:
     def classify_content_type(filename: str, source_url: str = None) -> int:
         """
         Classify a report's content type based on filename and URL.
-        
+
         Args:
             filename: Name of the PDF file
             source_url: Optional URL where file was downloaded from
-        
+
         Returns:
             1 = Sustainability/ESG report
             2 = Annual Report/10K
@@ -119,7 +120,7 @@ class SustainabilityReportDownloader:
         text_to_check = filename.lower()
         if source_url:
             text_to_check += ' ' + source_url.lower()
-        
+
         # Earnings/Investor Transcript patterns (check first - most specific)
         transcript_patterns = [
             'transcript', 'earnings_call', 'earnings-call', 'earningscall',
@@ -129,7 +130,7 @@ class SustainabilityReportDownloader:
             'q1-call', 'q2-call', 'q3-call', 'q4-call',
             'quarterly_call', 'quarterly-call'
         ]
-        
+
         # Annual Report / 10K patterns
         annual_patterns = [
             '10k', '10-k', 'form10k', 'form-10k', 'form_10k',
@@ -139,7 +140,7 @@ class SustainabilityReportDownloader:
             '/investor-relations/', '/investors/', '/sec-filings/',
             'financial_report', 'financial-report'
         ]
-        
+
         # Sustainability / ESG patterns
         sustainability_patterns = [
             'sustainability', 'esg', 'csr',
@@ -153,24 +154,120 @@ class SustainabilityReportDownloader:
             '/sustainability/', '/esg/', '/responsibility/',
             'net-zero', 'net_zero', 'decarbonization'
         ]
-        
+
         # Check transcripts first (most specific)
         for pattern in transcript_patterns:
             if pattern in text_to_check:
                 return 4  # Earnings/Investor Transcripts
-        
+
         # Check sustainability (prioritize if ambiguous)
         for pattern in sustainability_patterns:
             if pattern in text_to_check:
                 return 1  # Sustainability/ESG
-        
+
         # Check annual/10K
         for pattern in annual_patterns:
             if pattern in text_to_check:
                 return 2  # Annual/10K
-        
+
         # Default to Other
         return 3
+
+    @staticmethod
+    def extract_domain(url: str) -> str:
+        """Extract the domain from a URL."""
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+            # Remove www. prefix
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            return domain
+        except Exception:
+            return ''
+
+    @staticmethod
+    def calculate_file_hash(content: bytes) -> str:
+        """Calculate SHA-256 hash of file content."""
+        return hashlib.sha256(content).hexdigest()
+
+    @staticmethod
+    def is_official_source(url: str, company_symbol: str, company_websites: dict) -> bool:
+        """
+        Check if URL is from an official company source.
+
+        Args:
+            url: The source URL
+            company_symbol: Stock symbol of the company
+            company_websites: Dictionary mapping symbols to official domains
+
+        Returns:
+            True if from official company IR/corporate domain
+        """
+        domain = SustainabilityReportDownloader.extract_domain(url)
+
+        # Check direct company website match
+        if company_symbol in company_websites:
+            official_domain = company_websites[company_symbol].lower()
+            if official_domain in domain or domain in official_domain:
+                return True
+
+        # Check for common official patterns
+        official_patterns = [
+            'investor.', 'ir.', 'investors.',
+            'corporate.', 'sustainability.',
+            'about.', 'esg.', 'responsibility.'
+        ]
+
+        # SEC EDGAR is always official
+        if 'sec.gov' in domain:
+            return True
+
+        return False
+
+    @staticmethod
+    def calculate_source_confidence(url: str, company_symbol: str,
+                                    company_websites: dict,
+                                    search_result_rank: int = None) -> int:
+        """
+        Calculate a confidence score (1-100) for a document source.
+
+        Args:
+            url: The source URL
+            company_symbol: Stock symbol of the company
+            company_websites: Dictionary mapping symbols to official domains
+            search_result_rank: Position in search results (1 = top)
+
+        Returns:
+            Confidence score from 1-100
+        """
+        domain = SustainabilityReportDownloader.extract_domain(url)
+        score = 50  # Base score
+
+        # SEC EDGAR - highest trust
+        if 'sec.gov' in domain:
+            return 95
+
+        # Official company domain
+        if SustainabilityReportDownloader.is_official_source(url, company_symbol, company_websites):
+            score = 90
+        # Known financial data providers
+        elif any(trusted in domain for trusted in ['annualreports.com', 'responsibilityreports.com']):
+            score = 75
+        # Generic third-party sites
+        else:
+            score = 40
+
+        # Adjust by search rank (top results more trusted)
+        if search_result_rank is not None:
+            if search_result_rank == 1:
+                score = min(100, score + 5)
+            elif search_result_rank <= 3:
+                score = min(100, score + 2)
+            elif search_result_rank > 5:
+                score = max(1, score - 5)
+
+        return score
 
     # Known company website mappings (symbol -> domain)
     COMPANY_WEBSITES = {
@@ -837,12 +934,14 @@ class SustainabilityReportDownloader:
         self.delay_seconds = delay_seconds
         self.current_sector_id = current_sector_id
         self.year_filter = year_filter  # List of years to download, or None for all
-        
+
         # Content types to download: 1=Sustainability/ESG, 2=Annual/10K, 3=Other, 4=Earnings Transcripts
         # Default to sustainability only for backward compatibility
         self.content_types = content_types if content_types else [1]
-        content_type_names = {1: 'Sustainability/ESG', 2: 'Annual/10K', 3: 'Other', 4: 'Earnings Transcripts'}
-        logger.info(f"Content types to download: {[content_type_names.get(ct, ct) for ct in self.content_types]}")
+        content_type_names = {1: 'Sustainability/ESG',
+                              2: 'Annual/10K', 3: 'Other', 4: 'Earnings Transcripts'}
+        logger.info(
+            f"Content types to download: {[content_type_names.get(ct, ct) for ct in self.content_types]}")
 
         # Track progress
         self.downloaded_reports = []
@@ -1214,11 +1313,54 @@ class SustainabilityReportDownloader:
 
         return False
 
+    def _is_duplicate_content(self, file_hash: str, company_name: str) -> Optional[str]:
+        """
+        Check if a file with the same SHA-256 hash already exists in t_data_source
+        for the same company, regardless of filename or URL.
+
+        This catches duplicates where the same document is downloaded from
+        different URLs with different filenames.
+
+        Args:
+            file_hash: SHA-256 hex digest of the downloaded content
+            company_name: Name of the company
+
+        Returns:
+            Existing document_name (source_url column) if a duplicate is found,
+            None otherwise
+        """
+        if not self.db_connection or not file_hash:
+            return None
+
+        try:
+            cursor = self.db_connection.cursor()
+            cursor.execute(
+                """SELECT source_url FROM t_data_source
+                   WHERE file_hash_sha256 = %s AND company_name = %s
+                   LIMIT 1""",
+                (file_hash, company_name)
+            )
+            result = cursor.fetchone()
+            cursor.close()
+            if result:
+                return result[0]
+        except Exception as e:
+            logger.debug(f"Duplicate hash check failed: {e}")
+
+        return None
+
     def _add_to_data_source(self, company_name: str, year: int, source_url: str,
                             document_name: str, filepath: str,
-                            content_type: int = None) -> Optional[int]:
+                            content_type: int = None,
+                            # New authenticity tracking parameters
+                            file_content: bytes = None,
+                            original_source_url: str = None,
+                            search_query_used: str = None,
+                            search_result_rank: int = None,
+                            http_response_code: int = None,
+                            company_symbol: str = None) -> Optional[int]:
         """
-        Add a downloaded report entry to t_data_source table.
+        Add a downloaded report entry to t_data_source table with authenticity tracking.
 
         Args:
             company_name: Name of the company
@@ -1227,6 +1369,12 @@ class SustainabilityReportDownloader:
             document_name: Name of the document file
             filepath: Local file path where document is saved
             content_type: 1=Sustainability/ESG, 2=Annual/10K, 3=Other, 4=Transcripts (auto-detected if None)
+            file_content: Raw file bytes for hash calculation
+            original_source_url: Full URL where file was downloaded from
+            search_query_used: Search query that found this document
+            search_result_rank: Position in search results (1 = top)
+            http_response_code: HTTP status code from download
+            company_symbol: Stock symbol for source verification
 
         Returns:
             unique_id of the inserted record, or None if failed/already exists
@@ -1247,9 +1395,34 @@ class SustainabilityReportDownloader:
 
         # Auto-detect content_type if not provided
         if content_type is None:
-            content_type = self.classify_content_type(document_name, source_url)
-            content_type_names = {1: 'Sustainability/ESG', 2: 'Annual/10K', 3: 'Other', 4: 'Transcripts'}
-            logger.debug(f"Auto-detected content_type={content_type} ({content_type_names.get(content_type)}) for {document_name}")
+            content_type = self.classify_content_type(
+                document_name, source_url)
+            content_type_names = {1: 'Sustainability/ESG',
+                                  2: 'Annual/10K', 3: 'Other', 4: 'Transcripts'}
+            logger.debug(
+                f"Auto-detected content_type={content_type} ({content_type_names.get(content_type)}) for {document_name}")
+
+        # Calculate authenticity metrics
+        source_domain = None
+        is_official = False
+        confidence_score = 50
+        file_hash = None
+        file_size = None
+
+        if original_source_url or source_url:
+            url_for_check = original_source_url or source_url
+            source_domain = self.extract_domain(url_for_check)
+
+            if company_symbol:
+                is_official = self.is_official_source(
+                    url_for_check, company_symbol, self.COMPANY_WEBSITES)
+                confidence_score = self.calculate_source_confidence(
+                    url_for_check, company_symbol, self.COMPANY_WEBSITES, search_result_rank
+                )
+
+        if file_content:
+            file_hash = self.calculate_file_hash(file_content)
+            file_size = len(file_content)
 
         try:
             cursor = self.db_connection.cursor(
@@ -1260,20 +1433,38 @@ class SustainabilityReportDownloader:
             insert_sql = """
                 INSERT INTO t_data_source 
                 (company_name, year, content_type, source_type, source_url, 
-                 processed_ind, added_dt, added_by, modify_dt, modify_by)
-                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s, CURRENT_TIMESTAMP, %s)
+                 processed_ind, added_dt, added_by, modify_dt, modify_by,
+                 source_domain, is_official_source, source_confidence_score,
+                 verification_status, file_hash_sha256, file_size_bytes,
+                 original_source_url, search_query_used, search_result_rank,
+                 http_response_code, download_timestamp)
+                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s, CURRENT_TIMESTAMP, %s,
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING unique_id
             """
 
             cursor.execute(insert_sql, (
                 company_name,
                 int(year),
-                content_type,  # content_type: 1=Sustainability, 2=Annual/10K, 3=Other
+                content_type,
                 'file',  # source_type: file
                 document_name,  # source_url stores the filename
                 0,  # processed_ind: Not yet processed
                 'SustainabilityReportDownloader',
-                'SustainabilityReportDownloader'
+                'SustainabilityReportDownloader',
+                # New authenticity columns
+                source_domain,
+                is_official,
+                confidence_score,
+                # verification_status: 1=auto-verified if official, 0=unverified
+                1 if is_official else 0,
+                file_hash,
+                file_size,
+                original_source_url,
+                search_query_used,
+                search_result_rank,
+                http_response_code,
+                datetime.now(timezone.utc)  # download_timestamp
             ))
 
             result = cursor.fetchone()
@@ -1588,7 +1779,7 @@ class SustainabilityReportDownloader:
             # Build search queries based on content types
             year_str = str(year) if year else ""
             search_terms = []
-            
+
             # Sustainability/ESG searches (content_type = 1)
             if 1 in self.content_types:
                 search_terms.extend([
@@ -1596,7 +1787,7 @@ class SustainabilityReportDownloader:
                     f'"{company_name}" ESG report {year_str} filetype:pdf',
                     f'"{company_name}" corporate responsibility report {year_str} filetype:pdf',
                 ])
-            
+
             # Annual Report/10K searches (content_type = 2)
             if 2 in self.content_types:
                 search_terms.extend([
@@ -1604,7 +1795,7 @@ class SustainabilityReportDownloader:
                     f'"{company_name}" 10-K {year_str} filetype:pdf',
                     f'"{company_name}" form 10-K SEC filing {year_str} filetype:pdf',
                 ])
-            
+
             # Earnings Call Transcripts searches (content_type = 4)
             if 4 in self.content_types:
                 search_terms.extend([
@@ -1623,25 +1814,28 @@ class SustainabilityReportDownloader:
                                 url = result.get('href', '')
                                 if not url:
                                     continue
-                                    
+
                                 # Check if URL is a PDF (by extension or content)
                                 is_pdf = url.lower().endswith('.pdf')
-                                
+
                                 # Also check if URL contains pdf in path (some CDNs)
                                 if not is_pdf and '/pdf/' in url.lower():
                                     is_pdf = True
-                                
+
                                 if is_pdf:
                                     # If year filter, verify year is in URL
                                     if year_str:
                                         if year_str in url:
                                             pdf_urls.append(url)
-                                            logger.info(f"DuckDuckGo found PDF for {year_str}: {url}")
+                                            logger.info(
+                                                f"DuckDuckGo found PDF for {year_str}: {url}")
                                         else:
-                                            logger.debug(f"Skipping PDF (year {year_str} not in URL): {url}")
+                                            logger.debug(
+                                                f"Skipping PDF (year {year_str} not in URL): {url}")
                                     else:
                                         pdf_urls.append(url)
-                                        logger.info(f"DuckDuckGo found PDF: {url}")
+                                        logger.info(
+                                            f"DuckDuckGo found PDF: {url}")
                         # Longer delay between searches to avoid rate limiting
                         time.sleep(self.delay_seconds * 2)
                     except Exception as e:
@@ -1651,7 +1845,8 @@ class SustainabilityReportDownloader:
                         continue
             else:
                 # Fallback to HTML scraping (may be blocked by CAPTCHA)
-                logger.warning("duckduckgo-search library not available, using HTML fallback (may be blocked)")
+                logger.warning(
+                    "duckduckgo-search library not available, using HTML fallback (may be blocked)")
                 for query in search_terms:
                     try:
                         # Use DuckDuckGo HTML search (no API key needed)
@@ -1666,7 +1861,8 @@ class SustainabilityReportDownloader:
                             url, headers=headers, timeout=15)
 
                         if response.status_code == 200:
-                            soup = BeautifulSoup(response.content, 'html.parser')
+                            soup = BeautifulSoup(
+                                response.content, 'html.parser')
 
                             # Find result links
                             for result in soup.find_all('a', class_='result__a'):
@@ -1685,7 +1881,8 @@ class SustainabilityReportDownloader:
                                                 f"DuckDuckGo found PDF: {actual_url}")
                                 elif href.lower().endswith('.pdf'):
                                     pdf_urls.append(href)
-                                    logger.info(f"DuckDuckGo found PDF: {href}")
+                                    logger.info(
+                                        f"DuckDuckGo found PDF: {href}")
 
                             # Also check result snippets for PDF links
                             for result in soup.find_all('a', class_='result__url'):
@@ -1696,7 +1893,8 @@ class SustainabilityReportDownloader:
                         time.sleep(self.delay_seconds)  # Be respectful
 
                     except Exception as e:
-                        logger.debug(f"DuckDuckGo search error for '{query}': {e}")
+                        logger.debug(
+                            f"DuckDuckGo search error for '{query}': {e}")
                         continue
 
             # Deduplicate and validate URLs
@@ -1835,7 +2033,9 @@ class SustainabilityReportDownloader:
     def download_report(self, url: str, company_symbol: str,
                         company_name: Optional[str] = None,
                         year: Optional[int] = None,
-                        max_retries: int = 3) -> Optional[str]:
+                        max_retries: int = 3,
+                        search_query_used: Optional[str] = None,
+                        search_result_rank: Optional[int] = None) -> Optional[str]:
         """
         Download a report PDF with retry logic for transient errors.
 
@@ -1845,10 +2045,16 @@ class SustainabilityReportDownloader:
             company_name: Name of the company (for database tracking)
             year: Year of the report (optional)
             max_retries: Maximum number of retry attempts for 5xx errors
+            search_query_used: The search query that found this URL
+            search_result_rank: Position in search results (1 = top)
 
         Returns:
             Path to downloaded file, or None if failed
         """
+        # Store search metadata for later use in _add_to_data_source
+        self._current_search_query = search_query_used
+        self._current_search_rank = search_result_rank
+
         # Check if already in DATABASE BEFORE making HTTP request
         # (only checks DB, not file system - allows re-registering existing files)
         if company_name and self._is_url_in_database(url, company_name):
@@ -1856,16 +2062,17 @@ class SustainabilityReportDownloader:
 
         response = None
         last_error = None
-        
+
         # Add dynamic Referer header based on the URL's domain
         parsed_url = urlparse(url)
         referer = f"{parsed_url.scheme}://{parsed_url.netloc}/"
         request_headers = {'Referer': referer}
-        
+
         # Retry logic for transient server errors (502, 503, 504)
         for attempt in range(max_retries):
             try:
-                response = self.session.get(url, timeout=30, headers=request_headers)
+                response = self.session.get(
+                    url, timeout=30, headers=request_headers)
                 response.raise_for_status()
                 break  # Success - exit retry loop
             except requests.exceptions.HTTPError as e:
@@ -1873,7 +2080,8 @@ class SustainabilityReportDownloader:
                 # Retry on 502, 503, 504 (transient server errors)
                 if status_code in (502, 503, 504) and attempt < max_retries - 1:
                     wait_time = (attempt + 1) * 3  # 3s, 6s, 9s
-                    logger.warning(f"HTTP {status_code} for {url}, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                    logger.warning(
+                        f"HTTP {status_code} for {url}, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
                     time.sleep(wait_time)
                     last_error = e
                     continue
@@ -1897,10 +2105,11 @@ class SustainabilityReportDownloader:
                     'timestamp': datetime.now().isoformat()
                 })
                 return None
-        
+
         # If we exhausted retries without success
         if response is None:
-            logger.error(f"Failed to download {url} after {max_retries} retries: {last_error}")
+            logger.error(
+                f"Failed to download {url} after {max_retries} retries: {last_error}")
             self.failed_downloads.append({
                 'symbol': company_symbol,
                 'url': url,
@@ -1910,6 +2119,20 @@ class SustainabilityReportDownloader:
             return None
 
         try:
+            # Compute content hash early for duplicate detection
+            content_hash = self.calculate_file_hash(response.content)
+
+            # Check for duplicate content (same document, different URL/filename)
+            if company_name:
+                existing_doc = self._is_duplicate_content(
+                    content_hash, company_name)
+                if existing_doc:
+                    logger.info(
+                        f"Skipping {url} - duplicate content already stored as '{existing_doc}' "
+                        f"(hash: {content_hash[:12]}...)"
+                    )
+                    return None
+
             # Extract original filename from URL
             url_path = urlparse(url).path
             original_filename = os.path.basename(url_path)
@@ -1969,10 +2192,10 @@ class SustainabilityReportDownloader:
             year_dir.mkdir(parents=True, exist_ok=True)
             filepath = year_dir / filename
 
-            # Check if file already exists with same content (skip duplicate downloads)
+            # Check if file already exists with identical content (skip duplicate downloads)
             if filepath.exists():
-                existing_size = filepath.stat().st_size
-                if existing_size == len(response.content):
+                existing_hash = self.calculate_file_hash(filepath.read_bytes())
+                if existing_hash == content_hash:
                     logger.debug(f"File exists, skipping write: {filepath}")
                     # Still add to database if not already tracked
                     db_id = None
@@ -1982,7 +2205,15 @@ class SustainabilityReportDownloader:
                             year=int(year_str),
                             source_url=url,
                             document_name=filename,
-                            filepath=str(filepath)
+                            filepath=str(filepath),
+                            file_content=response.content,
+                            original_source_url=url,
+                            search_query_used=getattr(
+                                self, '_current_search_query', None),
+                            search_result_rank=getattr(
+                                self, '_current_search_rank', None),
+                            http_response_code=response.status_code,
+                            company_symbol=company_symbol
                         )
                         if db_id:
                             logger.info(
@@ -1994,7 +2225,7 @@ class SustainabilityReportDownloader:
 
             logger.info(f"Downloaded: {filepath}")
 
-            # Add entry to t_data_source table
+            # Add entry to t_data_source table with authenticity tracking
             db_id = None
             if company_name:
                 db_id = self._add_to_data_source(
@@ -2002,7 +2233,15 @@ class SustainabilityReportDownloader:
                     year=int(year_str),
                     source_url=url,
                     document_name=filename,
-                    filepath=str(filepath)
+                    filepath=str(filepath),
+                    file_content=response.content,
+                    original_source_url=url,
+                    search_query_used=getattr(
+                        self, '_current_search_query', None),
+                    search_result_rank=getattr(
+                        self, '_current_search_rank', None),
+                    http_response_code=response.status_code,
+                    company_symbol=company_symbol
                 )
 
             # Track success
@@ -2064,25 +2303,27 @@ class SustainabilityReportDownloader:
                 website = f'https://{website}'
 
             report_urls = []
-            
+
             # PRIMARY: Use DuckDuckGo search (most reliable for finding PDFs)
             if self.year_filter and DDGS_AVAILABLE:
-                logger.info(f"Searching DuckDuckGo for {company_name} reports (years: {self.year_filter})")
+                logger.info(
+                    f"Searching DuckDuckGo for {company_name} reports (years: {self.year_filter})")
                 for year in self.year_filter:
                     ddg_urls = self.search_duckduckgo(company_name, year)
                     report_urls.extend(ddg_urls)
-                logger.info(f"DuckDuckGo found {len(report_urls)} reports for {company_name}")
-            
+                logger.info(
+                    f"DuckDuckGo found {len(report_urls)} reports for {company_name}")
+
             # SECONDARY: Try known direct PDF URLs for major companies (fast, reliable)
             if self.year_filter and symbol in self.KNOWN_REPORT_URL_PATTERNS:
                 logger.info(f"Checking known report URLs for {symbol}")
                 for year in self.year_filter:
                     known_urls = self.try_known_report_urls(symbol, year)
                     report_urls.extend(known_urls)
-            
+
             # Remove duplicates
             report_urls = list(set(report_urls))
-            
+
             # TERTIARY: If still missing years, crawl company website
             if self.year_filter:
                 years_found = set()
@@ -2090,22 +2331,27 @@ class SustainabilityReportDownloader:
                     year_match = re.search(r'20\d{2}', url)
                     if year_match:
                         years_found.add(int(year_match.group()))
-                
-                missing_years = [y for y in self.year_filter if y not in years_found]
+
+                missing_years = [
+                    y for y in self.year_filter if y not in years_found]
                 if missing_years:
-                    logger.info(f"Years found: {sorted(years_found)}, missing: {sorted(missing_years)} - crawling website")
-                    website_urls = self.search_company_website(company_name, website, symbol)
+                    logger.info(
+                        f"Years found: {sorted(years_found)}, missing: {sorted(missing_years)} - crawling website")
+                    website_urls = self.search_company_website(
+                        company_name, website, symbol)
                     website_urls = self._filter_urls_by_year(website_urls)
                     report_urls.extend(website_urls)
                 else:
-                    logger.info(f"All requested years found for {symbol}: {sorted(years_found)}")
+                    logger.info(
+                        f"All requested years found for {symbol}: {sorted(years_found)}")
             else:
                 # No year filter - search DuckDuckGo generally
                 if DDGS_AVAILABLE:
                     ddg_urls = self.search_duckduckgo(company_name)
                     report_urls.extend(ddg_urls)
                 # Also crawl website
-                website_urls = self.search_company_website(company_name, website, symbol)
+                website_urls = self.search_company_website(
+                    company_name, website, symbol)
                 report_urls.extend(website_urls)
 
             # Remove duplicates
