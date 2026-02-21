@@ -1,1 +1,3 @@
 bash Deployment/scripts/vm-deploy.sh $(gcloud config get-value project) us-central1-a avisk-core-services-vm1
+
+gcloud compute ssh avisk-core-services-vm1 --zone=us-central1-a -- sudo journalctl -u avisk-core-services -f
