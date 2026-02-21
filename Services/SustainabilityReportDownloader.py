@@ -896,14 +896,46 @@ class SustainabilityReportDownloader:
     # ──────────────────────────────────────────────────────────────────────────
     # SEC requires a descriptive User-Agent that identifies the caller
     EDGAR_USER_AGENT = 'Avisk Research contact@avisk.com'
+
+    # Minimal static overrides for companies where EDGAR renamed the old entity
+    # to something completely unrelated to the successor's name, making automatic
+    # predecessor discovery via name-prefix search impossible.
+    # The two-phase dynamic search handles ordinary reincorporations correctly;
+    # only add entries here when the old entity's EDGAR name is unrecognisable.
+    EDGAR_CIK_OVERRIDES: Dict[str, List[str]] = {
+        # Google Inc. (CIK 1288776, 2004-2015) became a subsidiary of the
+        # newly-created Alphabet Inc. (CIK 1652044, 2015-).  Predecessor name
+        # "Google" cannot be discovered from successor name "Alphabet".
+        'GOOG':  ['1288776', '1652044'],
+        'GOOGL': ['1288776', '1652044'],
+        # The Walt Disney Company (CIK 1001039, 1996-2018) reincorporated in
+        # 2019 as Walt Disney Co (CIK 1744489).  EDGAR renamed the old entity
+        # to "TWDC Enterprises 18 Corp" — completely unrelated to "Walt Disney"
+        # — so name-prefix search cannot bridge the two entities automatically.
+        'DIS':   ['1001039', '1744489'],
+    }
+
     EDGAR_SUBMISSIONS_URL = 'https://data.sec.gov/submissions/CIK{cik:010d}.json'
     EDGAR_COMPANY_TICKERS_URL = 'https://www.sec.gov/files/company_tickers.json'
+    # EDGAR company search by ticker — returns all historical filers for a symbol
+    EDGAR_COMPANY_SEARCH_URL = (
+        'https://www.sec.gov/cgi-bin/browse-edgar'
+        '?company=&CIK={ticker}&type=10-K&dateb=&owner=include'
+        '&count=100&search_text=&action=getcompany&output=atom'
+    )
+    # EDGAR company search by name — finds predecessor/successor entities
+    EDGAR_COMPANY_NAME_SEARCH_URL = (
+        'https://www.sec.gov/cgi-bin/browse-edgar'
+        '?company={name}&CIK=&type=10-K&dateb=&owner=include'
+        '&count=40&search_text=&action=getcompany&output=atom'
+    )
     EDGAR_ARCHIVES_BASE = 'https://www.sec.gov/Archives/edgar/data/'
     # 10-K form variants accepted as annual reports
     EDGAR_10K_FORMS = {'10-K', '10-K405', '10-KSB', '10-KT'}
 
-    # Class-level cache shared across instances (populated on first use)
+    # Class-level caches shared across instances (populated on first use)
     _edgar_ticker_map: Optional[Dict] = None
+    _edgar_multi_cik_cache: Dict[str, List[str]] = {}  # symbol -> [cik, ...]
 
     def __init__(self, download_dir: Optional[str] = None,
                  delay_seconds: float = 4.0,
@@ -2390,21 +2422,154 @@ class SustainabilityReportDownloader:
 
     def get_cik_for_symbol(self, symbol: str) -> Optional[str]:
         """
-        Look up the SEC CIK number for a ticker symbol.
-
-        Args:
-            symbol: Stock ticker (e.g., 'AAPL')
-
-        Returns:
-            Zero-padded 10-digit CIK string, or None if not found
+        Look up the primary SEC CIK for a ticker symbol.
+        Returns the most-recent CIK only. Use get_all_ciks_for_symbol()
+        to retrieve all historical CIKs for restructured companies.
         """
-        ticker_map = self._load_edgar_ticker_map()
-        cik = ticker_map.get(symbol.upper())
-        if cik:
-            logger.info(f"CIK for {symbol}: {cik}")
+        ciks = self.get_all_ciks_for_symbol(symbol)
+        return ciks[-1] if ciks else None
+
+    def get_all_ciks_for_symbol(self, symbol: str) -> List[str]:
+        """
+        Return every SEC CIK that has ever filed 10-Ks under this ticker,
+        covering corporate restructures via a two-phase EDGAR search:
+
+          Phase 1 — Ticker search:
+            Query EDGAR by ticker symbol to get the current registrant CIK.
+
+          Phase 2 — Company-name prefix search:
+            Fetch the company name from the primary CIK’s submissions JSON,
+            extract a distinctive 1–2 word prefix, then search EDGAR by that
+            name to find predecessor/successor entities (e.g. "Walt Disney"
+            finds both the old CIK 1001039 and new CIK 1744489 for DIS).
+
+          Static override:
+            Used only for the exceptional case where a company restructured
+            under a completely different name (GOOG → Alphabet), making
+            automatic predecessor discovery impossible.
+
+        Results are cached per-session to avoid redundant EDGAR requests.
+        """
+        import xml.etree.ElementTree as ET
+        import urllib.parse
+
+        upper = symbol.upper()
+
+        # 0. Static override wins for exceptional name-change restructures
+        if upper in self.EDGAR_CIK_OVERRIDES:
+            logger.info(
+                f"{upper} resolved via static override: {self.EDGAR_CIK_OVERRIDES[upper]}")
+            return list(self.EDGAR_CIK_OVERRIDES[upper])
+
+        # 1. Return from cache if already looked up this session
+        if upper in SustainabilityReportDownloader._edgar_multi_cik_cache:
+            return SustainabilityReportDownloader._edgar_multi_cik_cache[upper]
+
+        headers = self._get_edgar_session_headers()
+        headers['Host'] = 'www.sec.gov'
+
+        def _atom_ciks(url: str) -> List[str]:
+            """Fetch an EDGAR browse-edgar Atom feed and return unique CIKs."""
+            try:
+                r = requests.get(url, headers=headers, timeout=15)
+                if r.status_code != 200 or not r.content:
+                    return []
+                root = ET.fromstring(r.content)
+                ns = {'atom': 'http://www.w3.org/2005/Atom'}
+                found: List[str] = []
+                for entry in root.findall('atom:entry', ns):
+                    id_elem = entry.find('atom:id', ns)
+                    if id_elem is not None and id_elem.text:
+                        m = re.search(r'CIK=0*([1-9]\d*)', id_elem.text)
+                        if m:
+                            cik = m.group(1)
+                            if cik not in found:
+                                found.append(cik)
+                return found
+            except Exception as exc:
+                logger.warning(f"EDGAR Atom fetch failed [{url}]: {exc}")
+                return []
+
+        # Phase 1: search by ticker
+        ciks = _atom_ciks(self.EDGAR_COMPANY_SEARCH_URL.format(ticker=upper))
+        if ciks:
+            logger.info(f"Ticker search found CIK(s) for {upper}: {ciks}")
         else:
-            logger.warning(f"No CIK found for symbol {symbol}")
-        return cik
+            # Fall back to company_tickers.json primary CIK
+            ticker_map = self._load_edgar_ticker_map()
+            primary = ticker_map.get(upper)
+            if primary:
+                # ticker_map stores zero-padded strings; strip leading zeros
+                ciks = [str(int(primary))]
+                logger.info(f"Fell back to primary CIK for {upper}: {ciks[0]}")
+            else:
+                logger.warning(f"No CIK found for symbol {upper}")
+
+        # Phase 2: company-name prefix search to find predecessor/successor CIKs
+        if ciks:
+            primary_cik = ciks[-1]  # most-recent (highest) CIK
+            try:
+                data_headers = self._get_edgar_session_headers()
+                data_headers['Host'] = 'data.sec.gov'
+                sub_url = self.EDGAR_SUBMISSIONS_URL.format(
+                    cik=int(primary_cik))
+                r = requests.get(sub_url, headers=data_headers, timeout=15)
+                if r.status_code == 200:
+                    company_name = r.json().get('name', '')
+                    name_prefix = self._extract_edgar_name_prefix(company_name)
+                    if name_prefix:
+                        encoded = urllib.parse.quote(name_prefix)
+                        name_url = self.EDGAR_COMPANY_NAME_SEARCH_URL.format(
+                            name=encoded)
+                        name_ciks = _atom_ciks(name_url)
+                        added = [c for c in name_ciks if c not in ciks]
+                        if added:
+                            ciks.extend(added)
+                            logger.info(
+                                f"Name-prefix search ({name_prefix!r}) found "
+                                f"additional CIK(s) for {upper}: {added}")
+            except Exception as exc:
+                logger.warning(
+                    f"Company-name prefix search failed for {upper}: {exc}")
+
+        # Sort oldest-first (lower numeric CIK = older SEC registrant)
+        ciks.sort(key=lambda x: int(x))
+
+        SustainabilityReportDownloader._edgar_multi_cik_cache[upper] = ciks
+        return ciks
+
+    def _extract_edgar_name_prefix(self, company_name: str) -> str:
+        """
+        Extract a 1–2 word search prefix from a company name, dropping
+        common legal suffixes so EDGAR’s company-name search can find
+        predecessor and successor entities under the same brand.
+
+        Examples:
+          "Walt Disney Co"         → "Walt Disney"
+          "Alphabet Inc."          → "Alphabet"
+          "Apple Inc"              → "Apple"
+          "JPMorgan Chase & Co"    → "JPMorgan Chase"
+        """
+        LEGAL_SUFFIXES = {
+            'inc', 'corp', 'co', 'ltd', 'plc', 'llc', 'lp', 'na',
+            'company', 'corporation', 'incorporated', 'limited',
+            'group', 'holdings', 'holding', 'enterprises',
+            'international', 'industries', 'solutions',
+        }
+        # Split on whitespace; strip punctuation from each word
+        words = [re.sub(r'[^\w]', '', w) for w in company_name.split()]
+        significant: List[str] = []
+        for w in words:
+            lw = w.lower()
+            if not w:
+                continue
+            if lw in LEGAL_SUFFIXES and significant:
+                break  # stop when we hit a legal suffix after ≥1 real word
+            if lw not in {'the', 'a', 'an', 'and', 'of', '&'}:
+                significant.append(w)
+            if len(significant) >= 2:
+                break
+        return ' '.join(significant)
 
     def get_edgar_10k_filings(self, cik: str, company_name: str) -> List[Dict]:
         """
@@ -2456,6 +2621,8 @@ class SustainabilityReportDownloader:
                         'primary_document': primary_doc,
                         'filing_url': filing_url,
                         'form': form,
+                        # preserve source CIK for multi-CIK companies
+                        'filing_cik': str(cik_int),
                     })
 
         try:
@@ -2469,7 +2636,9 @@ class SustainabilityReportDownloader:
 
             # Paginate through older filing archives if present
             for older_file in data.get('filings', {}).get('files', []):
-                older_url = f"https://data.sec.gov/{older_file['name']}"
+                # The 'name' field is just the filename, e.g. 'CIK0000021344-submissions-001.json'
+                # — it must be prefixed with the submissions/ path.
+                older_url = f"https://data.sec.gov/submissions/{older_file['name']}"
                 try:
                     older_resp = requests.get(
                         older_url, headers=headers, timeout=30)
@@ -2554,15 +2723,21 @@ class SustainabilityReportDownloader:
         """
         downloaded_paths: List[str] = []
 
-        # 1. CIK look-up
-        cik = self.get_cik_for_symbol(symbol)
-        if not cik:
+        # 1. CIK look-up — may return multiple CIKs for restructured companies
+        all_ciks = self.get_all_ciks_for_symbol(symbol)
+        if not all_ciks:
             logger.warning(
                 f"Cannot download EDGAR 10-K for {symbol}: CIK not found")
             return downloaded_paths
 
-        # 2. Retrieve filing list
-        filings = self.get_edgar_10k_filings(cik, company_name)
+        # 2. Retrieve filing list across ALL CIKs and merge
+        filings: List[Dict] = []
+        for cik in all_ciks:
+            cik_filings = self.get_edgar_10k_filings(cik, company_name)
+            logger.info(
+                f"CIK {cik}: found {len(cik_filings)} 10-K filing(s) for {company_name}")
+            filings.extend(cik_filings)
+
         if not filings:
             logger.info(
                 f"No 10-K filings found on EDGAR for {company_name} ({symbol})")
@@ -2594,8 +2769,11 @@ class SustainabilityReportDownloader:
             filing_date = filing.get('filing_date', '')
             year_str = (report_date or filing_date)[:4]
 
+            # Extract the CIK from the filing's own URL so multi-CIK companies
+            # (e.g. Google Inc. vs Alphabet Inc.) resolve correctly.
+            filing_cik = filing.get('filing_cik') or all_ciks[-1]
             doc_url = self._get_edgar_filing_best_url(
-                cik, accession, primary_doc)
+                filing_cik, accession, primary_doc)
 
             # Skip if already in database
             if company_name and self._is_url_in_database(doc_url, company_name):

@@ -177,8 +177,8 @@ else:
     current_sector_id = None
 
 # Main content
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
-    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files", "📊 Today's Downloads"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files", "📊 Today's Downloads", "🔍 Missing Reports"])
 
 with tab1:
     st.header("Select Companies to Download")
@@ -279,28 +279,54 @@ with tab1:
         # Company selection with checkboxes
         col1, col2 = st.columns([3, 1])
 
-        with col1:
-            # Multi-select for companies - include rank number
-            company_options = filtered_df.apply(
-                lambda row: f"#{int(row['market_cap_rank'])} {row['Symbol']} - {row['Company']}", axis=1
-            ).tolist()
+        _CKEY = 'tab1_companies_select'
+        _PENDING = 'tab1_companies_pending'  # staging key for button actions
 
-            selected = st.multiselect(
+        # Apply any pending action from the PREVIOUS render (before the widget
+        # is instantiated — Streamlit forbids writing to a widget key after it
+        # has been rendered in the current pass).
+        if _PENDING in st.session_state:
+            st.session_state[_CKEY] = st.session_state.pop(_PENDING)
+
+        # Build options from the filtered view.
+        company_options = filtered_df.apply(
+            lambda row: f"#{int(row['market_cap_rank'])} {row['Symbol']} - {row['Company']}", axis=1
+        ).tolist()
+
+        # Seed the key on first load from any pre-existing selection.
+        if _CKEY not in st.session_state:
+            st.session_state[_CKEY] = [
+                c for c in st.session_state.get('selected_companies', [])
+                if c in company_options
+            ]
+
+        # Always inject currently-selected items back into options so they are
+        # never stripped when the "Search" text input filters the list.
+        # This lets the user search for "DIS", add it, then clear the search
+        # without losing previously selected companies like GOOG.
+        all_options = list(company_options)
+        for item in st.session_state[_CKEY]:
+            if item not in all_options:
+                all_options.insert(0, item)  # keep at top so they're visible
+
+        with col1:
+            st.multiselect(
                 "Select Companies to Download",
-                options=company_options,
-                default=st.session_state.selected_companies if st.session_state.selected_companies else [],
+                options=all_options,
+                key=_CKEY,
                 help="Select one or more companies (ranked by market cap)"
             )
-            st.session_state.selected_companies = selected
+            st.session_state.selected_companies = st.session_state[_CKEY]
 
         with col2:
             st.markdown("### Quick Actions")
             if st.button("Select All Shown"):
-                st.session_state.selected_companies = company_options
+                # Write to pending, not _CKEY — widget already rendered above
+                st.session_state[_PENDING] = list(company_options)
                 st.rerun()
 
             if st.button("Clear Selection"):
-                st.session_state.selected_companies = []
+                st.session_state[_PENDING] = []
                 st.rerun()
 
         # Show selected count
@@ -494,7 +520,6 @@ with tab3:
     # Run the download on the render where is_downloading=True and the
     # button is already shown as disabled.
     if st.session_state.is_downloading and not st.session_state.download_complete:
-        download_banner = st.empty()  # placeholder cleared when done
 
         # Get year filter from session state
         years_filter = st.session_state.get('years_to_download')
@@ -712,53 +737,56 @@ with tab3:
             f"**🏢 Company Progress:** {total_companies}/{total_companies} - ✅ Complete")
         status_text.success("✅ Download complete!")
 
+        # Save all results to session state BEFORE rerun so they persist.
+        active_dl = multi_year_downloader if years_filter else downloader
+        active_dl._save_metadata()
+        st.session_state.download_results = pd.DataFrame(results)
+        st.session_state.download_summary = {
+            'companies': len(results),
+            'reports_found': sum(r.get('reports_found', 0) for r in results),
+            'downloaded': len(active_dl.downloaded_reports),
+            'failed': len(active_dl.failed_downloads),
+        }
+        active_dl.close()
+
         st.session_state.is_downloading = False
         st.session_state.download_complete = True
-        download_banner.empty()
+        # Rerun so the page re-renders cleanly: no "in progress" banner,
+        # button re-enabled, and summary shown via the download_complete path.
+        st.rerun()
 
-        # Save results
-        downloader._save_metadata()
-        st.session_state.download_results = pd.DataFrame(results)
-
-        # Display summary
-        st.subheader("📊 Download Summary")
-
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Companies Processed", len(results))
-        with col2:
-            st.metric("Reports Found", sum(r.get('reports_found', 0)
-                      for r in results))
-        with col3:
-            st.metric("Reports Downloaded", len(downloader.downloaded_reports))
-        with col4:
-            st.metric("Failed", len(downloader.failed_downloads))
-
-        # Display results table
-        st.subheader("📋 Detailed Results")
-        st.dataframe(st.session_state.download_results,
-                     use_container_width=True)
-
-        # Download results as CSV
-        csv = st.session_state.download_results.to_csv(index=False)
-        st.download_button(
-            label="📥 Download Results CSV",
-            data=csv,
-            file_name="download_results.csv",
-            mime="text/csv"
-        )
-
-        # Close downloader
-        downloader.close()
-
-    # Completion banner (persists across re-runs until a new download starts)
+    # Completion banner + summary (shown on the clean re-render after download)
     if st.session_state.download_complete and not st.session_state.is_downloading:
         st.success(
             "✅ **Download complete!** All selected companies have been processed. "
-            "Check the results table above or switch to the 📁 Files tab to view downloaded reports."
+            "Switch to the 📁 Files tab to view downloaded reports."
         )
 
-    # Show previous results if available
+        summary = st.session_state.get('download_summary', {})
+        if summary:
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Companies Processed", summary.get('companies', 0))
+            with col2:
+                st.metric("Reports Found", summary.get('reports_found', 0))
+            with col3:
+                st.metric("Reports Downloaded", summary.get('downloaded', 0))
+            with col4:
+                st.metric("Failed", summary.get('failed', 0))
+
+        if st.session_state.download_results is not None:
+            st.subheader("📋 Detailed Results")
+            st.dataframe(st.session_state.download_results,
+                         use_container_width=True)
+            csv = st.session_state.download_results.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Results CSV",
+                data=csv,
+                file_name="download_results.csv",
+                mime="text/csv"
+            )
+
+    # Show previous results if available (no completed download this session)
     elif st.session_state.download_results is not None:
         st.subheader("📋 Previous Download Results")
         st.dataframe(st.session_state.download_results,
@@ -1170,6 +1198,196 @@ with tab5:
             st.success(f"{len(today_files)} file(s) found on disk for today.")
         else:
             st.info(f"No downloads found for {today.strftime('%B %d, %Y')}.")
+
+# --- Missing Reports Tab ---
+with tab6:
+    st.header("🔍 Missing Reports")
+
+    # ── Read selections directly from tab1 & tab2 ────────────────────────
+    _tab1_companies = st.session_state.get('selected_companies') or []
+    _tab2_years = st.session_state.get('years_to_download')
+
+    # Derive symbols + names from tab1 selection
+    miss_syms, miss_names = [], []
+    for c in _tab1_companies:
+        parts = c.split(' - ')[0]
+        miss_syms.append(parts.split(' ')[-1])
+        miss_names.append(
+            c.split(' - ', 1)[1] if ' - ' in c else parts.split(' ')[-1])
+
+    # Derive year list from tab2
+    years_sorted_miss = sorted(_tab2_years) if _tab2_years else []
+
+    # ── Context summary strip ─────────────────────────────────────────────
+    si1, si2, si3 = st.columns(3)
+    si1.info(f"🏢 **{len(miss_syms)}** companies from Tab 1")
+    si2.info(
+        f"📅 **{len(years_sorted_miss)}** years from Tab 2"
+        + (f" ({years_sorted_miss[0]}–{years_sorted_miss[-1]})" if years_sorted_miss else "")
+    )
+    CT_NAMES = {1: "🌱 ESG", 2: "📊 Annual/10K", 4: "🎙️ Transcripts"}
+    si3.info(
+        f"📄 **Content:** {', '.join(CT_NAMES.get(ct, str(ct)) for ct in content_types) or 'None'}")
+
+    # ── Guard: prompt user to configure missing inputs ────────────────────
+    guards = []
+    if not miss_syms:
+        guards.append(
+            "⚠️ No companies selected — go to **Tab 1** and select companies.")
+    if not years_sorted_miss:
+        guards.append(
+            "⚠️ No year range set — go to **Tab 2** and choose a specific year range.")
+    if not content_types:
+        guards.append(
+            "⚠️ No content types selected — tick at least one option in the sidebar.")
+
+    for g in guards:
+        st.warning(g)
+
+    if not guards:
+        col_ref_miss, _ = st.columns([1, 8])
+        with col_ref_miss:
+            st.button("🔄 Refresh", key="refresh_missing")
+
+        # ── Query DB ──────────────────────────────────────────────────────
+        db_error_miss = None
+        db_existing: set = set()
+
+        try:
+            import psycopg2
+            from collections import defaultdict as _defaultdict
+            from Utilities.Lookups import DB_Connection
+            _conn_str = DB_Connection().DB_CONNECTION_STRING
+            if _conn_str:
+                _conn_m = psycopg2.connect(_conn_str)
+                _cur_m = _conn_m.cursor()
+                _cur_m.execute(
+                    """
+                    SELECT LOWER(company_name), year, content_type
+                    FROM t_data_source
+                    WHERE year = ANY(%s)
+                      AND content_type = ANY(%s)
+                    """,
+                    (years_sorted_miss, content_types)
+                )
+                db_idx = _defaultdict(set)
+                for (db_name, db_year, db_ct) in _cur_m.fetchall():
+                    db_idx[(db_year, db_ct)].add(db_name)
+                _cur_m.close()
+                _conn_m.close()
+
+                for sym, company_name in zip(miss_syms, miss_names):
+                    name_lower = company_name.lower()
+                    for year in years_sorted_miss:
+                        for ct in content_types:
+                            if any(name_lower in n or n in name_lower
+                                   for n in db_idx.get((year, ct), set())):
+                                db_existing.add((sym, year, ct))
+        except Exception as _e_miss:
+            db_error_miss = str(_e_miss)
+
+        if db_error_miss:
+            st.error(f"❌ Database error: {db_error_miss}")
+        else:
+            all_combos = {(sym, year, ct)
+                          for sym in miss_syms for year in years_sorted_miss for ct in content_types}
+            missing_combos = all_combos - db_existing
+            total_combos = len(all_combos)
+            missing_count = len(missing_combos)
+            existing_count = len(db_existing)
+            coverage_pct = (existing_count / total_combos *
+                            100) if total_combos > 0 else 0
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("📋 Total Combinations", total_combos)
+            m2.metric("✅ Existing in DB", existing_count)
+            m3.metric("❌ Missing", missing_count)
+            m4.metric("📈 Coverage", f"{coverage_pct:.1f}%")
+
+            st.markdown("---")
+
+            # ── Missing records grid ──────────────────────────────────────
+            if missing_count == 0:
+                st.success("✅ All combinations are present in the database!")
+            else:
+                sym_to_name = dict(zip(miss_syms, miss_names))
+                missing_rows = [
+                    {"Symbol": sym, "Company": sym_to_name.get(sym, sym),
+                     "Year": year, "Content Type": CT_NAMES.get(ct, str(ct))}
+                    for (sym, year, ct) in sorted(missing_combos, key=lambda x: (x[0], x[1], x[2]))
+                ]
+                missing_df = pd.DataFrame(missing_rows)
+
+                st.subheader(f"❌ Missing Records ({missing_count})")
+                fc1, fc2, fc3 = st.columns(3)
+                with fc1:
+                    filt_syms = st.multiselect("Symbol", sorted(missing_df["Symbol"].unique(
+                    )), default=[], placeholder="All", key="miss_filt_sym")
+                with fc2:
+                    filt_years = st.multiselect("Year", sorted(missing_df["Year"].unique()), default=[
+                    ], placeholder="All", key="miss_filt_year")
+                with fc3:
+                    filt_ct = st.multiselect("Content Type", sorted(
+                        missing_df["Content Type"].unique()), default=[], placeholder="All", key="miss_filt_ct")
+
+                fdf = missing_df.copy()
+                if filt_syms:
+                    fdf = fdf[fdf["Symbol"].isin(filt_syms)]
+                if filt_years:
+                    fdf = fdf[fdf["Year"].isin(filt_years)]
+                if filt_ct:
+                    fdf = fdf[fdf["Content Type"].isin(filt_ct)]
+
+                st.caption(
+                    f"Showing **{len(fdf)}** of **{missing_count}** missing records")
+                st.dataframe(fdf, hide_index=True, use_container_width=True)
+                st.download_button("⬇️ Export to CSV", fdf.to_csv(index=False),
+                                   "missing_reports.csv", "text/csv")
+
+            # ── Company × Year matrix ─────────────────────────────────────
+            st.markdown("---")
+            st.subheader("🗓️ Company × Year Matrix")
+
+            mf1, mf2 = st.columns([2, 3])
+            with mf1:
+                matrix_sym_filter = st.multiselect(
+                    "Filter by Symbol",
+                    options=sorted(miss_syms), default=[],
+                    placeholder="All symbols", key="miss_matrix_sym")
+            with mf2:
+                show_only_incomplete = st.checkbox(
+                    "Show only rows with at least one ❌ or ⚠️",
+                    value=False, key="miss_matrix_incomplete")
+
+            matrix_data = []
+            for sym, company_name in zip(miss_syms, miss_names):
+                if matrix_sym_filter and sym not in matrix_sym_filter:
+                    continue
+                row_data = {"Symbol": sym, "Company": company_name}
+                for year in years_sorted_miss:
+                    present = [ct for ct in content_types if (
+                        sym, year, ct) in db_existing]
+                    if len(present) == len(content_types):
+                        row_data[str(year)] = "✅"
+                    elif len(present) == 0:
+                        row_data[str(year)] = "❌"
+                    else:
+                        row_data[str(year)] = "⚠️ " + \
+                            " ".join(CT_NAMES.get(ct, str(ct))
+                                     for ct in present)
+                matrix_data.append(row_data)
+
+            matrix_df = pd.DataFrame(matrix_data)
+            if show_only_incomplete:
+                yr_cols = [c for c in matrix_df.columns if c not in (
+                    "Symbol", "Company")]
+                mask = matrix_df[yr_cols].apply(
+                    lambda row: any("❌" in str(v) or "⚠️" in str(v) for v in row), axis=1)
+                matrix_df = matrix_df[mask]
+
+            st.caption(
+                f"Showing **{len(matrix_df)}** companies  |  ✅ All types present  |  ⚠️ Partial  |  ❌ None")
+            st.dataframe(matrix_df, hide_index=True, use_container_width=True)
 
 # Footer
 st.markdown("---")

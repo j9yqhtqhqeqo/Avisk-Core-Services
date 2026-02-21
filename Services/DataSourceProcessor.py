@@ -36,6 +36,18 @@ class DataSourceProcessor:
         self.logfile = f'{log_path} {dt.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
         self.flagged_for_review = False
 
+    def _extract_text_from_htm(self, htm_path: str) -> str:
+        """Extract plain text from an .htm/.html file using BeautifulSoup.
+        Preferred over pdfkit for SEC EDGAR filings — cleaner, faster, no wkhtmltopdf dependency.
+        """
+        from bs4 import BeautifulSoup
+        with open(htm_path, 'r', encoding='utf-8', errors='replace') as f:
+            soup = BeautifulSoup(f, 'html.parser')
+        # Remove script / style noise
+        for tag in soup(['script', 'style', 'head']):
+            tag.decompose()
+        return soup.get_text(separator='\n', strip=True)
+
     def download_webpage_as_pdf_file(self, url: str, f_name=None, f_log=None):
         try:
 
@@ -149,6 +161,10 @@ class DataSourceProcessor:
                 if (source_type == 'pdf'):
                     self.download_single_file(
                         url=source_url, f_name=l_file_location, f_log=self.logfile)
+                elif (source_type == 'htm' or source_type == 'html'):
+                    # EDGAR 10-K filings are served as raw HTML — save as-is, extract text during processing
+                    self.download_single_file(
+                        url=source_url, f_name=l_file_location, f_log=self.logfile)
                 elif (source_type == 'webpage'):
                     self.download_webpage_as_pdf_file(
                         url=source_url, f_name=l_file_location, f_log=self.logfile)
@@ -187,20 +203,32 @@ class DataSourceProcessor:
                     str(year)+' '+content_type_desc+'.txt'
                 output_path = os.path.join(output_folder, output_file_name)
 
-                print(
-                    f'Converting PDF to text: {l_file_location} -> {output_path}')
+                ext = Path(l_file_location).suffix.lower()
 
-                doc = fitz.open(l_file_location)  # open a document
-                with open(output_path, "wb") as out:  # create a text output
-                    for page in doc:  # iterate the document pages
-                        text = page.get_text().encode("utf8")  # get plain text (is in UTF-8)
-                        out.write(text)  # write text of page
-                        # write page delimiter (form feed 0x0C)
-                        out.write(bytes((12,)))
-                    out.flush()  # Flush Python buffers
-                    # Force OS to write to GCS FUSE immediately
-                    os.fsync(out.fileno())
-                doc.close()
+                if ext in ('.htm', '.html'):
+                    # --- EDGAR HTM path: extract text directly via BeautifulSoup ---
+                    print(
+                        f'Converting HTM to text: {l_file_location} -> {output_path}')
+                    text = self._extract_text_from_htm(l_file_location)
+                    with open(output_path, 'wb') as out:
+                        out.write(text.encode('utf-8'))
+                        out.flush()
+                        os.fsync(out.fileno())
+                else:
+                    # --- PDF / other fitz-supported formats ---
+                    print(
+                        f'Converting PDF to text: {l_file_location} -> {output_path}')
+                    doc = fitz.open(l_file_location)  # open a document
+                    with open(output_path, "wb") as out:  # create a text output
+                        for page in doc:  # iterate the document pages
+                            text = page.get_text().encode("utf8")  # get plain text (is in UTF-8)
+                            out.write(text)  # write text of page
+                            # write page delimiter (form feed 0x0C)
+                            out.write(bytes((12,)))
+                        out.flush()  # Flush Python buffers
+                        # Force OS to write to GCS FUSE immediately
+                        os.fsync(out.fileno())
+                    doc.close()
 
                 # Create list of successfully processed Files
                 document.document_name = output_file_name
