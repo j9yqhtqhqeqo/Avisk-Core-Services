@@ -50,6 +50,11 @@ except ImportError:
     except ImportError:
         DDGS_AVAILABLE = False
 
+# Financial Modeling Prep API key — used for earnings call transcripts
+FMP_API_KEY = 'j1sUHyVT1lU3gsc2l6zF2jkuleFJEA2o'
+# FMP migrated from /api/v3/ to /stable/ — use stable endpoints
+FMP_STABLE_BASE_URL = 'https://financialmodelingprep.com/stable'
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -1876,13 +1881,9 @@ class SustainabilityReportDownloader:
                     f'"{company_name}" form 10-K SEC filing {year_str} filetype:pdf',
                 ])
 
-            # Earnings Call Transcripts searches (content_type = 4)
-            if 4 in self.content_types:
-                search_terms.extend([
-                    f'"{company_name}" earnings call transcript {year_str} filetype:pdf',
-                    f'"{company_name}" investor call transcript {year_str} filetype:pdf',
-                    f'"{company_name}" quarterly earnings transcript {year_str} filetype:pdf',
-                ])
+            # Earnings call transcripts are sourced directly from SEC EDGAR 8-K
+            # exhibits (see download_edgar_transcripts) — they are not published
+            # as PDFs so DuckDuckGo searches for them would be fruitless.
 
             # Use duckduckgo-search library if available (handles bot detection)
             if DDGS_AVAILABLE:
@@ -2871,6 +2872,570 @@ class SustainabilityReportDownloader:
             f"{len(downloaded_paths)} 10-K(s) saved")
         return downloaded_paths
 
+    def _quarter_from_filing_date(self, filing_date: str) -> Tuple[int, int]:
+        """
+        Estimate the fiscal quarter and year from an 8-K filing date.
+
+        Earnings calls are typically filed shortly after the quarter ends:
+          Q1 (Jan–Mar results) → filed in Mar–May
+          Q2 (Apr–Jun results) → filed in Jun–Aug
+          Q3 (Jul–Sep results) → filed in Sep–Nov
+          Q4 (Oct–Dec results) → filed in Jan–Feb of the FOLLOWING year
+
+        Returns:
+            (fiscal_year, quarter) or (0, 0) on parse error
+        """
+        if not filing_date or len(filing_date) < 7:
+            return 0, 0
+        try:
+            year = int(filing_date[:4])
+            month = int(filing_date[5:7])
+            if month in (1, 2):
+                return year - 1, 4   # Q4 filed in Jan/Feb of next year
+            elif month in (3, 4, 5):
+                return year, 1
+            elif month in (6, 7, 8):
+                return year, 2
+            elif month in (9, 10, 11):
+                return year, 3
+            else:  # December — some companies file Q4 in Dec
+                return year, 4
+        except (ValueError, IndexError):
+            return 0, 0
+
+    def download_edgar_transcripts(self, symbol: str, company_name: str,
+                                   years_needed: Optional[List[int]] = None) -> List[str]:
+        """
+        Download earnings call transcripts from SEC EDGAR 8-K exhibit filings.
+
+        Many public companies attach their earnings call transcripts as an
+        EX-99.x exhibit to an 8-K filed on the day of the call.  This method:
+          1. Resolves the ticker → CIK(s) via the existing EDGAR CIK lookup
+          2. Fetches 8-K filings from the EDGAR submissions API
+          3. Inspects each filing's index JSON for exhibits whose description
+             or filename contains the word "transcript"
+          4. Downloads the exhibit, strips HTML → plain text
+          5. Saves as {SYMBOL}_transcript_Q{Q}_{YEAR}.txt and registers in DB
+
+        This is free and requires no API key.
+
+        Returns:
+            List of saved file paths.
+        """
+        saved_paths: List[str] = []
+
+        all_ciks = self.get_all_ciks_for_symbol(symbol)
+        if not all_ciks:
+            logger.warning(
+                f"[EDGAR-T] Cannot find CIK for {symbol} — skipping transcripts")
+            return saved_paths
+
+        # Include year+1 in the filing-date filter because Q4 earnings calls
+        # are filed in January/February of the following calendar year.
+        if years_needed:
+            relevant_filing_years: Optional[Set[int]] = (
+                set(years_needed) | {y + 1 for y in years_needed}
+            )
+        else:
+            relevant_filing_years = None
+
+        base_hdrs = self._get_edgar_session_headers()
+        sub_hdrs = {**base_hdrs, 'Host': 'data.sec.gov'}
+        www_hdrs = {**base_hdrs, 'Host': 'www.sec.gov'}
+
+        for cik in all_ciks:
+            cik_int = int(cik)
+            submissions_url = self.EDGAR_SUBMISSIONS_URL.format(cik=cik_int)
+            try:
+                resp = requests.get(
+                    submissions_url, headers=sub_hdrs, timeout=30)
+                resp.raise_for_status()
+                sub_data = resp.json()
+            except Exception as exc:
+                logger.warning(
+                    f"[EDGAR-T] Failed to fetch submissions for CIK {cik}: {exc}")
+                continue
+
+            # ── Collect all 8-K / 8-K/A filings within the year scope ────────────
+            eight_k_filings: List[Dict] = []
+
+            def _collect_8k(block: dict) -> None:
+                forms = block.get('form', [])
+                accessions = block.get('accessionNumber', [])
+                filing_dates = block.get('filingDate', [])
+                for i, form in enumerate(forms):
+                    if form not in ('8-K', '8-K/A'):
+                        continue
+                    fd = filing_dates[i] if i < len(filing_dates) else ''
+                    if relevant_filing_years and fd:
+                        try:
+                            if int(fd[:4]) not in relevant_filing_years:
+                                continue
+                        except ValueError:
+                            continue
+                    eight_k_filings.append({
+                        'accession': accessions[i],
+                        'filing_date': fd,
+                        'cik': cik_int,
+                    })
+
+            _collect_8k(sub_data.get('filings', {}).get('recent', {}))
+
+            # Paginate through older archives when years_needed go far back
+            current_year = datetime.now().year
+            if not years_needed or min(years_needed) < current_year - 3:
+                for older_file in sub_data.get('filings', {}).get('files', []):
+                    older_url = (
+                        f"https://data.sec.gov/submissions/{older_file['name']}")
+                    try:
+                        or_ = requests.get(
+                            older_url, headers=sub_hdrs, timeout=30)
+                        or_.raise_for_status()
+                        _collect_8k(or_.json())
+                        time.sleep(0.2)
+                    except Exception as exc:
+                        logger.warning(
+                            f"[EDGAR-T] Older submissions fetch failed: {exc}")
+
+            logger.info(
+                f"[EDGAR-T] {len(eight_k_filings)} 8-K filing(s) in scope for "
+                f"{symbol} (CIK: {cik})")
+
+            # ── Inspect each filing index for transcript exhibits ─────────────────
+            for filing in eight_k_filings:
+                accession = filing['accession']
+                accession_nodash = accession.replace('-', '')
+                filing_date = filing['filing_date']
+
+                index_url = (
+                    f"{self.EDGAR_ARCHIVES_BASE}{cik_int}/{accession_nodash}/"
+                    f"{accession_nodash}-index.json"
+                )
+                try:
+                    time.sleep(0.15)  # Respect SEC rate limit
+                    idx_resp = requests.get(
+                        index_url, headers=www_hdrs, timeout=15)
+                    if idx_resp.status_code != 200:
+                        continue
+                    idx_data = idx_resp.json()
+                except Exception as exc:
+                    logger.debug(
+                        f"[EDGAR-T] Index fetch failed for {accession}: {exc}")
+                    continue
+
+                for doc in idx_data.get('documents', []):
+                    doc_type = doc.get('type', '')
+                    description = doc.get('description', '').lower()
+                    doc_fname = doc.get('filename', '')
+
+                    # EX-99.1: only if description/filename explicitly says "transcript"
+                    #           (EX-99.1 is usually the earnings press release)
+                    # EX-99.2 / EX-99.3: always include — these slots are commonly
+                    #           used for the actual call transcript or presentation
+                    is_exhibit = doc_type.startswith('EX-99')
+                    is_transcript = (
+                        'transcript' in description
+                        or 'transcript' in doc_fname.lower()
+                        or doc_type in ('EX-99.2', 'EX-99.3')
+                    )
+                    if not (is_exhibit and is_transcript):
+                        continue
+
+                    fiscal_year, quarter = self._quarter_from_filing_date(
+                        filing_date)
+                    if not fiscal_year:
+                        continue
+                    if years_needed and fiscal_year not in years_needed:
+                        continue
+
+                    # Include exhibit type in filename so 99.1/99.2/99.3 from the
+                    # same filing don't overwrite each other
+                    exhibit_tag = doc_type.replace('EX-', '').replace('.', '_')
+                    filename_out = (
+                        f"{symbol}_transcript_Q{quarter}_{fiscal_year}_{exhibit_tag}.txt")
+
+                    # Skip if already tracked in DB
+                    if self._data_source_exists(
+                            company_name, fiscal_year, filename_out):
+                        logger.info(
+                            f"[EDGAR-T] Already in DB: {filename_out} — skipping")
+                        fp = self.base_download_dir / \
+                            str(fiscal_year) / filename_out
+                        if fp.exists():
+                            saved_paths.append(str(fp))
+                        continue
+
+                    exhibit_url = (
+                        f"{self.EDGAR_ARCHIVES_BASE}{cik_int}/{accession_nodash}/"
+                        f"{doc_fname}"
+                    )
+                    try:
+                        time.sleep(max(self.delay_seconds * 0.25, 0.3))
+                        ex_resp = requests.get(
+                            exhibit_url, headers=www_hdrs, timeout=30)
+                        if ex_resp.status_code != 200:
+                            logger.warning(
+                                f"[EDGAR-T] HTTP {ex_resp.status_code} "
+                                f"for {exhibit_url}")
+                            continue
+
+                        raw = ex_resp.content
+                        # Convert HTML to plain text when applicable
+                        if (doc_fname.lower().endswith(('.htm', '.html'))
+                                or b'<html' in raw[:200].lower()):
+                            soup = BeautifulSoup(raw, 'lxml')
+                            text = soup.get_text(separator='\n', strip=True)
+                        else:
+                            text = raw.decode('utf-8', errors='replace')
+
+                        if len(text.strip()) < 500:
+                            logger.info(
+                                f"[EDGAR-T] Skipping near-empty exhibit: "
+                                f"{exhibit_url}")
+                            continue
+
+                        header = (
+                            f"SYMBOL: {symbol}\n"
+                            f"COMPANY: {company_name}\n"
+                            f"QUARTER: Q{quarter} {fiscal_year}\n"
+                            f"DATE: {filing_date}\n"
+                            f"SOURCE: SEC EDGAR 8-K ({doc_type}) — {accession}\n"
+                            f"{'=' * 80}\n\n"
+                        )
+                        content_bytes = (header + text).encode('utf-8')
+
+                        year_dir = self.base_download_dir / str(fiscal_year)
+                        year_dir.mkdir(parents=True, exist_ok=True)
+                        filepath = year_dir / filename_out
+
+                        if not filepath.exists():
+                            filepath.write_bytes(content_bytes)
+                            logger.info(f"[EDGAR-T] Saved: {filepath}")
+                        else:
+                            logger.debug(
+                                f"[EDGAR-T] Already on disk: {filepath}")
+
+                        self._add_to_data_source(
+                            company_name=company_name,
+                            year=fiscal_year,
+                            source_url=exhibit_url,
+                            document_name=filename_out,
+                            filepath=str(filepath),
+                            content_type=4,
+                            file_content=content_bytes,
+                            original_source_url=exhibit_url,
+                            search_query_used=(
+                                f"EDGAR 8-K Q{quarter} {fiscal_year}"),
+                            search_result_rank=1,
+                            http_response_code=ex_resp.status_code,
+                            company_symbol=symbol,
+                        )
+                        saved_paths.append(str(filepath))
+
+                    except Exception as exc:
+                        logger.warning(
+                            f"[EDGAR-T] Error downloading exhibit "
+                            f"{exhibit_url}: {exc}")
+                        continue
+
+        logger.info(
+            f"[EDGAR-T] {len(saved_paths)} transcript(s) saved for {symbol}")
+        return saved_paths
+
+    # Known IR website overrides for companies whose investor-relations site
+    # is on a different domain from their main corporate/product website.
+    # Maps ticker symbol → IR base URL (no trailing slash).
+    _IR_WEBSITE_OVERRIDES: Dict[str, str] = {
+        # Alphabet — IR is abc.xyz, not google.com
+        'GOOGL': 'https://abc.xyz',
+        'GOOG':  'https://abc.xyz',
+        # Meta — IR subdomain
+        'META':  'https://investor.fb.com',
+        # Apple
+        'AAPL':  'https://investor.apple.com',
+        # Microsoft
+        'MSFT':  'https://www.microsoft.com',
+        # Amazon
+        'AMZN':  'https://ir.aboutamazon.com',
+        # Nvidia
+        'NVDA':  'https://investor.nvidia.com',
+        # Tesla
+        'TSLA':  'https://ir.tesla.com',
+        # Netflix
+        'NFLX':  'https://ir.netflix.net',
+        # Salesforce
+        'CRM':   'https://investor.salesforce.com',
+        # Adobe
+        'ADBE':  'https://www.adobe.com',
+        # Broadcom
+        'AVGO':  'https://investors.broadcom.com',
+        # Oracle
+        'ORCL':  'https://investor.oracle.com',
+        # Walmart
+        'WMT':   'https://stock.walmart.com',
+        # JPMorgan
+        'JPM':   'https://www.jpmorganchase.com',
+        # Johnson & Johnson
+        'JNJ':   'https://investor.jnj.com',
+        # ExxonMobil
+        'XOM':   'https://investor.exxonmobil.com',
+        # Berkshire Hathaway
+        'BRK.B': 'https://www.berkshirehathaway.com',
+        'BRK.A': 'https://www.berkshirehathaway.com',
+    }
+
+    # Common IR path patterns for Investors → Events & Presentations pages
+    _IR_TRANSCRIPT_PATHS = [
+        '/investors/events-and-presentations',
+        '/investors/events-presentations',
+        '/investor-relations/events-and-presentations',
+        '/investor-relations/events-presentations',
+        '/investors/events',
+        '/investor-relations/events',
+        '/investors/earnings',
+        '/investor-relations/earnings',
+        '/investors/quarterly-earnings',
+        '/investor-relations/quarterly-earnings',
+        '/investors/earnings-transcripts',
+        '/investor-relations/earnings-transcripts',
+        '/investors/transcripts',
+        '/investor-relations/transcripts',
+        '/investors/presentations',
+        '/investor-relations/presentations',
+        '/ir/events',
+        '/ir/events-and-presentations',
+        '/ir/earnings',
+        '/ir/transcripts',
+        '/investors',
+        '/investor-relations',
+    ]
+
+    # Keywords in anchor text / href that suggest a transcript link
+    _IR_TRANSCRIPT_LINK_KWS = [
+        'transcript', 'earnings call', 'earnings transcript',
+        'quarterly earnings', 'investor call', 'conference call',
+        'q1 ', 'q2 ', 'q3 ', 'q4 ',
+        'first quarter', 'second quarter', 'third quarter', 'fourth quarter',
+    ]
+
+    def download_ir_website_transcripts(
+            self, symbol: str, company_name: str, website: str,
+            years_needed: Optional[List[int]] = None) -> List[str]:
+        """
+        Scrape earnings call transcripts from the company's own Investor
+        Relations website (Investors → Events & Presentations).
+
+        Strategy:
+          1. Try common IR path patterns against the company domain
+          2. On each page found, locate anchor tags whose text / href
+             contains transcript keywords
+          3. If the link points to an HTML page, fetch it and extract the
+             visible text (plain-text transcript).  If it's a PDF, download
+             the binary directly.
+          4. Estimate fiscal year/quarter from the link text or URL, then
+             save as {SYMBOL}_transcript_Q{Q}_{YEAR}_ir.txt
+
+        Returns:
+            List of saved file paths.
+        """
+        saved_paths: List[str] = []
+
+        if not website:
+            return saved_paths
+
+        # ── Resolve the best IR base URL ──────────────────────────────────────
+        # 1. Check the known override map first (e.g. GOOGL → abc.xyz)
+        # 2. Auto-probe IR subdomains derived from the corporate website
+        # 3. Fall back to the corporate website itself
+        raw_base = website.rstrip('/')
+        if not raw_base.startswith('http'):
+            raw_base = f'https://{raw_base}'
+
+        override = self._IR_WEBSITE_OVERRIDES.get(symbol.upper())
+        if override:
+            ir_bases = [override, raw_base]
+            logger.info(
+                f"[IR-T] Using known IR override for {symbol}: {override}")
+        else:
+            # Derive IR subdomain candidates from the corporate domain
+            from urllib.parse import urlparse as _urlparse
+            parsed = _urlparse(raw_base)
+            apex = parsed.netloc.lstrip('www.')
+            ir_bases = [
+                f'https://investor.{apex}',
+                f'https://investors.{apex}',
+                f'https://ir.{apex}',
+                raw_base,
+            ]
+
+        # Use the first IR base that responds with HTTP 200 on its root
+        base = raw_base  # fallback
+        for candidate in ir_bases:
+            try:
+                probe = self.session.get(
+                    candidate, timeout=10, allow_redirects=True)
+                if probe.status_code == 200:
+                    base = candidate
+                    logger.info(
+                        f"[IR-T] Resolved IR base for {symbol}: {base}")
+                    break
+            except Exception:
+                continue
+
+        visited_ir_pages: Set[str] = set()
+        transcript_links: List[Tuple[str, str]] = []  # (url, anchor_text)
+
+        # ── Step 1: Find IR pages ─────────────────────────────────────────────
+        for path in self._IR_TRANSCRIPT_PATHS:
+            url = base + path
+            if url in visited_ir_pages:
+                continue
+            try:
+                time.sleep(max(self.delay_seconds * 0.5, 0.5))
+                resp = self.session.get(url, timeout=15, allow_redirects=True)
+                if resp.status_code != 200:
+                    continue
+                visited_ir_pages.add(resp.url)  # track final (redirected) URL
+                soup = BeautifulSoup(resp.content, 'lxml')
+
+                # Collect candidate transcript links from this IR page
+                for a in soup.find_all('a', href=True):
+                    text = a.get_text(' ', strip=True).lower()
+                    href = a['href'].lower()
+                    if any(kw in text or kw in href
+                           for kw in self._IR_TRANSCRIPT_LINK_KWS):
+                        full = urljoin(resp.url, a['href'])
+                        if (full, a.get_text(' ', strip=True)) not in transcript_links:
+                            transcript_links.append(
+                                (full, a.get_text(' ', strip=True)))
+
+                logger.info(
+                    f"[IR-T] Found {len(transcript_links)} candidate link(s) "
+                    f"on {resp.url} for {symbol}")
+
+                # Stop early if we already have plenty of candidates
+                if len(transcript_links) >= 60:
+                    break
+
+            except Exception as exc:
+                logger.debug(f"[IR-T] {url}: {exc}")
+                continue
+
+        if not transcript_links:
+            logger.info(
+                f"[IR-T] No transcript links found on IR site for {symbol}")
+            return saved_paths
+
+        logger.info(
+            f"[IR-T] {len(transcript_links)} candidate transcript link(s) "
+            f"for {symbol} — filtering by year and downloading")
+
+        # ── Step 2: Download each candidate ──────────────────────────────────
+        for link_url, anchor_text in transcript_links:
+            # Try to extract year from anchor text or URL
+            year_match = re.search(r'(20\d{2})', anchor_text + ' ' + link_url)
+            if not year_match:
+                continue
+            fiscal_year = int(year_match.group(1))
+            if years_needed and fiscal_year not in years_needed:
+                continue
+
+            # Estimate quarter from anchor text / URL
+            combined = (anchor_text + ' ' + link_url).lower()
+            if any(x in combined for x in ('q1', 'first quarter', 'first-quarter')):
+                quarter = 1
+            elif any(x in combined for x in ('q2', 'second quarter', 'second-quarter')):
+                quarter = 2
+            elif any(x in combined for x in ('q3', 'third quarter', 'third-quarter')):
+                quarter = 3
+            elif any(x in combined for x in ('q4', 'fourth quarter', 'fourth-quarter',
+                                             'full year', 'full-year', 'annual')):
+                quarter = 4
+            else:
+                quarter = 0  # unknown
+
+            quarter_tag = f'Q{quarter}' if quarter else 'Qx'
+            filename_out = (
+                f"{symbol}_transcript_{quarter_tag}_{fiscal_year}_ir.txt")
+
+            if self._data_source_exists(company_name, fiscal_year, filename_out):
+                logger.info(f"[IR-T] Already in DB: {filename_out} — skipping")
+                fp = self.base_download_dir / str(fiscal_year) / filename_out
+                if fp.exists():
+                    saved_paths.append(str(fp))
+                continue
+
+            try:
+                time.sleep(max(self.delay_seconds * 0.5, 0.5))
+                ex_resp = self.session.get(link_url, timeout=30)
+                if ex_resp.status_code != 200:
+                    logger.debug(
+                        f"[IR-T] HTTP {ex_resp.status_code} for {link_url}")
+                    continue
+
+                raw = ex_resp.content
+                is_pdf = (
+                    link_url.lower().endswith('.pdf')
+                    or ex_resp.headers.get('Content-Type', '').startswith(
+                        'application/pdf')
+                )
+
+                if is_pdf:
+                    content_bytes = raw
+                    filename_out = filename_out.replace('.txt', '.pdf')
+                else:
+                    # Strip HTML → plain text
+                    page_soup = BeautifulSoup(raw, 'lxml')
+                    text = page_soup.get_text(separator='\n', strip=True)
+                    if len(text.strip()) < 500:
+                        logger.debug(
+                            f"[IR-T] Near-empty page, skipping: {link_url}")
+                        continue
+                    header = (
+                        f"SYMBOL: {symbol}\n"
+                        f"COMPANY: {company_name}\n"
+                        f"QUARTER: {quarter_tag} {fiscal_year}\n"
+                        f"SOURCE: Company IR Website — {link_url}\n"
+                        f"ANCHOR: {anchor_text}\n"
+                        f"{'=' * 80}\n\n"
+                    )
+                    content_bytes = (header + text).encode('utf-8')
+
+                year_dir = self.base_download_dir / str(fiscal_year)
+                year_dir.mkdir(parents=True, exist_ok=True)
+                filepath = year_dir / filename_out
+
+                if not filepath.exists():
+                    filepath.write_bytes(content_bytes)
+                    logger.info(f"[IR-T] Saved: {filepath}")
+                else:
+                    logger.debug(f"[IR-T] Already on disk: {filepath}")
+
+                self._add_to_data_source(
+                    company_name=company_name,
+                    year=fiscal_year,
+                    source_url=link_url,
+                    document_name=filename_out,
+                    filepath=str(filepath),
+                    content_type=4,
+                    file_content=content_bytes,
+                    original_source_url=link_url,
+                    search_query_used=f"IR website {quarter_tag} {fiscal_year}",
+                    search_result_rank=1,
+                    http_response_code=ex_resp.status_code,
+                    company_symbol=symbol,
+                )
+                saved_paths.append(str(filepath))
+
+            except Exception as exc:
+                logger.warning(
+                    f"[IR-T] Error downloading {link_url}: {exc}")
+                continue
+
+        logger.info(
+            f"[IR-T] {len(saved_paths)} IR website transcript(s) saved for {symbol}")
+        return saved_paths
+
     def process_company(self, symbol: str, company_name: str,
                         website: Optional[str] = None) -> Dict:
         """
@@ -2908,7 +3473,12 @@ class SustainabilityReportDownloader:
 
             # Determine which content types need which sources
             needs_10k = 2 in self.content_types
-            needs_other = any(ct != 2 for ct in self.content_types)
+            # EDGAR handles type-4 transcripts (free, no API key required) —
+            # exclude type 4 from the DuckDuckGo/website crawl path entirely
+            needs_edgar_transcripts = 4 in self.content_types
+            needs_other = any(
+                ct not in (2, 4) for ct in self.content_types
+            )
 
             # ── DB-SKIP: determine which years already have entries (when force_reload=False) ──
             years_already_in_db: Set[int] = set()
@@ -3059,6 +3629,45 @@ class SustainabilityReportDownloader:
                     logger.info(
                         f"[EDGAR] All requested years covered for {symbol}: "
                         f"{sorted(edgar_years_found)}")
+
+            # ── EDGAR: Primary source for Earnings Call Transcripts (content_type=4) ──
+            edgar_t_count = 0
+            edgar_t_years: Set[int] = set()
+            if needs_edgar_transcripts:
+                logger.info(
+                    f"[EDGAR-T] Fetching earnings call transcripts for {symbol} "
+                    f"(years: {years_needed or 'all'})")
+                edgar_t_paths = self.download_edgar_transcripts(
+                    symbol, company_name, years_needed=years_needed)
+                edgar_t_count = len(edgar_t_paths)
+                downloaded_count += edgar_t_count
+                result['reports_found'] += edgar_t_count
+                for p in edgar_t_paths:
+                    m = re.search(r'_transcript_Q\d+_(\d{4})\.txt',
+                                  Path(p).name)
+                    if m:
+                        edgar_t_years.add(int(m.group(1)))
+                logger.info(
+                    f"[EDGAR-T] {edgar_t_count} transcript(s) saved for "
+                    f"{symbol}: years {sorted(edgar_t_years)}")
+
+                # ── IR Website: second-pass transcript scrape ─────────────────
+                if website:
+                    logger.info(
+                        f"[IR-T] Scraping IR website for transcripts: {website}")
+                    ir_paths = self.download_ir_website_transcripts(
+                        symbol, company_name, website,
+                        years_needed=years_needed)
+                    ir_count = len(ir_paths)
+                    downloaded_count += ir_count
+                    result['reports_found'] += ir_count
+                    result['ir_transcripts_downloaded'] = ir_count
+                    logger.info(
+                        f"[IR-T] {ir_count} transcript(s) from IR site for {symbol}")
+                else:
+                    result['ir_transcripts_downloaded'] = 0
+
+            result['edgar_transcripts_downloaded'] = edgar_t_count
 
             # ── Web search only for non-10K content types (ESG/Sustainability, Other, Transcripts) ──
             if needs_other:

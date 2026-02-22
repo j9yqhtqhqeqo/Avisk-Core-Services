@@ -230,7 +230,8 @@ class StartUpClass:
 
                         if run_unclassified:
                             candidates_df = edited_df[
-                                ~edited_df['Action'].isin(['Include', 'Exclude'])
+                                ~edited_df['Action'].isin(
+                                    ['Include', 'Exclude'])
                             ]
                         else:
                             candidates_df = edited_df
@@ -258,7 +259,8 @@ class StartUpClass:
                 st.markdown("#### 📊 Recommendation Results")
 
                 # Summary pivot: one row per term, one column per context
-                contexts = ['internalization', 'exposure_pathway', 'mitigation']
+                contexts = ['internalization',
+                            'exposure_pathway', 'mitigation']
                 pivot_rows = []
                 for term, grp in rec_df.groupby('term'):
                     row = {'Term': term}
@@ -271,7 +273,8 @@ class StartUpClass:
                     pivot_rows.append(row)
 
                 pivot_df = pd.DataFrame(pivot_rows)
-                st.dataframe(pivot_df, use_container_width=True, hide_index=True)
+                st.dataframe(pivot_df, use_container_width=True,
+                             hide_index=True)
 
                 # Detailed expander per context
                 for ctx in contexts:
@@ -313,7 +316,8 @@ class StartUpClass:
                         include_votes = (grp['action'] == 'Include').sum()
                         recommended = 'Include' if include_votes >= 2 else 'Exclude'
                         mask = st.session_state.terms_df['Keyword'] == term
-                        st.session_state.terms_df.loc[mask, 'Action'] = recommended
+                        st.session_state.terms_df.loc[mask,
+                                                      'Action'] = recommended
                     st.success(
                         "✅ Recommendations applied — review the grid above "
                         "and click 'Save Changes' when ready."
