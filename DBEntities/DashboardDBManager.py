@@ -459,6 +459,31 @@ class DashboardDBManager():
 
 # Financial Metrics
 
+    def get_financial_metrics_status(self) -> 'pd.DataFrame':
+        """Return a DataFrame showing which company/year combinations already
+        exist in t_financial_metrics (used by the Extract Financial Data page)."""
+        import pandas as pd
+        sql = """
+            SELECT company_name, reporting_year,
+                   revenue IS NOT NULL    AS has_revenue,
+                   net_income IS NOT NULL AS has_net_income,
+                   assets IS NOT NULL     AS has_assets
+            FROM t_financial_metrics
+            ORDER BY company_name, reporting_year DESC
+        """
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            cursor.close()
+            return pd.DataFrame(
+                rows,
+                columns=['company_name', 'reporting_year',
+                         'has_revenue', 'has_net_income', 'has_assets']
+            )
+        except Exception as exc:
+            print(f"Error get_financial_metrics_status: {exc}")
+            return pd.DataFrame()
 
     def get_financial_metrics(self, company_name: str, year: int):
         metrics_list = []
