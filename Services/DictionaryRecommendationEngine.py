@@ -127,7 +127,8 @@ class DictionaryRecommendationEngine:
         """Fetch keyword strings from a dictionary table."""
         terms: List[str] = []
         if not self.db_connection:
-            logger.warning(f"No DB connection — cannot load terms from {table}")
+            logger.warning(
+                f"No DB connection — cannot load terms from {table}")
             return terms
         try:
             cur = self.db_connection.cursor()
@@ -153,7 +154,8 @@ class DictionaryRecommendationEngine:
             if len(token) < n:
                 result.append(token)
             else:
-                result.extend(token[i:i + n] for i in range(len(token) - n + 1))
+                result.extend(token[i:i + n]
+                              for i in range(len(token) - n + 1))
         return result
 
     @staticmethod
@@ -247,7 +249,7 @@ class DictionaryRecommendationEngine:
                 'scores': {
                     'max_similarity':  0.0,
                     'mean_similarity': 0.0,
-                    'combined':        -1.0,
+                    'combined': -1.0,
                 },
             }
 
@@ -268,7 +270,8 @@ class DictionaryRecommendationEngine:
             }
 
         # ── Similarity signals ────────────────────────────────────────────────
-        max_sim, closest_term = self._max_similarity_to_vocab(candidate, ctx_name)
+        max_sim, closest_term = self._max_similarity_to_vocab(
+            candidate, ctx_name)
         mean_sim = self._mean_similarity_to_vocab(candidate, ctx_name)
 
         # Weighted combination (max catches exact/near matches; mean gauges
@@ -278,7 +281,8 @@ class DictionaryRecommendationEngine:
         # ── Decision ──────────────────────────────────────────────────────────
         if combined >= INCLUDE_SIMILARITY_THRESHOLD:
             action = 'Include'
-            confidence = round(min(combined / max(INCLUDE_SIMILARITY_THRESHOLD * 3, 0.001), 1.0), 3)
+            confidence = round(
+                min(combined / max(INCLUDE_SIMILARITY_THRESHOLD * 3, 0.001), 1.0), 3)
             reason = (
                 f"Similar to existing {ctx_name} term '{closest_term}' "
                 f"(max sim: {max_sim:.2f}, mean sim: {mean_sim:.2f}). "
