@@ -130,6 +130,25 @@ CONCEPT_MAP: Dict[str, List[str]] = {
         'PaymentsForCapitalImprovements',
         'PaymentsToAcquireProductiveAssets',   # used by NVIDIA post-2012
     ],
+    # Shares outstanding — used with stock price to compute market cap → Tobin's Q
+    # Priority: exact year-end instant → weighted average (period proxy)
+    # WeightedAverageNumberOfSharesOutstandingBasic is the most reliably filed
+    # concept in all of EDGAR (mandatory since XBRL inception; it is the EPS
+    # denominator) and fills gaps in early years (2009-2013) where the balance-
+    # sheet concepts were often missing or mis-tagged.
+    'shares_outstanding': [
+        # ── Point-in-time (preferred) ─────────────────────────────────────────
+        'CommonStockSharesOutstanding',
+        'CommonStockSharesIssuedNet',
+        'SharesOutstanding',
+        # ── Weighted-average period proxy (reliable fallback) ─────────────────
+        # Within 1-2% of year-end count for stable/slowly-buyback companies;
+        # far better than NULL for Tobin's Q computation.
+        'WeightedAverageNumberOfSharesOutstandingBasic',
+        'WeightedAverageNumberOfDilutedSharesOutstanding',
+        # Variant spellings used by some early EDGAR filers (pre-2014)
+        'WeightedAverageNumberOfShareOutstandingBasic',
+    ],
 }
 
 # ── Dual-class share aliases ──────────────────────────────────────────────────
@@ -191,7 +210,118 @@ def cik_for_symbol(symbol: str) -> Optional[str]:
     return None
 
 
-def _fiscal_year_from_entry(entry: Dict) -> Optional[int]:
+def _extract_dei_shares(
+    facts: Dict,
+    fiscal_end_dates: Dict[int, str],
+    years_needed: Optional[List[int]] = None,
+) -> Dict[int, float]:
+    """
+    Extract shares outstanding from the EDGAR *dei* namespace.
+
+    ``dei/EntityCommonStockSharesOutstanding`` is filed on the cover page of
+    every 10-K and is far more reliably tagged than the balance-sheet
+    ``us-gaap/CommonStockSharesOutstanding`` concept.  It is an *instant*
+    (point-in-time) value rather than a period value.
+
+    For each reporting year we pick the entry whose date is closest to (and
+    not later than) the fiscal year end date.  If we have no date to compare
+    against, we fall back to year-of-date attribution.
+    """
+    dei = facts.get('dei', {})
+    concept_data = dei.get('EntityCommonStockSharesOutstanding')
+    if not concept_data:
+        return {}
+
+    # Collect candidate (date_str, value) pairs keyed by attributed year.
+    #
+    # KEY FIX: most 10-Ks are filed in February or March of the year *after*
+    # the fiscal year end.  The cover-page EntityCommonStockSharesOutstanding
+    # instant date therefore looks like "2013-02-15" for a FY2012 filing, which
+    # the old Jan-1–10 heuristic wrongly attributes to year 2013.
+    #
+    # Correct attribution: a 10-K for FY{year} is filed 0–180 days after the
+    # FYE.  Find the fiscal year whose FYE window contains the entry date.
+    from datetime import datetime as _dt, timedelta as _td
+
+    # Pre-parse FYE dates once for efficient comparison.
+    _fye_dt: Dict[int, _dt] = {}
+    for _yr, _fye_str in fiscal_end_dates.items():
+        try:
+            _fye_dt[_yr] = _dt.strptime(_fye_str, '%Y-%m-%d')
+        except Exception:
+            pass
+
+    candidates: Dict[int, List[tuple]] = {}
+    for unit_entries in concept_data.get('units', {}).values():
+        for entry in unit_entries:
+            form = entry.get('form', '')
+            if form not in EDGAR_10K_FORMS:
+                continue
+            # DEI instant entries use 'instant'; period entries use 'end'
+            date_str = entry.get('instant') or entry.get('end', '')
+            if not date_str or len(date_str) < 10:
+                continue
+            val = entry.get('val')
+            if not val or val == 0:
+                continue
+
+            # ── FYE-window attribution ────────────────────────────────────────
+            # Find the year whose FYE is closest to (and just before) this
+            # filing date.  Window: FYE − 10 days ≤ entry_date ≤ FYE + 180 days
+            attributed_year = None
+            best_gap: Optional[int] = None
+            if _fye_dt:
+                try:
+                    entry_dt = _dt.strptime(date_str[:10], '%Y-%m-%d')
+                    for _yr, _fye in _fye_dt.items():
+                        if years_needed and _yr not in years_needed:
+                            continue
+                        delta = (entry_dt - _fye).days
+                        if -10 <= delta <= 180:
+                            if best_gap is None or abs(delta) < abs(best_gap):
+                                best_gap = delta
+                                attributed_year = _yr
+                except Exception:
+                    pass
+
+            # ── Fallback: simple year heuristic (Jan 1–10 → prior year) ──────
+            # Used when fiscal_end_dates is empty or no FYE window matched.
+            if attributed_year is None:
+                try:
+                    y = int(date_str[:4])
+                    m = int(date_str[5:7])
+                    d = int(date_str[8:10])
+                    attributed_year = y - 1 if (m == 1 and d <= 10) else y
+                except (ValueError, IndexError):
+                    continue
+                if years_needed and attributed_year not in years_needed:
+                    continue
+
+            candidates.setdefault(attributed_year, []).append(
+                (date_str, float(val)))
+
+    result: Dict[int, float] = {}
+    for year, pairs in candidates.items():
+        fye = fiscal_end_dates.get(year, f'{year}-12-31')
+        # Prefer entries on or before the fiscal year end date
+        valid = [(d, v) for d, v in pairs if d <= fye]
+        if valid:
+            # Latest date wins (most recent filing for that FYE)
+            result[year] = max(valid, key=lambda x: x[0])[1]
+        elif pairs:
+            # Fallback: entry closest in time to the FYE
+            try:
+                fye_dt = _dt.strptime(fye[:10], '%Y-%m-%d')
+                result[year] = min(
+                    pairs,
+                    key=lambda x: abs(
+                        (_dt.strptime(x[0][:10], '%Y-%m-%d') - fye_dt).days
+                    )
+                )[1]
+            except Exception:
+                result[year] = pairs[0][1]
+    return result
+
     """
     Extract the fiscal/calendar year an XBRL data point belongs to.
 
@@ -308,6 +438,66 @@ def _extract_annual_values(
     return {yr: v for yr, (_, v) in annual.items()}
 
 
+def _extract_fiscal_year_end_dates(
+    facts: Dict, years_needed: Optional[List[int]] = None
+) -> Dict[int, str]:
+    """
+    Return {reporting_year: end_date_str} by scanning 10-K entries for the
+    actual fiscal year end date.  Used to look up the correct year-end stock
+    price for P/E and to compute historically accurate beta/Sharpe ratios.
+
+    Scans a priority list of flow concepts (most reliably tagged with fp=FY)
+    and picks the entry with the latest accession number per year.
+    """
+    PROBE_CONCEPTS = [
+        'NetIncomeLoss',
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'NetCashProvidedByUsedInOperatingActivities',
+        'Assets',
+    ]
+    us_gaap = facts.get('us-gaap', {})
+    end_dates: Dict[int, Tuple[str, str]] = {}  # year → (accn, end_date_str)
+
+    for concept in PROBE_CONCEPTS:
+        cd = us_gaap.get(concept)
+        if not cd:
+            continue
+        found_any = False
+        for unit_entries in cd.get('units', {}).values():
+            for entry in unit_entries:
+                form = entry.get('form', '')
+                fp = entry.get('fp',   '')
+                if form not in EDGAR_10K_FORMS:
+                    continue
+                if fp and fp not in ('FY', 'Q4'):
+                    continue
+                if not fp:
+                    frame = entry.get('frame', '')
+                    if frame and not re.match(r'^CY\d{4}($|Q\d+I$)', frame):
+                        continue
+                year = _fiscal_year_from_entry(entry)
+                if year is None:
+                    continue
+                if years_needed and year not in years_needed:
+                    continue
+                end = entry.get('end', '')
+                if not end:
+                    continue
+                accn = entry.get('accn', '')
+                existing = end_dates.get(year)
+                if existing is None or accn >= existing[0]:
+                    end_dates[year] = (accn, end)
+                    found_any = True
+            break  # only need first unit type per concept
+        if found_any and len(end_dates) > 0:
+            # Once we have dates from a reliable concept, no need to keep probing
+            # for years we already covered — but continue to fill missing years.
+            pass
+
+    return {yr: end for yr, (_, end) in end_dates.items()}
+
+
 class FinancialDataScraper:
     """
     Scrapes annual financial metrics from EDGAR XBRL for a list of companies
@@ -369,6 +559,10 @@ class FinancialDataScraper:
 
         facts = data.get('facts', {})
 
+        # ── Capture fiscal year end dates (for market data lookups) ───────────
+        fiscal_end_dates = _extract_fiscal_year_end_dates(
+            facts, self.years_needed)
+
         # ── Extract per-concept annual series ──────────────────────────────────
         # Merge across ALL matching concepts so companies that switch XBRL tags
         # between fiscal years (e.g. NVIDIA changed revenue concept after FY2022)
@@ -388,6 +582,25 @@ class FinancialDataScraper:
                         f"[XBRL] {symbol} {col} ({concept}): {sorted(vals.keys())}")
             if merged:
                 extracted[col] = merged
+
+        # ── DEI fallback for shares_outstanding ───────────────────────────────
+        # EntityCommonStockSharesOutstanding (dei namespace) is on the cover
+        # page of every 10-K and fills gaps the us-gaap balance-sheet concept
+        # often leaves behind.
+        dei_shares = _extract_dei_shares(
+            facts, fiscal_end_dates, self.years_needed)
+        if dei_shares:
+            existing = extracted.get('shares_outstanding', {})
+            # Only fill years that are missing or zero in the us-gaap result
+            filled = {yr: v for yr, v in dei_shares.items()
+                      if yr not in existing or not existing[yr]}
+            if filled:
+                # existing wins on overlap
+                merged_shares = {**filled, **existing}
+                extracted['shares_outstanding'] = merged_shares
+                logger.debug(
+                    f"[XBRL] {symbol} DEI shares filled years: "
+                    f"{sorted(filled.keys())}")
 
         if not extracted:
             logger.info(f"[XBRL] No annual XBRL data found for {symbol}")
@@ -426,7 +639,9 @@ class FinancialDataScraper:
                 'cash_flow_investing':  extracted.get('cf_investing', {}).get(year),
                 'cash_flow_financing':  extracted.get('cf_financing', {}).get(year),
                 'free_cash_flow':       extracted.get('free_cash_flow', {}).get(year),
-                # stock_price, pe_ratio, roa, beta, sharpe come from other sources
+                'shares_outstanding':   extracted.get('shares_outstanding', {}).get(year),
+                # stock_price, pe_ratio, roa, beta, sharpe come from MarketDataFetcher
+                'fiscal_year_end_date':          fiscal_end_dates.get(year),
                 'stock_price_calender_year_end': None,
                 'pe_ratio': None,
                 'return_on_asset': None,
@@ -552,6 +767,8 @@ class FinancialDataScraper:
                 net_income, eps,
                 cash_flow_operations, cash_flow_investing,
                 cash_flow_financing, free_cash_flow,
+                shares_outstanding,
+                fiscal_year_end_date,
                 stock_price_calender_year_end, pe_ratio,
                 return_on_asset, exchange_ref,
                 beta_calender_year_end, sharpe_ratio,
@@ -563,6 +780,8 @@ class FinancialDataScraper:
                 %s, %s,
                 %s, %s,
                 %s, %s,
+                %s,
+                %s,
                 %s, %s,
                 %s, %s,
                 %s, %s,
@@ -581,6 +800,11 @@ class FinancialDataScraper:
                 cash_flow_investing          = EXCLUDED.cash_flow_investing,
                 cash_flow_financing          = EXCLUDED.cash_flow_financing,
                 free_cash_flow               = EXCLUDED.free_cash_flow,
+                shares_outstanding            = COALESCE(
+                                               NULLIF(EXCLUDED.shares_outstanding, 0),
+                                               t_financial_metrics.shares_outstanding),
+                fiscal_year_end_date         = COALESCE(EXCLUDED.fiscal_year_end_date,
+                                               t_financial_metrics.fiscal_year_end_date),
                 return_on_asset              = COALESCE(EXCLUDED.return_on_asset,
                                                t_financial_metrics.return_on_asset),
                 modify_dt                    = EXCLUDED.modify_dt,
@@ -599,6 +823,11 @@ class FinancialDataScraper:
                 _int(row['cash_flow_investing']),
                 _int(row['cash_flow_financing']),
                 _int(row['free_cash_flow']),
+                # shares_outstanding: store NULL rather than 0 so COALESCE
+                # never overwrites a good value with 0.
+                (int(row['shares_outstanding'])
+                 if row.get('shares_outstanding') else None),
+                row.get('fiscal_year_end_date'),
                 _float(row['stock_price_calender_year_end']),
                 row['pe_ratio'],
                 row['return_on_asset'],       row['exchange_ref'],
