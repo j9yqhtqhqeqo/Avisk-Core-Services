@@ -49,6 +49,45 @@ def get_market_cap_rank(symbol: str) -> int:
         return 999  # Not in top 150
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_ds_years() -> list:
+    """Distinct years from t_data_source, descending. Clamped to 2000–current year."""
+    import psycopg2
+    from Utilities.Lookups import DB_Connection
+    conn_str = DB_Connection().DB_CONNECTION_STRING
+    if not conn_str:
+        raise ValueError("DB_CONNECTION_STRING is not configured")
+    conn = psycopg2.connect(conn_str)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT DISTINCT year FROM t_data_source
+        WHERE year BETWEEN 2000 AND EXTRACT(YEAR FROM CURRENT_DATE)
+        ORDER BY year DESC
+    """)
+    years = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return years
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_ds_companies() -> list:
+    """Distinct company names from t_data_source, alphabetical."""
+    import psycopg2
+    from Utilities.Lookups import DB_Connection
+    conn_str = DB_Connection().DB_CONNECTION_STRING
+    if not conn_str:
+        raise ValueError("DB_CONNECTION_STRING is not configured")
+    conn = psycopg2.connect(conn_str)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT DISTINCT company_name FROM t_data_source ORDER BY company_name")
+    companies = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return companies
+
+
 @st.cache_data(show_spinner=False)
 def _read_file_bytes(path: str) -> bytes:
     """
@@ -100,6 +139,11 @@ download_annual = st.sidebar.checkbox(
     value=False,
     help="Download annual reports, 10-K SEC filings"
 )
+download_other = st.sidebar.checkbox(
+    "📁 Other Filings (EDGAR)",
+    value=False,
+    help="Download other EDGAR filings and miscellaneous company documents (content type 3)"
+)
 download_transcripts = st.sidebar.checkbox(
     "🎙️ Earnings Call Transcripts",
     value=False,
@@ -122,6 +166,8 @@ if download_sustainability:
     content_types.append(1)
 if download_annual:
     content_types.append(2)
+if download_other:
+    content_types.append(3)  # 3 = Other EDGAR filings
 if download_transcripts:
     content_types.append(4)  # 4 = Earnings Transcripts
 
@@ -370,20 +416,29 @@ with tab2:
             help="Choose how to filter reports by year"
         )
 
+        try:
+            _ds_years = _load_ds_years()
+        except Exception as _ye:
+            st.error(f"⚠️ Cannot load years — database inaccessible: {_ye}")
+            st.stop()
+
+        _yr_min = int(_ds_years[-1]) if _ds_years else 2000
+        _yr_max = int(_ds_years[0]) if _ds_years else current_year
+
         if year_selection_mode == "Specific Year Range":
             start_year = st.slider(
                 "Start Year",
-                min_value=2000,
-                max_value=current_year,
-                value=2012,
+                min_value=_yr_min,
+                max_value=_yr_max,
+                value=min(_yr_min + 2, _yr_max),
                 help="Download reports from this year onwards"
             )
 
             end_year = st.slider(
                 "End Year",
                 min_value=start_year,
-                max_value=current_year,
-                value=current_year,
+                max_value=_yr_max,
+                value=_yr_max,
                 help="Download reports up to this year"
             )
 
@@ -392,7 +447,7 @@ with tab2:
         elif year_selection_mode == "Single Year":
             single_year = st.selectbox(
                 "Select Year",
-                options=list(range(current_year, 1999, -1)),
+                options=_ds_years,
                 index=0,
                 help="Download reports only from this specific year"
             )
@@ -797,8 +852,15 @@ with tab4:
 
     # Function to classify report type based on filename
     def classify_report_type(filename: str) -> str:
-        """Classify a report as Sustainability, Annual/10K, or Other based on filename."""
+        """Classify a report as Sustainability, Annual/10K, Earnings Transcript, or Other EDGAR filing based on filename."""
         filename_lower = filename.lower()
+
+        # Earnings Transcript / Press Release patterns
+        transcript_patterns = [
+            'pressrelease', 'press_release', 'press-release',
+            'transcript', 'earnings_call', 'earnings-call', 'earningscall',
+            'conference_call', 'conference-call', 'earnings_transcript'
+        ]
 
         # Annual Report / 10K patterns
         annual_patterns = [
@@ -818,7 +880,12 @@ with tab4:
             'progress-report', 'cdp', 'tcfd', 'sasb', 'gri'
         ]
 
-        # Check sustainability first (prioritize if both match)
+        # Check transcripts / press releases first
+        for pattern in transcript_patterns:
+            if pattern in filename_lower:
+                return "🎙️ Earnings Transcripts/Press Releases"
+
+        # Check sustainability (prioritize if both match)
         for pattern in sustainability_patterns:
             if pattern in filename_lower:
                 return "🌱 Sustainability/ESG"
@@ -828,8 +895,8 @@ with tab4:
             if pattern in filename_lower:
                 return "📊 Annual/10K"
 
-        # Default to Other
-        return "📄 Other"
+        # Default to Other EDGAR
+        return "📁 Other Filings (EDGAR)"
 
     # Get the storage path
     if use_storage:
@@ -855,25 +922,54 @@ with tab4:
             # Collect all PDF files first
             all_files = []
             for folder in year_folders:
-                for pdf_file in folder.glob("*.pdf"):
+                for report_file in list(folder.glob("*.pdf")) + list(folder.glob("*.txt")):
                     # Extract company symbol from filename (format: SYMBOL_filename.pdf or SYMBOL-filename.pdf)
-                    filename = pdf_file.name
+                    filename = report_file.name
                     symbol = filename.split('_')[0].split('-')[0].upper()
                     report_type = classify_report_type(filename)
                     all_files.append({
                         'year': folder.name,
                         'symbol': symbol,
                         'filename': filename,
-                        'path': pdf_file,
-                        'size_mb': pdf_file.stat().st_size / (1024 * 1024),
+                        'path': report_file,
+                        'size_mb': report_file.stat().st_size / (1024 * 1024),
                         'report_type': report_type
                     })
 
-            # Get unique symbols, years, and report types
-            unique_symbols = sorted(set(f['symbol'] for f in all_files))
-            unique_years = sorted(set(f['year']
-                                  for f in all_files), reverse=True)
+            # Get report types from filesystem
             unique_types = sorted(set(f['report_type'] for f in all_files))
+
+            # Load distinct years and companies from t_data_source
+            unique_years = []
+            unique_symbols = []          # display: full company names
+            company_name_to_ticker = {}  # company_name -> ticker
+            try:
+                import psycopg2
+                from Utilities.Lookups import DB_Connection
+                _conn_str = DB_Connection().DB_CONNECTION_STRING
+                if not _conn_str:
+                    raise ValueError("DB_CONNECTION_STRING is not configured")
+                _dsconn = psycopg2.connect(_conn_str)
+                _dscur = _dsconn.cursor()
+                _dscur.execute(
+                    "SELECT DISTINCT year FROM t_data_source ORDER BY year DESC")
+                unique_years = [str(row[0]) for row in _dscur.fetchall()]
+                _dscur.execute("""
+                    SELECT DISTINCT company_name, ticker
+                    FROM t_data_source
+                    ORDER BY company_name
+                """)
+                for row in _dscur.fetchall():
+                    _cname, _ticker = row[0], row[1]
+                    unique_symbols.append(_cname)
+                    if _ticker:
+                        company_name_to_ticker[_cname] = _ticker.upper()
+                _dscur.close()
+                _dsconn.close()
+            except Exception as _dse:
+                st.error(
+                    f"⚠️ Cannot load filters — database is inaccessible: {_dse}")
+                st.stop()
 
             # Count by type
             type_counts = {}
@@ -895,38 +991,30 @@ with tab4:
             col1, col2, col3 = st.columns(3)
 
             with col1:
-                # Company filter - use selected companies from tab1 as default if available
-                # selected_companies format: "#1 AAPL - Apple Inc."
-                selected_companies_symbols = []
+                # Company filter — options are full company names from t_data_source
+                # Pre-select based on session state: format "#1 AAPL - Apple Inc."
+                default_companies = []
                 if st.session_state.selected_companies:
                     for c in st.session_state.selected_companies:
-                        # Extract symbol from format: "#1 AAPL - Company Name"
-                        parts = c.split(' - ')[0]  # "#1 AAPL"
-                        symbol = parts.split(' ')[-1]  # "AAPL"
-                        if symbol in unique_symbols:
-                            selected_companies_symbols.append(symbol)
+                        # Extract company name from format: "#1 AAPL - Apple Inc."
+                        name_part = c.split(
+                            ' - ', 1)[-1].strip() if ' - ' in c else ''
+                        if name_part and name_part in unique_symbols:
+                            default_companies.append(name_part)
 
                 filter_by_company = st.checkbox(
                     "🏢 Filter by Selected Companies",
-                    value=len(selected_companies_symbols) > 0,
+                    value=len(default_companies) > 0,
                     help="Show only files for companies selected in the 'Select Companies' tab"
                 )
 
                 if filter_by_company:
-                    if selected_companies_symbols:
-                        company_filter = st.multiselect(
-                            "Companies",
-                            options=unique_symbols,
-                            default=selected_companies_symbols,
-                            help="Filter files by company symbol"
-                        )
-                    else:
-                        company_filter = st.multiselect(
-                            "Companies",
-                            options=unique_symbols,
-                            default=[],
-                            help="Select companies to filter (or select companies in the 'Select Companies' tab first)"
-                        )
+                    company_filter = st.multiselect(
+                        "Companies",
+                        options=unique_symbols,
+                        default=default_companies if default_companies else [],
+                        help="Filter files by company name"
+                    )
                 else:
                     company_filter = unique_symbols  # Show all
 
@@ -966,20 +1054,42 @@ with tab4:
                 )
 
                 if filter_by_type:
+                    # Fixed order for the 4 content types
+                    ordered_types = [
+                        "🌱 Sustainability/ESG",
+                        "📊 Annual/10K",
+                        "📁 Other Filings (EDGAR)",
+                        "🎙️ Earnings Transcripts/Press Releases"
+                    ]
+                    available_types = [
+                        t for t in ordered_types if t in unique_types]
+                    # Fall back to any types not in the ordered list
+                    for t in unique_types:
+                        if t not in available_types:
+                            available_types.append(t)
+                    default_type = [
+                        "🌱 Sustainability/ESG"] if "🌱 Sustainability/ESG" in available_types else available_types[:1]
                     type_filter = st.multiselect(
                         "Report Types",
-                        options=unique_types,
-                        default=[
-                            "🌱 Sustainability/ESG"] if "🌱 Sustainability/ESG" in unique_types else unique_types,
+                        options=available_types,
+                        default=default_type,
                         help="Filter by report type"
                     )
                 else:
                     type_filter = unique_types  # Show all
 
             # Apply filters
+            # Resolve selected company names -> tickers via the DB-sourced map.
+            # Fall back to the name itself (upper) if ticker wasn't in the DB.
+            selected_tickers = set(
+                company_name_to_ticker.get(name, name.upper())
+                for name in company_filter
+            )
             filtered_files = [
                 f for f in all_files
-                if f['symbol'] in company_filter and f['year'] in year_filter and f['report_type'] in type_filter
+                if f['symbol'].upper() in selected_tickers
+                and f['year'] in year_filter
+                and f['report_type'] in type_filter
             ]
 
             st.markdown("---")

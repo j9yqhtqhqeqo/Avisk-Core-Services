@@ -1517,19 +1517,20 @@ class SustainabilityReportDownloader:
             # source_type = 'file' for downloaded files
             insert_sql = """
                 INSERT INTO t_data_source 
-                (company_name, year, content_type, source_type, source_url, 
+                (company_name, ticker, year, content_type, source_type, source_url, 
                  processed_ind, added_dt, added_by, modify_dt, modify_by,
                  source_domain, is_official_source, source_confidence_score,
                  verification_status, file_hash_sha256, file_size_bytes,
                  original_source_url, search_query_used, search_result_rank,
                  http_response_code, download_timestamp)
-                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s, CURRENT_TIMESTAMP, %s,
+                VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s, CURRENT_TIMESTAMP, %s,
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING unique_id
             """
 
             cursor.execute(insert_sql, (
                 company_name,
+                company_symbol.upper() if company_symbol else None,  # ticker
                 int(year),
                 content_type,
                 'file',  # source_type: file
@@ -2218,14 +2219,15 @@ class SustainabilityReportDownloader:
             url_path = urlparse(url).path
             original_filename = os.path.basename(url_path)
 
-            # Extract year from URL or filename first
-            year_match = re.search(r'20\d{2}', url)
-            year_str = None
+            # Extract year from URL or filename — pick the most recent plausible year (<= current)
+            _this_year = datetime.now().year
+            _year_candidates = [int(m) for m in re.findall(r'20\d{2}', url)]
+            _plausible = [
+                y for y in _year_candidates if 2000 <= y <= _this_year]
+            year_str = str(max(_plausible)) if _plausible else None
 
-            if year_match:
-                year_str = year_match.group()
-            else:
-                # Try to extract year from PDF content/metadata
+            # If no plausible year in URL, try PDF content/metadata
+            if not year_str:
                 year_str = self._extract_year_from_pdf(response.content)
                 if year_str:
                     logger.debug(
@@ -3142,7 +3144,127 @@ class SustainabilityReportDownloader:
             f"[EDGAR-T] {len(saved_paths)} transcript(s) saved for {symbol}")
         return saved_paths
 
-    # Known IR website overrides for companies whose investor-relations site
+    def download_fmp_transcripts(
+            self, symbol: str, company_name: str,
+            years_needed: Optional[List[int]] = None) -> List[str]:
+        """
+        Download earnings call transcripts from Financial Modeling Prep (FMP).
+
+        FMP aggregates transcripts for companies (like Apple) that do NOT
+        attach them to their EDGAR 8-K filings.  It covers all four quarters
+        per year and goes back to ~2012 for most large-cap companies.
+
+        Endpoint: GET /stable/earning-call-transcript
+          ?symbol=AAPL&year=2024&quarter=1&apikey=...
+
+        Returns:
+            List of saved file paths.
+        """
+        saved_paths: List[str] = []
+
+        target_years: List[int]
+        if years_needed:
+            target_years = sorted(years_needed)
+        else:
+            current_yr = datetime.now().year
+            target_years = list(range(2012, current_yr + 1))
+
+        url_base = f"{FMP_STABLE_BASE_URL}/earning-call-transcript"
+
+        for year in target_years:
+            for quarter in (1, 2, 3, 4):
+                filename_out = (
+                    f"{symbol}_transcript_Q{quarter}_{year}_fmp.txt")
+
+                if self._data_source_exists(company_name, year, filename_out):
+                    logger.debug(
+                        f"[FMP-T] Already in DB: {filename_out} — skipping")
+                    fp = self.base_download_dir / str(year) / filename_out
+                    if fp.exists():
+                        saved_paths.append(str(fp))
+                    continue
+
+                try:
+                    # FMP rate limit: 300 req/min on free tier
+                    time.sleep(0.25)
+                    resp = requests.get(
+                        url_base,
+                        params={
+                            'symbol':  symbol,
+                            'year':    year,
+                            'quarter': quarter,
+                            'apikey':  FMP_API_KEY,
+                        },
+                        timeout=20,
+                    )
+                    if resp.status_code != 200:
+                        logger.debug(
+                            f"[FMP-T] HTTP {resp.status_code} for "
+                            f"{symbol} Q{quarter} {year}")
+                        continue
+
+                    data = resp.json()
+                    # FMP returns a list; take the first item if present
+                    if not data or not isinstance(data, list):
+                        continue
+                    entry = data[0]
+                    content = entry.get('content', '').strip()
+                    if len(content) < 500:
+                        logger.debug(
+                            f"[FMP-T] Near-empty transcript for "
+                            f"{symbol} Q{quarter} {year} — skipping")
+                        continue
+
+                    filing_date = entry.get('date', f"{year}-01-01")[:10]
+                    header = (
+                        f"SYMBOL: {symbol}\n"
+                        f"COMPANY: {company_name}\n"
+                        f"QUARTER: Q{quarter} {year}\n"
+                        f"DATE: {filing_date}\n"
+                        f"SOURCE: Financial Modeling Prep (FMP)\n"
+                        f"{'=' * 80}\n\n"
+                    )
+                    content_bytes = (header + content).encode('utf-8')
+
+                    year_dir = self.base_download_dir / str(year)
+                    year_dir.mkdir(parents=True, exist_ok=True)
+                    filepath = year_dir / filename_out
+
+                    if not filepath.exists():
+                        filepath.write_bytes(content_bytes)
+                        logger.info(f"[FMP-T] Saved: {filepath}")
+                    else:
+                        logger.debug(f"[FMP-T] Already on disk: {filepath}")
+
+                    fmp_url = (
+                        f"{url_base}?symbol={symbol}&year={year}"
+                        f"&quarter={quarter}")
+                    self._add_to_data_source(
+                        company_name=company_name,
+                        year=year,
+                        source_url=fmp_url,
+                        document_name=filename_out,
+                        filepath=str(filepath),
+                        content_type=4,
+                        file_content=content_bytes,
+                        original_source_url=fmp_url,
+                        search_query_used=(
+                            f"FMP earning-call-transcript Q{quarter} {year}"),
+                        search_result_rank=1,
+                        http_response_code=resp.status_code,
+                        company_symbol=symbol,
+                    )
+                    saved_paths.append(str(filepath))
+
+                except Exception as exc:
+                    logger.warning(
+                        f"[FMP-T] Error for {symbol} Q{quarter} {year}: {exc}")
+                    continue
+
+        logger.info(
+            f"[FMP-T] {len(saved_paths)} FMP transcript(s) saved for {symbol}")
+        return saved_paths
+
     # is on a different domain from their main corporate/product website.
     # Maps ticker symbol → IR base URL (no trailing slash).
     _IR_WEBSITE_OVERRIDES: Dict[str, str] = {
@@ -3669,9 +3791,81 @@ class SustainabilityReportDownloader:
 
             result['edgar_transcripts_downloaded'] = edgar_t_count
 
-            # ── Web search only for non-10K content types (ESG/Sustainability, Other, Transcripts) ──
+            # ── FMP fallback: covers companies whose transcripts aren't in EDGAR ─
+            # E.g. Apple, many consumer companies — FMP aggregates these from
+            # third-party sources and covers back to ~2012.
+            if needs_edgar_transcripts:
+                # Identify years that EDGAR + IR together didn't cover
+                all_t_years_found: Set[int] = set(edgar_t_years)
+                if website:
+                    for p in (edgar_t_paths if edgar_t_count else []) + (ir_paths if 'ir_paths' in dir() else []):
+                        m = re.search(
+                            r'_transcript_[Qq]\w+_(\d{4})', Path(p).name)
+                        if m:
+                            all_t_years_found.add(int(m.group(1)))
+
+                fmp_years: Optional[List[int]]
+                if years_needed is not None:
+                    fmp_years = [
+                        y for y in years_needed if y not in all_t_years_found]
+                else:
+                    fmp_years = None   # let FMP scan all years
+
+                if fmp_years is None or fmp_years:
+                    logger.info(
+                        f"[FMP-T] EDGAR/IR missing transcript year(s) for "
+                        f"{symbol}: {fmp_years or 'all'} — trying FMP")
+                    fmp_paths = self.download_fmp_transcripts(
+                        symbol, company_name, years_needed=fmp_years)
+                    fmp_count = len(fmp_paths)
+                    downloaded_count += fmp_count
+                    result['reports_found'] += fmp_count
+                    result['fmp_transcripts_downloaded'] = fmp_count
+                    logger.info(
+                        f"[FMP-T] {fmp_count} transcript(s) from FMP for {symbol}")
+                else:
+                    logger.info(
+                        f"[FMP-T] All transcript years covered by EDGAR/IR for "
+                        f"{symbol} — skipping FMP")
+                    result['fmp_transcripts_downloaded'] = 0
+
+            # ── Press-release fallback: EDGAR 8-K Item 2.02 primary documents ─
+            # For companies (e.g. Apple) that file no written transcripts,
+            # the Item-2.02 earnings press release is the next-best source.
+            # Runs only for years still not covered after EDGAR-T + IR + FMP.
+            if needs_edgar_transcripts:
+                covered_t_years: Set[int] = set(edgar_t_years)
+                if fmp_years is not None:  # fmp_years was the gap list passed to FMP
+                    for p in (fmp_paths if 'fmp_paths' in dir() else []):
+                        m = re.search(r'_(\d{4})', Path(p).name)
+                        if m:
+                            covered_t_years.add(int(m.group(1)))
+
+                pr_years_needed: Optional[List[int]]
+                if years_needed is not None:
+                    pr_years_needed = [
+                        y for y in years_needed if y not in covered_t_years]
+                else:
+                    pr_years_needed = None
+
+                if pr_years_needed is None or pr_years_needed:
+                    logger.info(
+                        f"[EDGAR-PR] No transcript coverage for {symbol} "
+                        f"year(s) {pr_years_needed or 'all'} — "
+                        f"trying earnings press releases")
+                    pr_paths = self.download_edgar_press_releases(
+                        symbol, company_name, years_needed=pr_years_needed)
+                    pr_count = len(pr_paths)
+                    downloaded_count += pr_count
+                    result['reports_found'] += pr_count
+                    result['press_releases_downloaded'] = pr_count
+                    logger.info(
+                        f"[EDGAR-PR] {pr_count} press release(s) for {symbol}")
+                else:
+                    result['press_releases_downloaded'] = 0
+
+            # ── Web search only for non-10K content types ──────────────────────
             if needs_other:
-                # PRIMARY web: Use DuckDuckGo search
                 if self.year_filter and DDGS_AVAILABLE:
                     logger.info(
                         f"Searching DuckDuckGo for {company_name} reports (years: {self.year_filter})")

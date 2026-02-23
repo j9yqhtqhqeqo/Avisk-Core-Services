@@ -1830,7 +1830,9 @@ class InsightGeneratorDBManager:
 
         year_list = []
 
-        sql = 'select distinct year from t_document order by year desc'
+        sql = """select distinct year from t_data_source
+                 where year between 2000 and extract(year from current_date)
+                 order by year desc"""
 
         try:
             # Execute the SQL query

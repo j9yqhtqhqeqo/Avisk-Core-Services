@@ -80,6 +80,46 @@ if st.session_state.fin_companies_df is None:
 
 current_year = datetime.datetime.now().year
 
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_ds_years() -> list:
+    """Distinct years from t_data_source, descending. Clamped to 2000–current year."""
+    import psycopg2
+    from Utilities.Lookups import DB_Connection
+    conn_str = DB_Connection().DB_CONNECTION_STRING
+    if not conn_str:
+        raise ValueError("DB_CONNECTION_STRING is not configured")
+    conn = psycopg2.connect(conn_str)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT DISTINCT year FROM t_data_source
+        WHERE year BETWEEN 2000 AND EXTRACT(YEAR FROM CURRENT_DATE)
+        ORDER BY year DESC
+    """)
+    years = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return years
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_ds_companies() -> list:
+    """Distinct company names from t_data_source, alphabetical."""
+    import psycopg2
+    from Utilities.Lookups import DB_Connection
+    conn_str = DB_Connection().DB_CONNECTION_STRING
+    if not conn_str:
+        raise ValueError("DB_CONNECTION_STRING is not configured")
+    conn = psycopg2.connect(conn_str)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT DISTINCT company_name FROM t_data_source ORDER BY company_name")
+    companies = [row[0] for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return companies
+
+
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🏢 Select Companies",
     "📅 Select Years",
@@ -234,15 +274,23 @@ with tab2:
             ["Specific Year Range", "Single Year"],
         )
 
+        try:
+            _ds_years = _load_ds_years()
+        except Exception as _ye:
+            st.error(f"⚠️ Cannot load years — database inaccessible: {_ye}")
+            st.stop()
+
+        _yr_min = int(_ds_years[-1]) if _ds_years else 2010
+        _yr_max = int(_ds_years[0]) if _ds_years else current_year
+
         if year_mode == "Single Year":
-            single_year = st.selectbox("Select Year",
-                                       list(range(current_year, 2009, -1)), index=0)
+            single_year = st.selectbox("Select Year", _ds_years, index=0)
             years_to_extract = [single_year]
         else:
             start_year = st.slider(
-                "Start Year", 2010, current_year, 2012)
+                "Start Year", _yr_min, _yr_max, min(_yr_min + 2, _yr_max))
             end_year = st.slider("End Year", start_year,
-                                 current_year, current_year - 1)
+                                 _yr_max, max(_yr_max - 1, start_year))
             years_to_extract = list(range(start_year, end_year + 1))
 
         st.session_state["fin_years"] = years_to_extract
