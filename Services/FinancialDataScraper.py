@@ -31,6 +31,7 @@ recently-filed accession for each year.
 import logging
 import time
 import re
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 import requests
@@ -53,6 +54,12 @@ CONCEPT_MAP: Dict[str, List[str]] = {
         'SalesRevenueGoodsNet',
         'RevenueFromContractWithCustomerIncludingAssessedTax',
         'RevenuesNetOfInterestExpense',
+        # Utilities (NextEra Energy / NEE 2012-2017) file regulated revenues
+        # under this combined concept rather than the generic Revenues tag.
+        'RegulatedAndUnregulatedOperatingRevenue',
+        # REITs (Prologis / PLD 2012-2015) file rental revenues under a
+        # real-estate-specific tag before switching to Revenues in later years.
+        'RealEstateRevenueNet',
         # Banks/financial companies (AXP 2012-2014, WFC 2012-2015) report
         # gross interest income as their primary top-line revenue
         'InterestAndDividendIncomeOperating',
@@ -67,7 +74,10 @@ CONCEPT_MAP: Dict[str, List[str]] = {
     ],
     'liabilities': [
         'Liabilities',
-        'LiabilitiesAndStockholdersEquity',  # fallback
+        # NOTE: LiabilitiesAndStockholdersEquity is intentionally excluded —
+        # it equals Total Assets (Liabilities + Equity = Assets) and would
+        # produce the wrong value.  Missing liabilities are derived below as
+        # Assets − Equity instead.
     ],
     'equity': [
         'StockholdersEquity',
@@ -101,6 +111,11 @@ CONCEPT_MAP: Dict[str, List[str]] = {
         # Financial/energy companies (AXP, Chevron, Citigroup, JNJ, KLAC) use
         # this variant — excludes extraordinary items & minority interest
         'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments',
+        # Oil & gas companies (ConocoPhillips 2012-2014) do not tag
+        # OperatingIncomeLoss directly; use after-tax income from continuing
+        # operations as the best available proxy for EBITDA.
+        'IncomeLossFromContinuingOperations',
+        'IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest',
     ],
     'eps': [
         'EarningsPerShareDiluted',
@@ -162,6 +177,34 @@ _COMPANY_NAME_ALIASES: Dict[str, str] = {
     'Berkshire Hathaway Class B': 'Berkshire Hathaway',
 }
 
+# ── Legacy-entity CIK overrides ───────────────────────────────────────────────
+# Some companies redomiciled, restructured, or reincorporated so the EDGAR
+# ticker now maps to a NEW CIK that only has data from the restructuring date.
+# Map new-entity CIK (string, no leading zeros) → old-entity CIK to allow
+# the scraper to backfill early years from the original EDGAR filings.
+_SUPPLEMENTAL_CIKS: Dict[str, str] = {
+    # Alphabet Inc (GOOG/GOOGL, CIK 1652044) was incorporated in 2015;
+    # pre-2013 financial data lives under the original Google Inc CIK 1288776.
+    '1652044': '1288776',
+    # Walt Disney Company reincorporated as a new entity (CIK 1744489) in 2018
+    # as part of the Fox acquisition structure.  Pre-2018 data is under the
+    # original Walt Disney Company CIK 1001039.
+    '1744489': '1001039',
+    # BlackRock, Inc. re-registered the BLK ticker under a new Delaware
+    # holding company CIK 2012383 in late 2024.  All pre-2022 financial
+    # history lives under the original CIK 1364742 ("BlackRock Finance, Inc."
+    # — formerly "BlackRock Inc.").
+    '2012383': '1364742',
+    # Linde plc (CIK 1707925) was created for the Oct-2018 merger of
+    # Praxair and Linde AG.  Praxair Inc (CIK 884905) is the US predecessor
+    # whose continuous 10-K history covers 2007-2017.
+    '1707925': '884905',
+    # Medtronic plc (CIK 1613103) reincorporated in Ireland in Jan-2015 via
+    # the Covidien acquisition.  The original Medtronic Inc (CIK 310764)
+    # has continuous 10-K history through FY2016 (April year-end).
+    '1613103': '310764',
+}
+
 # ── Ticker → CIK cache (module-level, shared) ──────────────────────────────────
 _ticker_map_cache: Optional[Dict] = None
 
@@ -208,6 +251,47 @@ def cik_for_symbol(symbol: str) -> Optional[str]:
     if cik:
         return cik.zfill(10)
     return None
+
+
+def _fetch_shares_yfinance(symbol: str, fiscal_year_end: str) -> Optional[int]:
+    """
+    Last-resort fallback: fetch shares outstanding from yfinance when EDGAR
+    XBRL (both us-gaap and dei namespaces) has no value for a given year.
+
+    Uses Ticker.get_shares_full() which returns a quarterly time-series
+    sourced from SEC filings.  A ±1-year window around the FYE is used to
+    handle the 60-90 day filing lag, then the entry closest to (and not
+    after) the FYE is selected.
+    """
+    try:
+        import yfinance as yf
+        import pandas as pd
+        end_dt = datetime.strptime(fiscal_year_end[:10], '%Y-%m-%d')
+        start_dt = end_dt - timedelta(days=365)
+        fetch_end = end_dt + timedelta(days=365)
+        series = yf.Ticker(symbol).get_shares_full(
+            start=start_dt.strftime('%Y-%m-%d'),
+            end=fetch_end.strftime('%Y-%m-%d'),
+        )
+        if series is None or len(series) == 0:
+            return None
+        if hasattr(series.index, 'tz') and series.index.tz is not None:
+            series.index = series.index.tz_localize(None)
+        series.index = series.index.normalize()
+        fye_ts = pd.Timestamp(fiscal_year_end[:10])
+        valid = series[series.index <= fye_ts]
+        if not valid.empty:
+            val = int(valid.iloc[-1])
+        else:
+            after = series[series.index > fye_ts]
+            val = int(after.iloc[0]) if not after.empty else int(
+                series.iloc[-1])
+        return val if val > 0 else None
+    except Exception as exc:
+        logger.warning(
+            f"[XBRL] yfinance shares fallback failed {symbol} "
+            f"@ {fiscal_year_end}: {exc}")
+        return None
 
 
 def _extract_dei_shares(
@@ -322,6 +406,8 @@ def _extract_dei_shares(
                 result[year] = pairs[0][1]
     return result
 
+
+def _fiscal_year_from_entry(entry: dict) -> Optional[int]:
     """
     Extract the fiscal/calendar year an XBRL data point belongs to.
 
@@ -425,7 +511,13 @@ def _extract_annual_values(
                 continue
 
             val = entry.get('val')
-            if val is None:
+            # Skip None and zero — zero values are almost always mis-tagged
+            # XBRL placeholders that block valid fallback concepts.  A value of
+            # exactly $0 is not a meaningful annual filing value for any of the
+            # metrics we track (revenue, assets, income, EPS, cash flows).
+            # E.g. Eaton's 'Revenues' concept is tagged $0 for 2011-2016,
+            # which would mask the real data in 'SalesRevenueNet'.
+            if val is None or val == 0:
                 continue
 
             accn = entry.get('accn', '')
@@ -606,6 +698,70 @@ class FinancialDataScraper:
             logger.info(f"[XBRL] No annual XBRL data found for {symbol}")
             return []
 
+        # ── Supplemental CIK: backfill historical gaps from legacy entity ────────
+        # Companies like Alphabet (Google) and Disney reincorporated under new
+        # EDGAR CIKs mid-history.  Fetch the original entity's facts and merge
+        # data for any years that the primary CIK doesn't cover.
+        supp_cik_str = _SUPPLEMENTAL_CIKS.get(str(cik_int))
+        if supp_cik_str:
+            supp_cik_int = int(supp_cik_str)
+            supp_url = EDGAR_COMPANY_FACTS_URL.format(cik=supp_cik_int)
+            logger.info(
+                f"[XBRL] Fetching supplemental (legacy) CIK {supp_cik_int} "
+                f"for {symbol} to fill historical gaps")
+            try:
+                supp_resp = self.session.get(
+                    supp_url,
+                    headers={**_get_headers(), 'Host': 'data.sec.gov'},
+                    timeout=30,
+                )
+                if supp_resp.status_code == 200:
+                    supp_facts = supp_resp.json().get('facts', {})
+                    # Merge fiscal year end dates for missing years
+                    supp_fye = _extract_fiscal_year_end_dates(
+                        supp_facts, self.years_needed)
+                    for yr, fye in supp_fye.items():
+                        if yr not in fiscal_end_dates:
+                            fiscal_end_dates[yr] = fye
+                    # Extract supplemental metrics; fill only years missing
+                    # from the primary extraction (primary data always wins).
+                    for col, concepts in CONCEPT_MAP.items():
+                        supp_merged: Dict[int, float] = {}
+                        for concept in concepts:
+                            vals = _extract_annual_values(
+                                supp_facts, concept, self.years_needed)
+                            if vals:
+                                for yr, v in vals.items():
+                                    if yr not in supp_merged:
+                                        supp_merged[yr] = v
+                        if supp_merged:
+                            existing_col = extracted.get(col, {})
+                            filled_yrs = {
+                                yr: v for yr, v in supp_merged.items()
+                                if yr not in existing_col
+                            }
+                            if filled_yrs:
+                                extracted[col] = {**filled_yrs, **existing_col}
+                                logger.debug(
+                                    f"[XBRL] {symbol} supplemental CIK filled "
+                                    f"{col}: years={sorted(filled_yrs.keys())}")
+                    # Fill DEI shares from supplemental for missing years
+                    supp_dei = _extract_dei_shares(
+                        supp_facts, supp_fye, self.years_needed)
+                    if supp_dei:
+                        existing_sh = extracted.get('shares_outstanding', {})
+                        supp_sh_fill = {
+                            yr: v for yr, v in supp_dei.items()
+                            if yr not in existing_sh or not existing_sh[yr]
+                        }
+                        if supp_sh_fill:
+                            extracted['shares_outstanding'] = {
+                                **supp_sh_fill, **existing_sh}
+            except Exception as exc:
+                logger.warning(
+                    f"[XBRL] Supplemental CIK {supp_cik_str} fetch failed "
+                    f"for {symbol}: {exc}")
+
         # ── Compute free cash flow = CF_ops − CapEx ────────────────────────────
         cf_ops = extracted.get('cf_operations', {})
         capex = extracted.get('capex', {})
@@ -615,6 +771,55 @@ class FinancialDataScraper:
                 for yr in cf_ops
             }
             extracted['free_cash_flow'] = fcf
+
+        # ── Derived EPS fallback ────────────────────────────────────────────────
+        # Two scenarios are handled:
+        #   A) EPS series entirely absent (e.g. Visa — XBRL has zero EPS tags).
+        #   B) EPS series partially present but has gaps for specific years
+        #      (e.g. Alphabet 2015 — EPS exists for 2013, 2014, 2016+ but not
+        #      2015 due to a gap in Alphabet's first-year XBRL filing).
+        #
+        # Two-pass share resolution:
+        #   Pass 1 — use XBRL shares already in `extracted` (free, instant).
+        #   Pass 2 — for years where net_income exists but shares is missing,
+        #            fetch shares from yfinance using the fiscal year end date.
+        existing_eps: Dict[int, float] = extracted.get('eps', {})
+        ni_map = extracted.get('net_income', {})
+        # Find years that have net_income but are missing from the EPS series
+        eps_gap_years = {yr for yr in ni_map if yr not in existing_eps}
+        if eps_gap_years:
+            sh_map = dict(extracted.get('shares_outstanding', {}))
+            # Pass 2: yfinance fallback for gap years with no shares in XBRL
+            yf_shares_fetched: Dict[int, int] = {}
+            for yr in eps_gap_years:
+                ni = ni_map.get(yr)
+                if ni and not sh_map.get(yr) and fiscal_end_dates.get(yr):
+                    yf_sh = _fetch_shares_yfinance(
+                        symbol, fiscal_end_dates[yr])
+                    if yf_sh:
+                        sh_map[yr] = yf_sh
+                        yf_shares_fetched[yr] = yf_sh
+            if yf_shares_fetched:
+                existing_sh = extracted.get('shares_outstanding', {})
+                extracted['shares_outstanding'] = {
+                    **existing_sh, **yf_shares_fetched}
+                logger.info(
+                    f"[XBRL] {symbol} shares filled from yfinance for "
+                    f"years: {sorted(yf_shares_fetched.keys())}")
+
+            # Derive EPS for all gap years where both values are now available
+            derived_eps: Dict[int, float] = {}
+            for yr in eps_gap_years:
+                ni = ni_map.get(yr)
+                shares = sh_map.get(yr)
+                if ni is not None and shares and shares > 0:
+                    derived_eps[yr] = round(ni / shares, 4)
+            if derived_eps:
+                # Existing XBRL EPS wins on any overlap; derived only fills gaps
+                extracted['eps'] = {**derived_eps, **existing_eps}
+                logger.info(
+                    f"[XBRL] {symbol} EPS derived for gap years: "
+                    f"{sorted(derived_eps.keys())}")
 
         # ── Union all years present in any column ──────────────────────────────
         all_years: set = set()
@@ -628,7 +833,17 @@ class FinancialDataScraper:
                 'symbol': symbol,
                 'reporting_year': year,
                 'assets':              extracted.get('assets', {}).get(year),
-                'liabilities':         extracted.get('liabilities', {}).get(year),
+                # Derive liabilities = assets − equity for companies that
+                # don't tag the Liabilities concept directly (e.g. Accenture).
+                # This is always correct: Assets = Liabilities + Equity.
+                'liabilities':         (
+                    extracted.get('liabilities', {}).get(year)
+                    or (
+                        (extracted.get('assets', {}).get(year) or 0)
+                        - (extracted.get('equity', {}).get(year) or 0)
+                        or None
+                    )
+                ),
                 'equity':              extracted.get('equity', {}).get(year),
                 'revenue':             extracted.get('revenue', {}).get(year),
                 'operating_expenses':  extracted.get('operating_expenses', {}).get(year),
@@ -648,6 +863,8 @@ class FinancialDataScraper:
                 'exchange_ref': None,
                 'beta_calender_year_end': None,
                 'sharpe_ratio': None,
+                'edgar_cik':            cik_int,
+                'missing_data_reason':  None,  # filled below
             }
             # Compute ROA if we have both net_income and assets
             if row['net_income'] and row['assets']:
@@ -656,6 +873,16 @@ class FinancialDataScraper:
                         row['net_income'] / row['assets'] * 100, 4)
                 except ZeroDivisionError:
                     pass
+            # Record which key financial fields are missing so operators can
+            # triage gaps without having to query NULL columns manually.
+            _TRACKED = [
+                'revenue', 'net_income', 'assets',
+                'operating_expenses', 'operating_income_ebitda', 'eps',
+                'cash_flow_operations', 'cash_flow_investing',
+                'cash_flow_financing', 'free_cash_flow',
+            ]
+            _missing = [f for f in _TRACKED if not row.get(f)]
+            row['missing_data_reason'] = ', '.join(_missing) or None
             rows.append(row)
 
         logger.info(
@@ -772,6 +999,7 @@ class FinancialDataScraper:
                 stock_price_calender_year_end, pe_ratio,
                 return_on_asset, exchange_ref,
                 beta_calender_year_end, sharpe_ratio,
+                edgar_cik, missing_data_reason,
                 added_dt, added_by, modify_dt, modify_by
             ) VALUES (
                 %s, %s,
@@ -782,6 +1010,7 @@ class FinancialDataScraper:
                 %s, %s,
                 %s,
                 %s,
+                %s, %s,
                 %s, %s,
                 %s, %s,
                 %s, %s,
@@ -807,6 +1036,22 @@ class FinancialDataScraper:
                                                t_financial_metrics.fiscal_year_end_date),
                 return_on_asset              = COALESCE(EXCLUDED.return_on_asset,
                                                t_financial_metrics.return_on_asset),
+                -- Preserve market-data columns — never overwrite with NULL
+                stock_price_calender_year_end = COALESCE(
+                                               t_financial_metrics.stock_price_calender_year_end,
+                                               EXCLUDED.stock_price_calender_year_end),
+                beta_calender_year_end        = COALESCE(
+                                               t_financial_metrics.beta_calender_year_end,
+                                               EXCLUDED.beta_calender_year_end),
+                sharpe_ratio                  = COALESCE(
+                                               t_financial_metrics.sharpe_ratio,
+                                               EXCLUDED.sharpe_ratio),
+                tobins_q                      = COALESCE(
+                                               t_financial_metrics.tobins_q,
+                                               EXCLUDED.tobins_q),
+                edgar_cik                    = COALESCE(EXCLUDED.edgar_cik,
+                                               t_financial_metrics.edgar_cik),
+                missing_data_reason          = EXCLUDED.missing_data_reason,
                 modify_dt                    = EXCLUDED.modify_dt,
                 modify_by                    = EXCLUDED.modify_by
         """
@@ -832,6 +1077,7 @@ class FinancialDataScraper:
                 row['pe_ratio'],
                 row['return_on_asset'],       row['exchange_ref'],
                 row['beta_calender_year_end'], row['sharpe_ratio'],
+                row.get('edgar_cik'), row.get('missing_data_reason'),
                 now, agent, now, agent,
             ))
             self.db_connection.commit()

@@ -287,8 +287,9 @@ with tab2:
             single_year = st.selectbox("Select Year", _ds_years, index=0)
             years_to_extract = [single_year]
         else:
+            _default_start = max(_yr_min, min(2012, _yr_max))
             start_year = st.slider(
-                "Start Year", _yr_min, _yr_max, min(_yr_min + 2, _yr_max))
+                "Start Year", _yr_min, _yr_max, _default_start)
             end_year = st.slider("End Year", start_year,
                                  _yr_max, max(_yr_max - 1, start_year))
             years_to_extract = list(range(start_year, end_year + 1))
@@ -725,6 +726,32 @@ with tab5:
             )
             st.session_state["search_metric_sel"] = selected_metrics
 
+        # ── Beta filter row ──────────────────────────────────────────────────
+        fb1, fb2 = st.columns([1, 3])
+        with fb1:
+            _beta_series = _all_df["beta_calender_year_end"].dropna()
+            if not _beta_series.empty:
+                _beta_data_min = float(_beta_series.min())
+                _beta_data_max = float(_beta_series.max())
+                # Round outward to one decimal for clean slider endpoints
+                _beta_lo = round(_beta_data_min - 0.05, 1)
+                _beta_hi = round(_beta_data_max + 0.05, 1)
+                beta_filter = st.slider(
+                    "📐 Beta range",
+                    min_value=_beta_lo,
+                    max_value=_beta_hi,
+                    value=(_beta_lo, _beta_hi),
+                    step=0.1,
+                    key="search_beta",
+                    help=(
+                        "Filter rows by Beta (market sensitivity). "
+                        "β < 1 = less volatile than market; β > 1 = more volatile. "
+                        "Rows with no Beta value are included regardless."
+                    ),
+                )
+            else:
+                beta_filter = None
+
         st.markdown("---")
 
         # ── Apply filters ────────────────────────────────────────────────────
@@ -735,6 +762,14 @@ with tab5:
             (view_df["reporting_year"] >= sel_years[0]) &
             (view_df["reporting_year"] <= sel_years[1])
         ]
+        if beta_filter is not None:
+            _blo, _bhi = beta_filter
+            # Keep rows where beta is within range OR beta is null (not yet fetched)
+            _beta_col = view_df["beta_calender_year_end"]
+            view_df = view_df[
+                _beta_col.isna() |
+                ((_beta_col >= _blo) & (_beta_col <= _bhi))
+            ]
 
         if view_df.empty:
             st.warning("No rows match the selected filters.")
@@ -797,9 +832,14 @@ with tab5:
 
                 total = len(display_df)
                 companies_shown = display_df["Company"].nunique()
+                _beta_label = (
+                    f" · β {beta_filter[0]:.1f}–{beta_filter[1]:.1f}"
+                    if beta_filter is not None and beta_filter != (_beta_lo, _beta_hi)
+                    else ""
+                )
                 st.markdown(
                     f"**{total} row(s)** · **{companies_shown} company/ies** "
-                    f"· years {sel_years[0]}–{sel_years[1]}"
+                    f"· years {sel_years[0]}–{sel_years[1]}{_beta_label}"
                 )
 
                 # ── Per-cell colour rules ─────────────────────────────────────

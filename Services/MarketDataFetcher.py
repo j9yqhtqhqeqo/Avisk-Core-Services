@@ -384,8 +384,21 @@ class MarketDataFetcher:
                 market_cap = price * shares
                 tobins_q = round((market_cap + (liabs or 0)) / assets, 4)
 
+            # Derived EPS fallback — for companies (e.g. Visa) that don't tag
+            # EarningsPerShareDiluted in XBRL at all.  Only fills when eps IS
+            # NULL; never overwrites a value already set by EDGAR extraction.
+            derived_eps = None
+            if not eps:
+                net_income = row.get('net_income')
+                if net_income and shares and shares > 0:
+                    derived_eps = round(net_income / shares, 4)
+                    print(
+                        f"  [{symbol} {year}] EPS derived from "
+                        f"net_income/shares: {derived_eps}")
+
             self._upsert_market_row(
-                company_name, year, price, beta, sharpe, pe, tobins_q)
+                company_name, year, price, beta, sharpe, pe, tobins_q,
+                derived_eps)
             results.append({
                 'year':           year,
                 'fiscal_year_end': fye,
@@ -630,6 +643,7 @@ class MarketDataFetcher:
                 SELECT reporting_year,
                        fiscal_year_end_date::text AS fiscal_year_end_date,
                        eps,
+                       net_income,
                        assets,
                        liabilities,
                        NULLIF(shares_outstanding, 0) AS shares_outstanding
@@ -671,17 +685,19 @@ class MarketDataFetcher:
         sharpe:   Optional[float],
         pe_ratio: Optional[float],
         tobins_q: Optional[float] = None,
+        eps:      Optional[float] = None,
     ) -> None:
         """
         Update only the market-data columns for an existing row.
         EDGAR financial columns are left untouched.
+        eps is only written when the existing DB value is NULL (COALESCE).
         """
         import datetime as _dt
         # Coerce all numpy scalars to native Python floats so psycopg2
         # can serialise them correctly.
-        price, beta, sharpe, pe_ratio, tobins_q = (
+        price, beta, sharpe, pe_ratio, tobins_q, eps = (
             self._f(price), self._f(beta), self._f(sharpe),
-            self._f(pe_ratio), self._f(tobins_q)
+            self._f(pe_ratio), self._f(tobins_q), self._f(eps)
         )
         cursor = self.db_connection.cursor()
         try:
@@ -693,13 +709,26 @@ class MarketDataFetcher:
                        sharpe_ratio                  = %s,
                        pe_ratio                      = %s,
                        tobins_q                      = %s,
+                       eps                           = COALESCE(NULLIF(eps, 0), %s),
+                       -- When we successfully write eps, strip it from the
+                       -- missing_data_reason so the gap list stays accurate.
+                       missing_data_reason = CASE
+                           WHEN %s IS NOT NULL AND missing_data_reason IS NOT NULL
+                           THEN NULLIF(
+                               TRIM(BOTH ', ' FROM
+                                   REGEXP_REPLACE(missing_data_reason,
+                                       '(^|, )eps(, |$)', '', 'g')),
+                               '')
+                           ELSE missing_data_reason
+                       END,
                        modify_dt                     = %s,
                        modify_by                     = %s
                 WHERE  company_name   = %s
                   AND  reporting_year = %s
                 """,
                 (
-                    price, beta, sharpe, pe_ratio, tobins_q,
+                    price, beta, sharpe, pe_ratio, tobins_q, eps,
+                    eps,   # extra bind for the CASE WHEN %s IS NOT NULL check
                     _dt.datetime.utcnow(), 'Market Data Fetcher',
                     company_name, reporting_year,
                 ),

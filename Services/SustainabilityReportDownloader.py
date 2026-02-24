@@ -1322,6 +1322,14 @@ class SustainabilityReportDownloader:
         Only checks database - NOT file system. This allows re-registering
         existing files that are missing from the database.
 
+        Primary check: exact match on original_source_url (the column that
+        stores the actual download URL for all records).  This correctly
+        handles EDGAR other filings whose reformatted filenames do NOT match
+        the raw URL path.
+
+        Fallback: filename-stem LIKE search on source_url for legacy rows
+        that predate the original_source_url column.
+
         Args:
             url: The download URL
             company_name: Name of the company
@@ -1329,44 +1337,95 @@ class SustainabilityReportDownloader:
         Returns:
             True if already in database, False otherwise
         """
-        if not self.db_connection:
+        if not self.db_connection or not url:
             return False
-
-        # Extract filename and year from URL for checking
-        url_path = urlparse(url).path
-        original_filename = os.path.basename(url_path)
-
-        # Extract year from URL
-        year_match = re.search(r'20\d{2}', url)
-        if not year_match:
-            return False  # Can't determine year, proceed with download
-
-        year_str = year_match.group()
-
-        # Build expected filename
-        if not (original_filename and original_filename.lower().endswith('.pdf')):
-            return False  # Can't determine filename, proceed with download
 
         try:
             cursor = self.db_connection.cursor()
-            # Check if any entry exists with this filename pattern
+
+            # --- Primary check: exact URL stored in original_source_url ---
             cursor.execute(
-                """SELECT unique_id FROM t_data_source 
-                   WHERE company_name = %s AND year = %s 
+                """SELECT unique_id FROM t_data_source
+                   WHERE company_name = %s AND original_source_url = %s
+                   LIMIT 1""",
+                (company_name, url)
+            )
+            result = cursor.fetchone()
+            if result:
+                cursor.close()
+                logger.info(
+                    f"Skipping {url} - already in database (id: {result[0]})")
+                return True
+
+            # --- Fallback: filename-stem search for legacy rows ---
+            url_path = urlparse(url).path
+            original_filename = os.path.basename(url_path)
+            year_match = re.search(r'20\d{2}', url)
+
+            if original_filename and year_match:
+                stem = (original_filename.rsplit('.', 1)[0]
+                        if '.' in original_filename else original_filename)
+                cursor.execute(
+                    """SELECT unique_id FROM t_data_source
+                       WHERE company_name = %s AND year = %s
+                       AND source_url LIKE %s
+                       LIMIT 1""",
+                    (company_name, int(year_match.group()), f"%{stem}%")
+                )
+                result = cursor.fetchone()
+                if result:
+                    cursor.close()
+                    logger.info(
+                        f"Skipping {url} - already in database by filename "
+                        f"(id: {result[0]})")
+                    return True
+
+            cursor.close()
+        except Exception as e:
+            logger.debug(f"Database check failed: {e}")
+
+        return False
+
+    def _is_accession_in_database(self, company_name: str, year: int,
+                                  accession_short: str) -> bool:
+        """
+        Check whether an EDGAR filing (identified by the 12-char accession
+        short-code embedded in the stored filename) already exists in
+        t_data_source for this company/year.
+
+        This is a fast pre-check used before calling
+        _get_edgar_filing_best_url so that we avoid an EDGAR HTTP index
+        request for filings we have already downloaded.
+
+        Args:
+            company_name: Name of the company
+            year: Report/filing year
+            accession_short: First 12 chars of the accession number with
+                             dashes stripped (e.g. '000012345623').
+
+        Returns:
+            True if already in database, False otherwise
+        """
+        if not self.db_connection or not accession_short:
+            return False
+        try:
+            cursor = self.db_connection.cursor()
+            cursor.execute(
+                """SELECT unique_id FROM t_data_source
+                   WHERE company_name = %s AND year = %s
                    AND source_url LIKE %s
                    LIMIT 1""",
-                (company_name, int(year_str),
-                 f"%{original_filename[:-4]}%")
+                (company_name, year, f"%{accession_short}%")
             )
             result = cursor.fetchone()
             cursor.close()
             if result:
-                logger.info(
-                    f"Skipping {url} - already in database (id: {result[0]})")
+                logger.debug(
+                    f"Accession {accession_short} already in DB for "
+                    f"{company_name}/{year} (id: {result[0]}) - skipping")
                 return True
         except Exception as e:
-            logger.debug(f"Database check failed: {e}")
-
+            logger.debug(f"Accession DB check failed: {e}")
         return False
 
     def _is_duplicate_content(self, file_hash: str, company_name: str) -> Optional[str]:
@@ -1443,7 +1502,8 @@ class SustainabilityReportDownloader:
                             search_query_used: str = None,
                             search_result_rank: int = None,
                             http_response_code: int = None,
-                            company_symbol: str = None) -> Optional[int]:
+                            company_symbol: str = None,
+                            form_type: str = None) -> Optional[int]:
         """
         Add a downloaded report entry to t_data_source table with authenticity tracking.
 
@@ -1460,6 +1520,8 @@ class SustainabilityReportDownloader:
             search_result_rank: Position in search results (1 = top)
             http_response_code: HTTP status code from download
             company_symbol: Stock symbol for source verification
+            form_type: Exact SEC EDGAR form string (e.g. '10-K', '8-K', 'DEF 14A').
+                       None for non-EDGAR records.
 
         Returns:
             unique_id of the inserted record, or None if failed/already exists
@@ -1522,9 +1584,9 @@ class SustainabilityReportDownloader:
                  source_domain, is_official_source, source_confidence_score,
                  verification_status, file_hash_sha256, file_size_bytes,
                  original_source_url, search_query_used, search_result_rank,
-                 http_response_code, download_timestamp)
+                 http_response_code, download_timestamp, form_type)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s, CURRENT_TIMESTAMP, %s,
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING unique_id
             """
 
@@ -1550,7 +1612,9 @@ class SustainabilityReportDownloader:
                 search_query_used,
                 search_result_rank,
                 http_response_code,
-                datetime.now(timezone.utc)  # download_timestamp
+                datetime.now(timezone.utc),  # download_timestamp
+                # SEC EDGAR form string (e.g. '10-K', '8-K')
+                form_type,
             ))
 
             result = cursor.fetchone()
@@ -2661,9 +2725,10 @@ class SustainabilityReportDownloader:
         return filings
 
     def _get_edgar_filing_best_url(self, cik: str, accession_number: str,
-                                   primary_document: str) -> str:
+                                   primary_document: str,
+                                   accepted_forms: Optional[set] = None) -> str:
         """
-        Resolve the best downloadable document URL for an EDGAR 10-K filing.
+        Resolve the best downloadable document URL for an EDGAR filing.
 
         Tries the filing index JSON first to find a PDF variant.  Falls back
         to the primary document URL if no PDF is listed.
@@ -2672,6 +2737,10 @@ class SustainabilityReportDownloader:
             cik: CIK as string
             accession_number: Accession number with dashes (e.g., '0000320193-22-000108')
             primary_document: Primary document filename from submissions JSON
+            accepted_forms: Set of form types to match when looking for a PDF.
+                            If None, any PDF in the filing index is accepted.
+                            Defaults to None (used by non-10K callers);
+                            pass self.EDGAR_10K_FORMS for the 10-K path.
 
         Returns:
             Direct URL to the best document
@@ -2687,11 +2756,16 @@ class SustainabilityReportDownloader:
             resp = requests.get(index_json_url, headers=headers, timeout=15)
             if resp.status_code == 200:
                 documents = resp.json().get('documents', [])
-                # Prefer a PDF variant of the 10-K
                 for doc in documents:
-                    if (doc.get('type') in self.EDGAR_10K_FORMS
-                            and doc.get('filename', '').lower().endswith('.pdf')):
-                        return f"{base_url}{doc['filename']}"
+                    is_pdf = doc.get('filename', '').lower().endswith('.pdf')
+                    if accepted_forms is None:
+                        # Accept any PDF in the filing index
+                        if is_pdf:
+                            return f"{base_url}{doc['filename']}"
+                    else:
+                        # Restrict to specified form types (e.g. 10-K variants)
+                        if doc.get('type') in accepted_forms and is_pdf:
+                            return f"{base_url}{doc['filename']}"
         except Exception as e:
             logger.debug(
                 f"Filing index lookup failed for {accession_number}: {e}")
@@ -2776,7 +2850,8 @@ class SustainabilityReportDownloader:
             # (e.g. Google Inc. vs Alphabet Inc.) resolve correctly.
             filing_cik = filing.get('filing_cik') or all_ciks[-1]
             doc_url = self._get_edgar_filing_best_url(
-                filing_cik, accession, primary_doc)
+                filing_cik, accession, primary_doc,
+                accepted_forms=self.EDGAR_10K_FORMS)
 
             # Skip if already in database
             if company_name and self._is_url_in_database(doc_url, company_name):
@@ -2851,6 +2926,7 @@ class SustainabilityReportDownloader:
                 original_source_url=doc_url,
                 http_response_code=resp.status_code,
                 company_symbol=symbol,
+                form_type=filing.get('form', '10-K'),
             )
 
             self.downloaded_reports.append({
@@ -2862,6 +2938,7 @@ class SustainabilityReportDownloader:
                 'file_size': len(content),
                 'db_id': db_id,
                 'source': 'EDGAR',
+                'form_type': filing.get('form', '10-K'),
             })
 
             downloaded_paths.append(str(filepath))
@@ -2872,6 +2949,266 @@ class SustainabilityReportDownloader:
         logger.info(
             f"EDGAR download complete for {company_name}: "
             f"{len(downloaded_paths)} 10-K(s) saved")
+        return downloaded_paths
+
+    def get_edgar_other_filings(self, cik: str, company_name: str) -> List[Dict]:
+        """
+        Fetch all EDGAR filings for a company EXCEPT 10-K variants.
+
+        Used by download_edgar_other_filings (content_type=3) to retrieve
+        DEF 14A, 10-Q, 8-K, 20-F, ARS, S-1, and any other form types that
+        are not annual report (10-K) forms.
+
+        Args:
+            cik: Zero-padded 10-digit CIK string
+            company_name: Company name (for logging)
+
+        Returns:
+            List of dicts with keys:
+              accession_number, filing_date, report_date,
+              primary_document, filing_url, form, filing_cik
+        """
+        filings: List[Dict] = []
+        cik_int = int(cik)
+        headers = self._get_edgar_session_headers()
+        headers['Host'] = 'data.sec.gov'
+
+        def _parse_filings_block(block: dict) -> None:
+            forms = block.get('form', [])
+            accessions = block.get('accessionNumber', [])
+            filing_dates = block.get('filingDate', [])
+            report_dates = block.get('reportDate', [])
+            primary_docs = block.get('primaryDocument', [])
+            for i, form in enumerate(forms):
+                if form not in self.EDGAR_10K_FORMS:
+                    accession = accessions[i]
+                    accession_nodash = accession.replace('-', '')
+                    filing_date = filing_dates[i] if i < len(
+                        filing_dates) else ''
+                    report_date = report_dates[i] if i < len(
+                        report_dates) else ''
+                    primary_doc = primary_docs[i] if i < len(
+                        primary_docs) else ''
+                    filing_url = (
+                        f"{self.EDGAR_ARCHIVES_BASE}{cik_int}/"
+                        f"{accession_nodash}/{primary_doc}"
+                    )
+                    filings.append({
+                        'accession_number': accession,
+                        'filing_date': filing_date,
+                        'report_date': report_date,
+                        'primary_document': primary_doc,
+                        'filing_url': filing_url,
+                        'form': form,
+                        'filing_cik': str(cik_int),
+                    })
+
+        try:
+            url = self.EDGAR_SUBMISSIONS_URL.format(cik=cik_int)
+            resp = requests.get(url, headers=headers, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+
+            _parse_filings_block(data.get('filings', {}).get('recent', {}))
+
+            for older_file in data.get('filings', {}).get('files', []):
+                older_url = f"https://data.sec.gov/submissions/{older_file['name']}"
+                try:
+                    older_resp = requests.get(
+                        older_url, headers=headers, timeout=30)
+                    older_resp.raise_for_status()
+                    _parse_filings_block(older_resp.json())
+                    time.sleep(0.2)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to fetch older filings from {older_url}: {e}")
+
+            logger.info(
+                f"Found {len(filings)} non-10K filing(s) for {company_name} (CIK: {cik})")
+        except Exception as e:
+            logger.error(
+                f"Failed to get EDGAR other filings for {company_name} (CIK: {cik}): {e}")
+
+        return filings
+
+    def download_edgar_other_filings(self, symbol: str, company_name: str,
+                                     year_filter_override: Optional[List[int]] = None) -> List[str]:
+        """
+        Download all non-10K EDGAR filings for a company and year(s).
+
+        Covers form types such as DEF 14A (proxy), 10-Q (quarterly),
+        8-K (current reports), 20-F, ARS, S-1, and any other SEC filing
+        that is not a 10-K annual report variant.
+
+        Workflow:
+          1. Resolve ticker → CIK via company_tickers.json
+          2. Fetch all non-10K filings from EDGAR submissions API
+          3. Filter by year (year_filter_override or self.year_filter)
+          4. Download each filing, deduplicating by URL and content hash
+          5. Save to year-based folder and record in t_data_source (content_type=3)
+
+        Args:
+            symbol: Stock ticker symbol (e.g., 'AAPL')
+            company_name: Human-readable company name
+            year_filter_override: Narrowed year list from process_company()
+
+        Returns:
+            List of local file paths for successfully downloaded filings
+        """
+        downloaded_paths: List[str] = []
+
+        all_ciks = self.get_all_ciks_for_symbol(symbol)
+        if not all_ciks:
+            logger.warning(
+                f"Cannot download EDGAR other filings for {symbol}: CIK not found")
+            return downloaded_paths
+
+        filings: List[Dict] = []
+        for cik in all_ciks:
+            cik_filings = self.get_edgar_other_filings(cik, company_name)
+            logger.info(
+                f"CIK {cik}: found {len(cik_filings)} non-10K filing(s) for {company_name}")
+            filings.extend(cik_filings)
+
+        if not filings:
+            logger.info(
+                f"No non-10K filings found on EDGAR for {company_name} ({symbol})")
+            return downloaded_paths
+
+        # Apply year filter
+        effective_year_filter = (
+            year_filter_override if year_filter_override is not None
+            else self.year_filter
+        )
+        if effective_year_filter:
+            filtered = []
+            for filing in filings:
+                date_str = (filing.get('report_date')
+                            or filing.get('filing_date', ''))
+                year_match = re.search(r'(20\d{2})', date_str)
+                if year_match and int(year_match.group(1)) in effective_year_filter:
+                    filtered.append(filing)
+            logger.info(
+                f"EDGAR other filings after year filter {effective_year_filter}: "
+                f"{len(filtered)}/{len(filings)} for {company_name}")
+            filings = filtered
+
+        sec_headers = self._get_edgar_session_headers()
+        sec_headers['Host'] = 'www.sec.gov'
+
+        for filing in filings:
+            accession = filing['accession_number']
+            primary_doc = filing['primary_document']
+            report_date = filing.get('report_date', '')
+            filing_date = filing.get('filing_date', '')
+            year_str = (report_date or filing_date)[:4]
+            form_type = filing.get('form', 'OTHER')
+            filing_cik = filing.get('filing_cik') or all_ciks[-1]
+
+            # --- Fast pre-check: skip EDGAR HTTP index request if we already
+            # have this accession stored (accession_short is embedded in the
+            # filename saved at insert time).
+            accession_short = accession.replace('-', '')[:12]
+            year_int = int(year_str) if year_str.isdigit() else 0
+            if self._is_accession_in_database(company_name, year_int,
+                                              accession_short):
+                continue
+
+            # accepted_forms=None → accept any PDF in the filing index
+            doc_url = self._get_edgar_filing_best_url(
+                filing_cik, accession, primary_doc, accepted_forms=None)
+
+            if doc_url and self._is_url_in_database(doc_url, company_name):
+                logger.debug(
+                    f"Skipping EDGAR other filing (already in DB): {doc_url}")
+                continue
+
+            logger.info(
+                f"Downloading EDGAR {form_type} [{filing_date}] for {symbol}: {doc_url}")
+            try:
+                resp = requests.get(doc_url, headers=sec_headers, timeout=60)
+                resp.raise_for_status()
+            except Exception as e:
+                logger.error(
+                    f"Failed to download EDGAR other filing {doc_url}: {e}")
+                self.failed_downloads.append({
+                    'symbol': symbol,
+                    'url': doc_url,
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat(),
+                })
+                time.sleep(1)
+                continue
+
+            content = resp.content
+            content_hash = self.calculate_file_hash(content)
+
+            existing_doc = self._is_duplicate_content(
+                content_hash, company_name)
+            if existing_doc:
+                logger.info(
+                    f"Skipping EDGAR other filing - duplicate content already stored "
+                    f"as '{existing_doc}'")
+                continue
+
+            ext = 'pdf' if doc_url.lower().endswith('.pdf') else 'htm'
+            form_safe = form_type.replace('/', '_').replace(' ', '')
+            filename = (
+                f"{symbol}_{form_safe}_{report_date or filing_date}_"
+                f"{accession_short}.{ext}"
+            )
+
+            year_dir = self.base_download_dir / (year_str or 'unknown')
+            year_dir.mkdir(parents=True, exist_ok=True)
+            filepath = year_dir / filename
+
+            if filepath.exists():
+                existing_hash = self.calculate_file_hash(filepath.read_bytes())
+                if existing_hash == content_hash:
+                    logger.debug(
+                        f"EDGAR other filing already on disk: {filepath}")
+                else:
+                    with open(filepath, 'wb') as f:
+                        f.write(content)
+                    logger.info(
+                        f"Updated EDGAR other filing on disk: {filepath}")
+            else:
+                with open(filepath, 'wb') as f:
+                    f.write(content)
+                logger.info(f"Downloaded EDGAR {form_type}: {filepath}")
+
+            db_id = self._add_to_data_source(
+                company_name=company_name,
+                year=int(year_str) if year_str.isdigit() else 0,
+                source_url=doc_url,
+                document_name=filename,
+                filepath=str(filepath),
+                content_type=3,           # Other EDGAR filings
+                file_content=content,
+                original_source_url=doc_url,
+                http_response_code=resp.status_code,
+                company_symbol=symbol,
+                form_type=form_type,
+            )
+
+            self.downloaded_reports.append({
+                'symbol': symbol,
+                'company_name': company_name,
+                'url': doc_url,
+                'filepath': str(filepath),
+                'download_date': datetime.now().isoformat(),
+                'file_size': len(content),
+                'db_id': db_id,
+                'source': 'EDGAR',
+                'form_type': form_type,
+            })
+
+            downloaded_paths.append(str(filepath))
+            time.sleep(max(self.delay_seconds, 0.15))
+
+        logger.info(
+            f"EDGAR other filings download complete for {company_name}: "
+            f"{len(downloaded_paths)} filing(s) saved")
         return downloaded_paths
 
     def _quarter_from_filing_date(self, filing_date: str) -> Tuple[int, int]:
@@ -3864,7 +4201,23 @@ class SustainabilityReportDownloader:
                 else:
                     result['press_releases_downloaded'] = 0
 
-            # ── Web search only for non-10K content types ──────────────────────
+            # ── PRIMARY for Other EDGAR filings (content_type=3): SEC EDGAR ──────
+            edgar_other_count = 0
+            if needs_other:
+                logger.info(
+                    f"[EDGAR-Other] Fetching non-10K filings from SEC EDGAR for "
+                    f"{company_name} ({symbol})")
+                edgar_other_paths = self.download_edgar_other_filings(
+                    symbol, company_name, year_filter_override=years_needed)
+                edgar_other_count = len(edgar_other_paths)
+                downloaded_count += edgar_other_count
+                result['reports_found'] += edgar_other_count
+                logger.info(
+                    f"[EDGAR-Other] Downloaded {edgar_other_count} non-10K filing(s) "
+                    f"for {symbol}")
+            result['edgar_other_downloaded'] = edgar_other_count
+
+            # ── FALLBACK web search for non-10K content (sustainability PDFs etc.) ──
             if needs_other:
                 if self.year_filter and DDGS_AVAILABLE:
                     logger.info(
