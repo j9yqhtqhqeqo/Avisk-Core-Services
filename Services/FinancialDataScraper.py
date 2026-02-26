@@ -54,6 +54,10 @@ CONCEPT_MAP: Dict[str, List[str]] = {
         'SalesRevenueGoodsNet',
         'RevenueFromContractWithCustomerIncludingAssessedTax',
         'RevenuesNetOfInterestExpense',
+        # Some financial/insurance companies consolidate all revenue streams
+        # under TotalRevenues when neither Revenues nor the ASC-606 concept
+        # covers their full top-line (e.g. Capital One, Liberty Mutual).
+        'TotalRevenues',
         # Utilities (NextEra Energy / NEE 2012-2017) file regulated revenues
         # under this combined concept rather than the generic Revenues tag.
         'RegulatedAndUnregulatedOperatingRevenue',
@@ -139,11 +143,25 @@ CONCEPT_MAP: Dict[str, List[str]] = {
         'NetCashProvidedByUsedInFinancingActivities',
         'NetCashProvidedByUsedInFinancingActivitiesContinuingOperations',
     ],
-    # Free cash flow = CF Operations − CapEx (calculated, not mapped directly)
-    'capex': [
+    # Free cash flow = CF Operations − CapEx (calculated, not mapped directly).
+    # CapEx is split into three additive component keys (prefix '_' = internal,
+    # not written to the DB).  The FCF block below combines them as:
+    #   capex_yr = max(PaymentsToAcquireProductiveAssets [umbrella],
+    #                  PaymentsToAcquirePropertyPlantAndEquipment
+    #                + PaymentsForCapitalImprovements)
+    # Taking the maximum avoids double-counting when the umbrella concept
+    # already includes improvements, while capturing the full CapEx spend when
+    # only individual components are tagged in the 10-K.
+    '_capex_ppe': [
         'PaymentsToAcquirePropertyPlantAndEquipment',
+    ],
+    '_capex_impr': [
         'PaymentsForCapitalImprovements',
-        'PaymentsToAcquireProductiveAssets',   # used by NVIDIA post-2012
+    ],
+    '_capex_prod': [
+        # Umbrella concept used by NVIDIA post-2012 and other companies;
+        # when present it already includes PP&E so max() will prefer it.
+        'PaymentsToAcquireProductiveAssets',
     ],
     # Shares outstanding — used with stock price to compute market cap → Tobin's Q
     # Priority: exact year-end instant → weighted average (period proxy)
@@ -762,9 +780,29 @@ class FinancialDataScraper:
                     f"[XBRL] Supplemental CIK {supp_cik_str} fetch failed "
                     f"for {symbol}: {exc}")
 
-        # ── Compute free cash flow = CF_ops − CapEx ────────────────────────────
-        cf_ops = extracted.get('cf_operations', {})
-        capex = extracted.get('capex', {})
+        # ── Compute free cash flow = CF_ops − CapEx (additive) ────────────────
+        # Combine the three CapEx component keys extracted above:
+        #   capex[yr] = max(
+        #       PaymentsToAcquireProductiveAssets           [umbrella],
+        #       PaymentsToAcquirePropertyPlantAndEquipment  [PP&E]
+        #     + PaymentsForCapitalImprovements               [improvements]
+        #   )
+        # Taking max() over the umbrella vs the sum of components avoids
+        # double-counting (umbrella already includes PP&E) while using the
+        # component sum for companies that tag each piece separately and don't
+        # tag the umbrella at all (most large-cap filers).
+        cf_ops = extracted.get('cf_operations',  {})
+        capex_ppe = extracted.get('_capex_ppe',  {})
+        capex_impr = extracted.get('_capex_impr', {})
+        capex_prod = extracted.get('_capex_prod', {})
+
+        all_capex_yrs = set(capex_prod) | set(capex_ppe) | set(capex_impr)
+        capex: Dict[int, float] = {}
+        for _yr in all_capex_yrs:
+            _umbrella = capex_prod.get(_yr, 0.0)
+            _components = capex_ppe.get(_yr, 0.0) + capex_impr.get(_yr, 0.0)
+            capex[_yr] = max(_umbrella, _components)
+
         if cf_ops:
             fcf = {
                 yr: cf_ops[yr] - capex.get(yr, 0.0)

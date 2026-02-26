@@ -120,12 +120,14 @@ def _load_ds_companies() -> list:
     return companies
 
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🏢 Select Companies",
     "📅 Select Years",
     "🚀 Extract Financial Data",
     "📈 Update Market Data",
     "🔍 Search Financial Metrics",
+    "🔬 Data Quality",
+    "🔎 Cross-Source Verification",
 ])
 
 # =============================================================================
@@ -1177,3 +1179,720 @@ with tab4:
                              hide_index=True)
             else:
                 st.success("✅ All rows now have shares outstanding.")
+
+
+# =============================================================================
+# TAB 6 - Data Quality
+# =============================================================================
+with tab6:
+    st.header("🔬 Data Quality")
+    st.markdown(
+        "Runs automated plausibility checks against the data stored in "
+        "`t_financial_metrics`. No external API calls — everything is derived "
+        "from values already in the database."
+    )
+
+    if st.button("🔄 Run Quality Checks", type="primary", key="dq_run"):
+        import psycopg2
+        from Utilities.Lookups import DB_Connection
+
+        try:
+            _dq_conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
+        except Exception as _exc:
+            st.error(f"DB connection failed: {_exc}")
+            st.stop()
+
+        # ── Check 1 · Missing field coverage ─────────────────────────────────
+        st.markdown("---")
+        st.subheader("1️⃣  Missing Field Coverage")
+        st.caption(
+            "Rows where at least one key financial field (revenue, net_income, "
+            "assets, eps, …) could not be extracted from EDGAR XBRL. "
+            "The `missing_data_reason` column records which fields are absent."
+        )
+        _dq_cur = _dq_conn.cursor()
+        _dq_cur.execute("""
+            SELECT
+                company_name,
+                COUNT(*)                                                    AS total_rows,
+                COUNT(*) FILTER (WHERE missing_data_reason IS NOT NULL)     AS rows_with_gaps,
+                ROUND(
+                    COUNT(*) FILTER (WHERE missing_data_reason IS NOT NULL)::numeric
+                    / COUNT(*) * 100, 1)                                    AS gap_pct,
+                STRING_AGG(
+                    DISTINCT reporting_year::text || ': ' || missing_data_reason,
+                    '; '
+                    ORDER BY reporting_year::text || ': ' || missing_data_reason
+                )                                                           AS detail
+            FROM t_financial_metrics
+            WHERE missing_data_reason IS NOT NULL
+            GROUP BY company_name
+            ORDER BY rows_with_gaps DESC, company_name
+        """)
+        _dq_rows = _dq_cur.fetchall()
+        if _dq_rows:
+            _dq_missing_df = pd.DataFrame(
+                _dq_rows,
+                columns=["Company", "Total Rows", "Rows with Gaps",
+                         "Gap %", "Detail (year: missing fields)"],
+            )
+            st.warning(
+                f"⚠️ {len(_dq_missing_df)} companies have at least one row "
+                "with missing fields."
+            )
+            st.dataframe(_dq_missing_df, use_container_width=True,
+                         hide_index=True)
+        else:
+            st.success(
+                "✅ No missing fields detected — all rows are fully populated.")
+
+        # ── Check 2 · Accounting identity (Assets = Liabilities + Equity) ────
+        st.markdown("---")
+        st.subheader(
+            "2️⃣  Accounting Identity  (Assets = Liabilities + Equity)")
+        st.caption(
+            "Flags rows where |assets − (liabilities + equity)| / assets > 5 %. "
+            "Large deviations suggest a wrong XBRL concept was mapped to one of "
+            "these fields."
+        )
+        _dq_cur.execute("""
+            SELECT
+                company_name,
+                reporting_year,
+                assets,
+                liabilities,
+                equity,
+                liabilities + equity                                            AS computed_assets,
+                ROUND((ABS(assets::numeric - (liabilities + equity)::numeric)
+                      / NULLIF(ABS(assets::numeric), 0) * 100), 2)             AS pct_error
+            FROM t_financial_metrics
+            WHERE assets      IS NOT NULL AND assets      <> 0
+              AND liabilities IS NOT NULL AND liabilities <> 0
+              AND equity      IS NOT NULL
+              AND ABS(assets::numeric - (liabilities + equity)::numeric)
+                  / NULLIF(ABS(assets::numeric), 0) > 0.05
+            ORDER BY pct_error DESC
+            LIMIT 50
+        """)
+        _dq_acct = _dq_cur.fetchall()
+        if _dq_acct:
+            _dq_acct_df = pd.DataFrame(
+                _dq_acct,
+                columns=["Company", "Year", "Assets (stored)",
+                         "Liabilities", "Equity",
+                         "L + E (computed)", "Error %"],
+            )
+            for col in ["Assets (stored)", "Liabilities", "Equity",
+                        "L + E (computed)"]:
+                _dq_acct_df[col] = _dq_acct_df[col].apply(
+                    lambda v: f"${v/1e9:,.2f}B" if pd.notna(v) else "—")
+            st.warning(
+                f"⚠️ {len(_dq_acct_df)} row(s) fail the accounting identity check."
+            )
+            st.dataframe(_dq_acct_df, use_container_width=True,
+                         hide_index=True)
+        else:
+            st.success(
+                "✅ All rows pass the accounting identity check (within 5 %).")
+
+        # ── Check 3 · EPS consistency ─────────────────────────────────────────
+        st.markdown("---")
+        st.subheader(
+            "3️⃣  EPS Consistency  (stored EPS ≈ net_income / shares)")
+        st.caption(
+            "Flags rows where the stored EPS deviates >20 % from "
+            "net_income / shares_outstanding.  Differences of <20 % are "
+            "expected due to diluted vs basic share counts."
+        )
+        _dq_cur.execute("""
+            SELECT
+                company_name,
+                reporting_year,
+                eps                                                              AS stored_eps,
+                ROUND((net_income::numeric / shares_outstanding), 4)             AS derived_eps,
+                ROUND((ABS(eps::numeric - net_income::numeric / shares_outstanding)
+                      / NULLIF(ABS(eps::numeric), 0) * 100), 1)                 AS pct_diff
+            FROM t_financial_metrics
+            WHERE eps                 IS NOT NULL AND eps               <> 0
+              AND shares_outstanding  IS NOT NULL AND shares_outstanding <> 0
+              AND net_income          IS NOT NULL
+              AND ABS(eps::numeric - net_income::numeric / shares_outstanding)
+                  / NULLIF(ABS(eps::numeric), 0) > 0.20
+            ORDER BY pct_diff DESC
+            LIMIT 50
+        """)
+        _dq_eps = _dq_cur.fetchall()
+        if _dq_eps:
+            _dq_eps_df = pd.DataFrame(
+                _dq_eps,
+                columns=["Company", "Year", "Stored EPS",
+                         "Derived EPS", "Diff %"],
+            )
+            st.warning(
+                f"⚠️ {len(_dq_eps_df)} row(s) have an EPS inconsistency."
+            )
+            st.dataframe(_dq_eps_df, use_container_width=True, hide_index=True)
+        else:
+            st.success(
+                "✅ Stored EPS values are consistent with net_income / shares.")
+
+        # ── Check 4 · ROA consistency ─────────────────────────────────────────
+        st.markdown("---")
+        st.subheader("4️⃣  Return-on-Assets Consistency")
+        st.caption(
+            "Flags rows where the stored `return_on_asset` differs by more than "
+            "1 percentage point from net_income / assets × 100."
+        )
+        _dq_cur.execute("""
+            SELECT
+                company_name,
+                reporting_year,
+                return_on_asset                                                  AS stored_roa,
+                ROUND(net_income::numeric / assets * 100, 4)                     AS computed_roa,
+                ROUND(ABS(return_on_asset::numeric
+                          - net_income::numeric / assets * 100), 4)              AS diff_pp
+            FROM t_financial_metrics
+            WHERE return_on_asset IS NOT NULL
+              AND assets          IS NOT NULL AND assets    <> 0
+              AND net_income      IS NOT NULL
+              AND ABS(return_on_asset::numeric - net_income::numeric / assets * 100) > 1.0
+            ORDER BY diff_pp DESC
+            LIMIT 50
+        """)
+        _dq_roa = _dq_cur.fetchall()
+        if _dq_roa:
+            _dq_roa_df = pd.DataFrame(
+                _dq_roa,
+                columns=["Company", "Year", "Stored ROA %",
+                         "Computed ROA %", "Diff (pp)"],
+            )
+            st.warning(
+                f"⚠️ {len(_dq_roa_df)} row(s) have an ROA inconsistency."
+            )
+            st.dataframe(_dq_roa_df, use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Stored ROA values match the computed figures.")
+
+        # ── Check 5 · Revenue year-over-year anomalies ────────────────────────
+        st.markdown("---")
+        st.subheader("5️⃣  Revenue Year-over-Year Anomalies  (> 300 % change)")
+        st.caption(
+            "Flags consecutive-year pairs where revenue changed by more than "
+            "300 %. Legitimate for spinoffs / mergers; otherwise may indicate a "
+            "unit-scaling error (e.g. thousands vs millions) in the XBRL filing."
+        )
+        _dq_cur.execute("""
+            SELECT * FROM (
+                SELECT
+                    curr.company_name,
+                    curr.reporting_year,
+                    prev.revenue                                                     AS prev_revenue,
+                    curr.revenue                                                     AS curr_revenue,
+                    ROUND(((curr.revenue::numeric - prev.revenue::numeric)
+                          / NULLIF(ABS(prev.revenue::numeric), 0) * 100), 1)        AS pct_change
+                FROM t_financial_metrics curr
+                JOIN t_financial_metrics prev
+                  ON curr.company_name   = prev.company_name
+                 AND curr.reporting_year = prev.reporting_year + 1
+                WHERE prev.revenue IS NOT NULL AND prev.revenue <> 0
+                  AND curr.revenue IS NOT NULL AND curr.revenue <> 0
+                  AND ABS(curr.revenue::numeric - prev.revenue::numeric)
+                      / NULLIF(ABS(prev.revenue::numeric), 0) > 3.0
+            ) sub
+            ORDER BY ABS(pct_change) DESC
+            LIMIT 50
+        """)
+        _dq_yoy = _dq_cur.fetchall()
+        if _dq_yoy:
+            _dq_yoy_df = pd.DataFrame(
+                _dq_yoy,
+                columns=["Company", "Year", "Prior Year Revenue",
+                         "Current Year Revenue", "YoY Change %"],
+            )
+            for col in ["Prior Year Revenue", "Current Year Revenue"]:
+                _dq_yoy_df[col] = _dq_yoy_df[col].apply(
+                    lambda v: f"${v/1e9:,.2f}B" if pd.notna(v) else "—")
+            st.warning(
+                f"⚠️ {len(_dq_yoy_df)} row(s) show a >300 % year-over-year "
+                "revenue change — review for unit-scaling errors or corporate "
+                "events (mergers, spinoffs)."
+            )
+            st.dataframe(_dq_yoy_df, use_container_width=True, hide_index=True)
+        else:
+            st.success(
+                "✅ No suspicious year-over-year revenue anomalies found.")
+
+        _dq_cur.close()
+        _dq_conn.close()
+    else:
+        st.info(
+            "Click **Run Quality Checks** to analyse the data currently stored "
+            "in `t_financial_metrics`."
+        )
+
+
+# =============================================================================
+# TAB 7 - Cross-Source Verification (EDGAR DB vs Yahoo Finance)
+# =============================================================================
+with tab7:
+    st.header("🔎 Cross-Source Verification")
+    st.markdown(
+        "Compares key financial fields stored in `t_financial_metrics` (sourced "
+        "from **SEC EDGAR XBRL**) against **Yahoo Finance** annual financials "
+        "(via yfinance).  Rows where the two sources deviate beyond the selected "
+        "tolerance are flagged for manual review."
+    )
+    st.info(
+        "💡 **How to use:** Select companies in the **🏢 Select Companies** tab, "
+        "set a tolerance, then click **Run Verification**.  "
+        "Fetches ~4 yfinance calls per company — allow ~2 s per company."
+    )
+    st.markdown("---")
+
+    _ver_selected = st.session_state.get("fin_selected_companies", [])
+    _ver_df_ref = st.session_state.fin_companies_df
+
+    if _ver_selected:
+        _ver_syms = [_parse_symbol(c) for c in _ver_selected]
+        if _ver_df_ref is not None and not _ver_df_ref.empty:
+            _ver_cols = ["Symbol", "Company"]
+            if "Sector" in _ver_df_ref.columns:
+                _ver_cols.append("Sector")
+            _ver_companies = (
+                _ver_df_ref[_ver_df_ref["Symbol"].isin(_ver_syms)][_ver_cols]
+                .rename(columns={"Symbol": "symbol", "Company": "company_name",
+                                 "Sector": "sector"})
+                .to_dict("records")
+            )
+        else:
+            _ver_companies = [{"symbol": s, "company_name": s}
+                              for s in _ver_syms]
+    else:
+        _ver_companies = []
+
+    vc1, vc2 = st.columns(2)
+    vc1.metric("Companies selected", len(_ver_companies))
+
+    _ver_tolerance = st.slider(
+        "Tolerance — flag rows where |EDGAR − Yahoo| / |EDGAR| exceeds this %",
+        min_value=1, max_value=50, value=10, step=1,
+        key="ver_tol",
+        help=(
+            "10 % is a good default.  Small differences are normal due to "
+            "rounding, currency conversion, or timing.  Large differences "
+            "indicate a wrong XBRL concept or a unit-scaling error."
+        ),
+    )
+
+    _ver_fields = st.multiselect(
+        "Fields to verify",
+        options=["Revenue", "Net Income", "Total Assets",
+                 "Total Liabilities", "Equity",
+                 "Cash Flow – Operations", "Free Cash Flow"],
+        default=["Revenue", "Net Income", "Total Assets",
+                 "Cash Flow – Operations"],
+        key="ver_fields",
+    )
+
+    # Map friendly names → (DB column, yfinance statement, yfinance row key)
+    _VER_MAP = {
+        "Revenue":              ("revenue",              "financials",  "Total Revenue"),
+        "Net Income":           ("net_income",           "financials",  "Net Income"),
+        "Total Assets":         ("assets",               "balance_sheet", "Total Assets"),
+        "Total Liabilities":    ("liabilities",          "balance_sheet",
+                                 "Total Liabilities Net Minority Interest"),
+        "Equity":               ("equity",               "balance_sheet", "Stockholders Equity"),
+        "Cash Flow – Operations": ("cash_flow_operations", "cashflow",  "Operating Cash Flow"),
+        "Free Cash Flow":       ("free_cash_flow",       "cashflow",    "Free Cash Flow"),
+    }
+
+    if not _ver_companies:
+        st.warning("⬅️ Go to **Select Companies** and pick at least one company.")
+    elif not _ver_fields:
+        st.warning("Select at least one field to verify.")
+    else:
+        if st.button(
+            f"🔎 Run Verification  ({len(_ver_companies)} companies)",
+            type="primary",
+            key="ver_run_btn",
+        ):
+            import psycopg2
+            import yfinance as yf
+            from Utilities.Lookups import DB_Connection
+
+            # ── Load DB snapshot for selected companies ───────────────────────
+            # t_financial_metrics has no "symbol" column; the lookup key is
+            # company_name.  exchange_ref holds the ticker where available.
+            _v_names_tuple = tuple(c["company_name"] for c in _ver_companies)
+            # Build a symbol → company_name map for labelling later
+            _v_sym_to_name = {c["symbol"]: c["company_name"]
+                              for c in _ver_companies}
+            _v_name_to_sym = {c["company_name"]: c["symbol"]
+                              for c in _ver_companies}
+            _v_conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
+            try:
+                _v_placeholders = ','.join(['%s'] * len(_v_names_tuple))
+                _v_db_df = pd.read_sql(
+                    f"""
+                    SELECT company_name, reporting_year,
+                           exchange_ref,
+                           revenue, net_income, assets, liabilities, equity,
+                           cash_flow_operations, free_cash_flow
+                    FROM   t_financial_metrics
+                    WHERE  company_name IN ({_v_placeholders})
+                    ORDER  BY company_name, reporting_year
+                    """,
+                    _v_conn,
+                    params=list(_v_names_tuple),
+                )
+            except Exception as _exc:
+                st.error(f"DB read failed: {_exc}")
+                _v_db_df = pd.DataFrame()
+            finally:
+                _v_conn.close()
+
+            # Attach symbol column for display (use exchange_ref if present,
+            # else fall back to the name→symbol map built above)
+            if not _v_db_df.empty:
+                _v_db_df["symbol"] = _v_db_df.apply(
+                    lambda r: (
+                        r["exchange_ref"].split(":")[-1].strip()
+                        if r.get("exchange_ref")
+                        else _v_name_to_sym.get(r["company_name"], "")
+                    ),
+                    axis=1,
+                )
+
+            if _v_db_df.empty:
+                st.warning(
+                    "No DB rows found for the selected companies.  "
+                    "Run an extraction in Tab 3 first."
+                )
+                st.stop()
+
+            # ── Fetch yfinance annual financials & compare ────────────────────
+            _ver_progress = st.progress(0)
+            _ver_status = st.empty()
+            _ver_total = len(_ver_companies)
+
+            all_discrepancies = []   # list of dicts
+            all_matches = []   # rows that passed for every selected field
+
+            for _vi, _co in enumerate(_ver_companies, 1):
+                _sym = _co["symbol"]
+                _name = _co["company_name"]
+                _ver_progress.progress(int(_vi / _ver_total * 100))
+                _ver_status.text(f"Verifying {_sym} … ({_vi}/{_ver_total})")
+
+                # DB rows for this symbol
+                # DB rows for this company (filter by company_name, not symbol)
+                _sym_db = _v_db_df[
+                    _v_db_df["company_name"] == _name
+                ].copy()
+                if _sym_db.empty:
+                    all_discrepancies.append({
+                        "Company": _name, "Symbol": _sym,
+                        "Year": "—", "Field": "—",
+                        "EDGAR Value": "—", "Yahoo Value": "—",
+                        "Diff %": "—", "Note": "No DB rows",
+                    })
+                    continue
+
+                # Fetch all four yfinance statements at once
+                try:
+                    _tk = yf.Ticker(_sym)
+                    _yf_data = {
+                        "financials":    _tk.financials,
+                        "balance_sheet": _tk.balance_sheet,
+                        "cashflow":      _tk.cashflow,
+                    }
+                except Exception as _exc:
+                    all_discrepancies.append({
+                        "Company": _name, "Symbol": _sym,
+                        "Year": "—", "Field": "—",
+                        "EDGAR Value": "—", "Yahoo Value": "—",
+                        "Diff %": "—", "Note": f"yfinance error: {_exc}",
+                    })
+                    continue
+
+                # Map yfinance datetime columns → fiscal year (calendar year)
+                # yfinance columns are Timestamps at the fiscal period end date.
+                _yf_year_map: dict = {}   # statement_key → {year: {row_key: value}}
+                for _stmt_key, _df_stmt in _yf_data.items():
+                    if _df_stmt is None or _df_stmt.empty:
+                        _yf_year_map[_stmt_key] = {}
+                        continue
+                    _yf_year_map[_stmt_key] = {}
+                    for _col in _df_stmt.columns:
+                        _yr = _col.year if hasattr(
+                            _col, "year") else int(str(_col)[:4])
+                        _yf_year_map[_stmt_key][_yr] = _df_stmt[_col].to_dict()
+
+                _sym_ok = True   # will be set False if any field fails
+
+                for _, _db_row in _sym_db.iterrows():
+                    _year = int(_db_row["reporting_year"])
+
+                    for _field in _ver_fields:
+                        _db_col, _stmt_key, _yf_row = _VER_MAP[_field]
+                        _edgar_val = _db_row.get(_db_col)
+
+                        # Skip if EDGAR value is NULL/0
+                        if _edgar_val is None or _edgar_val == 0:
+                            continue
+
+                        _yf_year_vals = _yf_year_map.get(
+                            _stmt_key, {}).get(_year)
+                        if not _yf_year_vals:
+                            # Try the adjacent year (some tickers' FYE is off by 1)
+                            _yf_year_vals = _yf_year_map.get(_stmt_key, {}).get(
+                                _year - 1
+                            )
+                        if not _yf_year_vals:
+                            continue   # yfinance simply doesn't have that year
+
+                        _yf_raw = _yf_year_vals.get(_yf_row)
+                        if _yf_raw is None or (
+                            isinstance(_yf_raw, float) and pd.isna(_yf_raw)
+                        ):
+                            continue
+
+                        _yf_val = float(_yf_raw)
+                        _edgar_f = float(_edgar_val)
+                        _denom = abs(_edgar_f)
+                        if _denom < 1:
+                            continue  # avoid division by near-zero
+
+                        _pct = abs(_edgar_f - _yf_val) / _denom * 100
+
+                        if _pct > _ver_tolerance:
+                            _sym_ok = False
+
+                            # ── Auto-generate explanatory note ────────────────
+                            _co_sector = _co.get("sector", "")
+                            _is_financial = (
+                                _co_sector == "Financials"
+                                or _sym in {
+                                    'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS',
+                                    'COF', 'AXP', 'USB', 'PNC', 'BK', 'STT',
+                                    'SCHW', 'DFS', 'SYF', 'ALLY',
+                                }
+                            )
+                            _is_reit = (
+                                _co_sector == "Real Estate"
+                                or _sym in {
+                                    'PLD', 'WELL', 'AMT', 'CCI', 'SPG', 'O',
+                                    'EQIX', 'PSA', 'EQR', 'AVB', 'VTR',
+                                }
+                            )
+                            _is_telecom_util = (
+                                _co_sector in (
+                                    "Communication Services", "Utilities")
+                                or _sym in {
+                                    'VZ', 'T', 'TMUS', 'NEE', 'DUK', 'SO',
+                                    'D', 'AEP', 'XEL', 'CMS', 'ETR',
+                                }
+                            )
+                            _auto_note = ""
+                            if _field == "Free Cash Flow":
+                                if _is_telecom_util and _pct > 30:
+                                    _auto_note = (
+                                        "Telecom/utility: spectrum licenses or "
+                                        "large infrastructure CapEx not in PP&E concept"
+                                    )
+                                elif _edgar_f > _yf_val and _pct > 5:
+                                    _auto_note = (
+                                        "EDGAR CapEx = PP&E only; Yahoo may "
+                                        "include capitalized improvements / "
+                                        "finance lease payments"
+                                    )
+                                elif _edgar_f < _yf_val and _pct > 5:
+                                    _auto_note = (
+                                        "Yahoo may classify some operating "
+                                        "items as CapEx differently from EDGAR"
+                                    )
+                            elif _field == "Revenue":
+                                if _is_financial and _pct > 20:
+                                    _auto_note = (
+                                        "Bank/financial: EDGAR may capture "
+                                        "service-fee revenue only; Yahoo "
+                                        "includes net interest income"
+                                    )
+                                elif _is_reit and _pct > 10:
+                                    _auto_note = (
+                                        "REIT: EDGAR captures rental/operating "
+                                        "revenue; Yahoo includes real estate "
+                                        "sale gains"
+                                    )
+                            elif _field in ("Equity",):
+                                if _pct < 20:
+                                    _auto_note = (
+                                        "May differ by noncontrolling interests "
+                                        "or redeemable equity treatment"
+                                    )
+                                elif _pct > 50:
+                                    _auto_note = (
+                                        "Large discrepancy — check for corporate "
+                                        "restructuring, spinoffs, or restatements"
+                                    )
+                            elif _field in ("Total Assets", "Total Liabilities"):
+                                if _pct < 20:
+                                    _auto_note = (
+                                        "May differ by noncontrolling interests "
+                                        "or redeemable liabilities treatment"
+                                    )
+                            elif _field == "Cash Flow \u2013 Operations":
+                                if _is_financial and _pct > 30:
+                                    _auto_note = (
+                                        "Financial co.: operating CF differs due "
+                                        "to loan / trading-asset classifications"
+                                    )
+
+                            all_discrepancies.append({
+                                "Company":     _name,
+                                "Symbol":      _sym,
+                                "Year":        _year,
+                                "Field":       _field,
+                                "EDGAR Value": _edgar_f,
+                                "Yahoo Value": _yf_val,
+                                "Diff %":      round(_pct, 1),
+                                "Note":        _auto_note,
+                            })
+                        else:
+                            all_matches.append({
+                                "Symbol": _sym, "Year": _year, "Field": _field
+                            })
+
+                if _sym_ok:
+                    pass  # nothing flagged — counted via all_matches
+
+            _ver_progress.progress(100)
+            _ver_status.text("Done!")
+
+            # ── Summary metrics ───────────────────────────────────────────────
+            _total_checked = len(all_discrepancies) + len(all_matches)
+            _total_flagged = len(all_discrepancies)
+
+            sm1, sm2, sm3 = st.columns(3)
+            sm1.metric("Company-field-year combinations checked",
+                       _total_checked)
+            sm2.metric("Discrepancies flagged", _total_flagged,
+                       delta=None if _total_flagged == 0 else f"{_total_flagged}",
+                       delta_color="inverse")
+            sm3.metric(
+                "Match rate",
+                f"{((_total_checked - _total_flagged) / max(_total_checked, 1)) * 100:.1f} %",
+            )
+            st.markdown("---")
+
+            if not all_discrepancies:
+                st.success(
+                    f"✅ All {_total_checked} checked values agree within "
+                    f"{_ver_tolerance} % tolerance."
+                )
+            else:
+                st.warning(
+                    f"⚠️ **{_total_flagged}** value(s) deviate by more than "
+                    f"{_ver_tolerance} % between EDGAR and Yahoo Finance."
+                )
+
+                _disc_df = pd.DataFrame(all_discrepancies)
+
+                # Format dollar columns for display
+                _dollar_fields = {
+                    "Revenue", "Net Income", "Total Assets",
+                    "Total Liabilities", "Equity",
+                    "Cash Flow – Operations", "Free Cash Flow",
+                }
+
+                def _fmt_dollar(v):
+                    if not isinstance(v, (int, float)) or pd.isna(v):
+                        return str(v)
+                    if abs(v) >= 1e12:
+                        return f"${v/1e12:,.2f}T"
+                    if abs(v) >= 1e9:
+                        return f"${v/1e9:,.2f}B"
+                    if abs(v) >= 1e6:
+                        return f"${v/1e6:,.2f}M"
+                    return f"${v:,.0f}"
+
+                _disc_display = _disc_df.copy()
+                for _col in ["EDGAR Value", "Yahoo Value"]:
+                    _disc_display[_col] = _disc_display.apply(
+                        lambda r, c=_col: (
+                            _fmt_dollar(r[c])
+                            if r["Field"] in _dollar_fields
+                            else r[c]
+                        ),
+                        axis=1,
+                    )
+
+                # Colour-code Diff % column: >50% = red, 10-50% = yellow
+                def _diff_color(v):
+                    if not isinstance(v, (int, float)):
+                        return ""
+                    if v > 50:
+                        return "background-color:#ffd6d6;color:#7b0000"
+                    if v > _ver_tolerance:
+                        return "background-color:#fff3cd;color:#7a5700"
+                    return ""
+
+                _styled = _disc_display.style.applymap(
+                    _diff_color, subset=["Diff %"]
+                )
+                st.dataframe(_styled, use_container_width=True,
+                             hide_index=True, height=520)
+
+                # ── Known systematic differences ──────────────────────────────
+                with st.expander("📚 Known Systematic Differences (by industry)"):
+                    st.markdown("""
+| Category | Affected Field | Root Cause |
+|---|---|---|
+| **Free Cash Flow – most companies** | Free Cash Flow | EDGAR FCF = CFO − PP&E payments only. Yahoo Finance may include capitalized improvements, software & finance lease principal payments, reducing FCF further. The additive CapEx fix (PP&E + improvements) now narrows most of these gaps. |
+| **Telecom / Utilities** (VZ, T, TMUS, NEE…) | Free Cash Flow | One-time spectrum license purchases (FCC C-band auctions, $40–45B for VZ) and large renewable energy construction CapEx are tagged separately from `PaymentsToAcquirePropertyPlantAndEquipment` and are not included in our EDGAR FCF. |
+| **Banks & Financial Services** (COF, AXP, GS, MS, C, WFC…) | Revenue | EDGAR XBRL often tags only service-fee / non-interest revenue under `RevenueFromContractWithCustomerExcludingAssessedTax`, omitting the much larger net interest income. Yahoo Finance uses consolidated total revenues. Capital One is the most extreme example (~6× difference). |
+| **Banks & Financial Services** | Cash Flow – Operations | Banks classify large loan origination, repayment, and trading-book movements differently. EDGAR operating CF can swing by tens of billions from period to period and may not match Yahoo's presentation. |
+| **REITs** (WELL, PLD…) | Revenue | EDGAR captures rental/lease operating revenue. Yahoo Finance includes gains from real estate property sales, which are often the largest revenue line for active-disposal REITs. |
+| **Noncontrolling Interests** (AT&T, UNH, Disney, Intel…) | Equity, Total Assets, Total Liabilities | EDGAR `StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest` bundles NCI into the total; Yahoo Finance typically shows parent-only equity. Causes consistent 1–15% differences. |
+| **Corporate Restructuring** (GE Aerospace, GE Vernova) | All fields | Spinoffs, demergers, and redomiciliations create entity discontinuities in EDGAR. Yahoo Finance often restates historical data on a continuity-adjusted basis. |
+| **Pharma alliance revenues** (PFE, MRK…) | Revenue | Co-promotion and collaboration revenues (e.g. BioNTech COVID vaccine alliance) may be tagged in a separate XBRL concept not captured by `RevenueFromContractWithCustomerExcludingAssessedTax`. |
+""")
+
+                # ── Breakdown by field ────────────────────────────────────────
+                st.markdown("#### Discrepancies by Field")
+                _by_field = (
+                    _disc_df[_disc_df["Diff %"] != "—"]
+                    .groupby("Field")
+                    .agg(
+                        Count=("Diff %", "count"),
+                        Avg_Diff=("Diff %", "mean"),
+                        Max_Diff=("Diff %", "max"),
+                    )
+                    .reset_index()
+                    .rename(columns={
+                        "Avg_Diff": "Avg Diff %",
+                        "Max_Diff": "Max Diff %",
+                    })
+                    .sort_values("Count", ascending=False)
+                )
+                _by_field["Avg Diff %"] = _by_field["Avg Diff %"].round(1)
+                _by_field["Max Diff %"] = _by_field["Max Diff %"].round(1)
+                st.dataframe(_by_field, use_container_width=True,
+                             hide_index=True)
+
+                st.caption(
+                    "**Common reasons for discrepancies:** "
+                    "(1) Wrong XBRL concept mapped — e.g. operating revenue vs total revenue; "
+                    "(2) Unit scaling error in the SEC filing (thousands vs millions); "
+                    "(3) Corporate events — mergers, spinoffs, restatements; "
+                    "(4) Yahoo Finance uses TTM or a different fiscal year alignment."
+                )
+
+                # ── CSV export ────────────────────────────────────────────────
+                _csv_disc = _disc_df.to_csv(index=False).encode()
+                st.download_button(
+                    "⬇️ Download discrepancies as CSV",
+                    data=_csv_disc,
+                    file_name="avisk_verification_discrepancies.csv",
+                    mime="text/csv",
+                )
