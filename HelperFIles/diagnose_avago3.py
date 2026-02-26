@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """diagnose_avago3.py — find Avago CIK via EDGAR filing search"""
-import sys, os, time
+import requests
+import sys
+import os
+import time
 sys.path.insert(0, '/Users/mohanganadal/Avisk/Avisk-Core-Services')
 os.environ.setdefault('DEPLOYMENT_ENV', 'development')
-import requests
 
 SEC_HEADERS = {'User-Agent': 'Avisk Research contact@avisk.com',
                'Accept-Encoding': 'gzip, deflate'}
 DATA_HEADERS = {**SEC_HEADERS, 'Host': 'data.sec.gov'}
+
 
 def get_facts(cik):
     r = requests.get(f'https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json',
                      headers=DATA_HEADERS, timeout=30)
     return r.json().get('facts', {}) if r.status_code == 200 else {}
 
+
 def get_sub(cik):
     r = requests.get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json',
                      headers=DATA_HEADERS, timeout=30)
     return r.json() if r.status_code == 200 else {}
+
 
 # Use EDGAR full-text search with entity search
 print("EFTS full search for Avago 10-K filings:")
@@ -44,8 +49,10 @@ if r2.status_code == 200:
         hits2 = data2.get('hits', {}).get('hits', [])
         for h in hits2[:5]:
             src = h.get('_source', {})
-            print(f"  entity_ids={src.get('entity_ids')} entity_names={src.get('entity_names')} form={src.get('form_type')} date={src.get('file_date')}")
-    except: pass
+            print(
+                f"  entity_ids={src.get('entity_ids')} entity_names={src.get('entity_names')} form={src.get('form_type')} date={src.get('file_date')}")
+    except:
+        pass
 
 # Direct accession number approach - the 2015-12-17 10-K for Avago
 # Accession numbers are sortable. Try to find it via EDGAR search
@@ -59,9 +66,10 @@ if r3.status_code == 200:
     try:
         data3 = r3.json()
         print(f"Total hits: {data3.get('hits',{}).get('total',{})}")
-        for h in data3.get('hits',{}).get('hits',[])[:5]:
+        for h in data3.get('hits', {}).get('hits', [])[:5]:
             src = h.get('_source', {})
-            print(f"  entity_ids={src.get('entity_ids')} entity_names={src.get('entity_names')} accn={h.get('_id')} date={src.get('file_date')}")
+            print(
+                f"  entity_ids={src.get('entity_ids')} entity_names={src.get('entity_names')} accn={h.get('_id')} date={src.get('file_date')}")
     except Exception as e:
         print(f"Error: {e}")
         print(r3.text[:500])
@@ -78,14 +86,14 @@ for cik in range(1440000, 1445000, 100):
         former = sub.get('formerNames', [])
         facts = get_facts(cik)
         rev_yrs = set()
-        for c in ['Revenues','SalesRevenueNet','RevenueFromContractWithCustomerExcludingAssessedTax']:
-            for e in facts.get('us-gaap',{}).get(c,{}).get('units',{}).get('USD',[]):
+        for c in ['Revenues', 'SalesRevenueNet', 'RevenueFromContractWithCustomerExcludingAssessedTax']:
+            for e in facts.get('us-gaap', {}).get(c, {}).get('units', {}).get('USD', []):
                 if e.get('fp') == 'FY':
-                    rev_yrs.add(int(e.get('end','0')[:4]))
+                    rev_yrs.add(int(e.get('end', '0')[:4]))
         asset_yrs = set()
-        for e in facts.get('us-gaap',{}).get('Assets',{}).get('units',{}).get('USD',[]):
+        for e in facts.get('us-gaap', {}).get('Assets', {}).get('units', {}).get('USD', []):
             if e.get('fp') == 'FY':
-                asset_yrs.add(int(e.get('end','0')[:4]))
+                asset_yrs.add(int(e.get('end', '0')[:4]))
         found.append(cik)
         print(f"  *** CIK {cik}: {name}  tickers={tickers}")
         print(f"      former={former}")

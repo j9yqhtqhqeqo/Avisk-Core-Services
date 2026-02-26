@@ -1,34 +1,42 @@
 #!/usr/bin/env python3
 """diagnose_avago2.py — find Avago through 20-F and targeted CIK search"""
-import sys, os, time, re
+import requests
+import sys
+import os
+import time
+import re
 sys.path.insert(0, '/Users/mohanganadal/Avisk/Avisk-Core-Services')
 os.environ.setdefault('DEPLOYMENT_ENV', 'development')
-import requests
 
 SEC_HEADERS = {'User-Agent': 'Avisk Research contact@avisk.com',
                'Accept-Encoding': 'gzip, deflate'}
 DATA_HEADERS = {**SEC_HEADERS, 'Host': 'data.sec.gov'}
+
 
 def get_sub(cik):
     r = requests.get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json',
                      headers=DATA_HEADERS, timeout=30)
     return r.json() if r.status_code == 200 else {}
 
+
 def get_facts(cik):
     r = requests.get(f'https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json',
                      headers=DATA_HEADERS, timeout=30)
     return r.json().get('facts', {}) if r.status_code == 200 else {}
 
+
 def rev_asset_yrs(facts):
-    rev = set(); assets = set()
-    for c in ['Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet']:
-        for e in facts.get('us-gaap',{}).get(c,{}).get('units',{}).get('USD',[]):
+    rev = set()
+    assets = set()
+    for c in ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet']:
+        for e in facts.get('us-gaap', {}).get(c, {}).get('units', {}).get('USD', []):
             if e.get('fp') == 'FY':  # ANY form type for this check
-                rev.add(int(e.get('end','0')[:4]))
-    for e in facts.get('us-gaap',{}).get('Assets',{}).get('units',{}).get('USD',[]):
+                rev.add(int(e.get('end', '0')[:4]))
+    for e in facts.get('us-gaap', {}).get('Assets', {}).get('units', {}).get('USD', []):
         if e.get('fp') == 'FY':
-            assets.add(int(e.get('end','0')[:4]))
+            assets.add(int(e.get('end', '0')[:4]))
     return sorted(rev), sorted(assets)
+
 
 # Broad scan around Avago's likely CIK range (IPO 2009, CIK ~1400k-1500k range)
 print("Scanning CIK range for Avago Technologies:")
@@ -62,7 +70,8 @@ for form in ['10-K', '20-F']:
             hits = data.get('hits', {}).get('hits', [])
             for h in hits[:3]:
                 src = h.get('_source', {})
-                print(f"  Form={form}: entity={src.get('entity_name')} CIK={src.get('entity_id')} date={src.get('file_date')}")
+                print(
+                    f"  Form={form}: entity={src.get('entity_name')} CIK={src.get('entity_id')} date={src.get('file_date')}")
         except Exception as e:
             print(f"  Error parsing {form} results: {e}")
     time.sleep(0.3)

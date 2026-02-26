@@ -1,41 +1,48 @@
 #!/usr/bin/env python3
 """diagnose_remaining4.py — find Avago/Broadcom Limited CIK"""
-import sys, os, time
+import requests
+import sys
+import os
+import time
 sys.path.insert(0, '/Users/mohanganadal/Avisk/Avisk-Core-Services')
 os.environ.setdefault('DEPLOYMENT_ENV', 'development')
-import requests
 
 HEADERS = {'User-Agent': 'Avisk Research contact@avisk.com',
            'Accept-Encoding': 'gzip, deflate', 'Host': 'data.sec.gov'}
+
 
 def get_sub(cik):
     r = requests.get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json',
                      headers=HEADERS, timeout=30)
     return r.json() if r.status_code == 200 else {}
 
+
 def get_facts(cik):
     r = requests.get(f'https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json',
                      headers=HEADERS, timeout=30)
     return r.json().get('facts', {}) if r.status_code == 200 else {}
 
+
 def rev_yrs(facts):
-    for c in ['Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet']:
+    for c in ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet']:
         cd = facts.get('us-gaap', {}).get(c, {})
         yrs = set()
         for e in cd.get('units', {}).get('USD', []):
-            if e.get('form','') in ('10-K','10-K405') and e.get('fp') == 'FY':
-                yrs.add(int(e.get('end','0')[:4]))
+            if e.get('form', '') in ('10-K', '10-K405') and e.get('fp') == 'FY':
+                yrs.add(int(e.get('end', '0')[:4]))
         if yrs:
             return c, sorted(yrs)
     return None, []
+
 
 def asset_yrs(facts):
     cd = facts.get('us-gaap', {}).get('Assets', {})
     yrs = set()
     for e in cd.get('units', {}).get('USD', []):
-        if e.get('form','') in ('10-K','10-K405') and e.get('fp') == 'FY':
-            yrs.add(int(e.get('end','0')[:4]))
+        if e.get('form', '') in ('10-K', '10-K405') and e.get('fp') == 'FY':
+            yrs.add(int(e.get('end', '0')[:4]))
     return sorted(yrs)
+
 
 # Search for Avago Technologies / Broadcom Limited via EDGAR full-text search
 # Known possible CIKs from public records
@@ -43,7 +50,7 @@ print("Searching for Avago/Broadcom Limited CIK...")
 candidates = [
     1365135,  # common guess for Avago
     1566090,  # another candidate
-    1728205,  # another candidate  
+    1728205,  # another candidate
     1657853,  # another candidate
     1679788,  # another candidate
     1054374,  # old Broadcom Corp (already known)
@@ -57,7 +64,8 @@ for cik in candidates:
         c, ry = rev_yrs(facts)
         ay = asset_yrs(facts)
         if ry:
-            print(f"  CIK {cik}: {name}  tickers={tickers}  Rev={ry}  Assets={ay}")
+            print(
+                f"  CIK {cik}: {name}  tickers={tickers}  Rev={ry}  Assets={ay}")
         elif name:
             print(f"  CIK {cik}: {name}  tickers={tickers}  (no revenue)")
     time.sleep(0.4)
@@ -96,15 +104,16 @@ time.sleep(0.5)
 cd = blk_facts.get('us-gaap', {}).get('InvestmentAdvisoryFees', {})
 vals = {}
 for e in cd.get('units', {}).get('USD', []):
-    if e.get('form','') in ('10-K','10-K405') and e.get('fp') == 'FY':
-        yr = int(e.get('end','0')[:4])
+    if e.get('form', '') in ('10-K', '10-K405') and e.get('fp') == 'FY':
+        yr = int(e.get('end', '0')[:4])
         vals[yr] = e.get('val')
 print(f"  InvestmentAdvisoryFees: {vals}")
 # Also check RevenueFromContractWithCustomerExcludingAssessedTax
-cd2 = blk_facts.get('us-gaap', {}).get('RevenueFromContractWithCustomerExcludingAssessedTax', {})
+cd2 = blk_facts.get(
+    'us-gaap', {}).get('RevenueFromContractWithCustomerExcludingAssessedTax', {})
 vals2 = {}
 for e in cd2.get('units', {}).get('USD', []):
-    if e.get('form','') in ('10-K','10-K405') and e.get('fp') == 'FY':
-        yr = int(e.get('end','0')[:4])
+    if e.get('form', '') in ('10-K', '10-K405') and e.get('fp') == 'FY':
+        yr = int(e.get('end', '0')[:4])
         vals2[yr] = e.get('val')
 print(f"  RevenueFromContract: {vals2}")

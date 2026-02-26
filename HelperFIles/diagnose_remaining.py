@@ -7,11 +7,14 @@ Investigate all remaining missing-field companies to determine:
  - What years of 10-K data are available
  - Which specific XBRL concepts cover the missing fields
 """
-import sys, os, time, json
+import requests
+import sys
+import os
+import time
+import json
 sys.path.insert(0, '/Users/mohanganadal/Avisk/Avisk-Core-Services')
 os.environ.setdefault('DEPLOYMENT_ENV', 'development')
 
-import requests
 
 HEADERS = {
     'User-Agent': 'Avisk Research contact@avisk.com',
@@ -33,12 +36,14 @@ LEGACY_CIKS = {
     'GE':       40533,
 }
 
+
 def get_facts(cik: int) -> dict:
     url = FACTS_URL.format(cik=cik)
     r = requests.get(url, headers=HEADERS, timeout=30)
     if r.status_code == 200:
         return r.json().get('facts', {})
     return {}
+
 
 def get_10k_years(facts: dict, concept: str, namespace: str = 'us-gaap') -> list:
     """Return sorted list of fiscal years that have 10-K data for a concept."""
@@ -55,6 +60,7 @@ def get_10k_years(facts: dict, concept: str, namespace: str = 'us-gaap') -> list
                     years.add(int(end[:4]))
     return sorted(years)
 
+
 def check_eps_concepts(facts: dict, years: list, symbol: str):
     """Check what EPS concepts are available."""
     eps_concepts = [
@@ -67,14 +73,18 @@ def check_eps_concepts(facts: dict, years: list, symbol: str):
         if yrs:
             print(f"  EPS concept {c}: {yrs}")
 
+
 # ─── 1. Look up current CIKs ─────────────────────────────────────────────────
 print("=" * 70)
 print("STEP 1: Current EDGAR CIK lookup")
 print("=" * 70)
-r = requests.get(TICKERS_URL, headers={**HEADERS, 'Host': 'www.sec.gov'}, timeout=30)
-ticker_map = {v['ticker'].upper(): (v['cik_str'], v['title']) for v in r.json().values()}
+r = requests.get(TICKERS_URL, headers={
+                 **HEADERS, 'Host': 'www.sec.gov'}, timeout=30)
+ticker_map = {v['ticker'].upper(): (v['cik_str'], v['title'])
+              for v in r.json().values()}
 
-targets = ['AVGO', 'BLK', 'GEV', 'LIN', 'MDT', 'GOOG', 'GOOGL', 'PANW', 'ANET', 'V', 'UBER', 'CRWD', 'PLTR', 'PLD']
+targets = ['AVGO', 'BLK', 'GEV', 'LIN', 'MDT', 'GOOG', 'GOOGL',
+           'PANW', 'ANET', 'V', 'UBER', 'CRWD', 'PLTR', 'PLD']
 current_ciks = {}
 for t in targets:
     if t in ticker_map:
@@ -89,7 +99,8 @@ print()
 print("=" * 70)
 print("STEP 2: Legacy CIK 10-K year coverage (Revenues concept)")
 print("=" * 70)
-revenue_concepts = ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet']
+revenue_concepts = [
+    'Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet']
 for name, cik in LEGACY_CIKS.items():
     facts = get_facts(cik)
     years = []
@@ -161,7 +172,7 @@ if gev_cik:
         if y:
             print(f"  GEV CIK {gev_cik} - {c}: {y}")
     print(f"  GEV Assets: {get_10k_years(gev_facts, 'Assets')}")
-    
+
     # Check GE parent
     print(f"  → GE (CIK {LEGACY_CIKS['GE']}) revenue years:")
     ge_facts = get_facts(LEGACY_CIKS['GE'])
