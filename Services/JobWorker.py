@@ -99,11 +99,11 @@ def _upd(conn, job_id: str, **fields) -> None:
 
 def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
     """Extract EDGAR XBRL metrics for each company in payload — parallel."""
-    companies   = payload.get("companies", [])
-    years       = payload.get("years", [])
-    skip_exist  = payload.get("skip_existing", True)
+    companies = payload.get("companies", [])
+    years = payload.get("years", [])
+    skip_exist = payload.get("skip_existing", True)
     max_workers = payload.get("max_workers", 5)
-    total       = len(companies)
+    total = len(companies)
 
     _upd(conn, job_id, total=total, progress=0,
          current_item=f"Initialising — {max_workers} parallel workers…")
@@ -114,10 +114,10 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
     from Services.FinancialDataScraper import FinancialDataScraper
     from Services.MarketDataFetcher import MarketDataFetcher
 
-    summary   = []
+    summary = []
     completed = 0
-    lock       = threading.Lock()
-    cancelled  = threading.Event()
+    lock = threading.Lock()
+    cancelled = threading.Event()
     active_set: set = set()   # symbols currently being processed
 
     def _process_one(co):
@@ -125,11 +125,11 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
         if cancelled.is_set():
             raise _JobCancelled()
         _check_cancel(conn, job_id)
-        sym  = co["symbol"]
+        sym = co["symbol"]
         name = co["company_name"]
         # Each thread gets its own DB connection + scraper
-        db_t     = _get_conn()
-        scraper  = FinancialDataScraper(db_connection=db_t, years_needed=years)
+        db_t = _get_conn()
+        scraper = FinancialDataScraper(db_connection=db_t, years_needed=years)
         with lock:
             active_set.add(sym)
             _upd(conn, job_id,
@@ -139,20 +139,21 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
                 existing = scraper.get_existing_years(name)
                 if set(years).issubset(existing):
                     entry = {"symbol": sym, "status": "skipped", "saved": 0}
-                    msg   = f"⏭ {sym} — skipped (all years in DB)"
+                    msg = f"⏭ {sym} — skipped (all years in DB)"
                 else:
                     rows, saved = scraper.scrape_and_save(sym, name)
                     entry = {"symbol": sym, "status": "ok", "saved": saved}
-                    msg   = f"✅ {sym} — {saved} year-rows saved"
+                    msg = f"✅ {sym} — {saved} year-rows saved"
             else:
                 rows, saved = scraper.scrape_and_save(sym, name)
                 entry = {"symbol": sym, "status": "ok", "saved": saved}
-                msg   = f"✅ {sym} — {saved} year-rows saved"
+                msg = f"✅ {sym} — {saved} year-rows saved"
         except _JobCancelled:
             raise
         except Exception as exc:
-            entry = {"symbol": sym, "status": "error", "saved": 0, "error": str(exc)}
-            msg   = f"❌ {sym} — {exc}"
+            entry = {"symbol": sym, "status": "error",
+                     "saved": 0, "error": str(exc)}
+            msg = f"❌ {sym} — {exc}"
         finally:
             try:
                 db_t.close()
@@ -190,11 +191,12 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
     _upd(conn, job_id, current_item="Patching shares…")
     _log(conn, job_id, "Patching missing shares_outstanding…")
     patched = 0
-    db2     = _get_conn()
+    db2 = _get_conn()
     fetcher = MarketDataFetcher(db2)
     for co in companies:
         try:
-            filled, _ = fetcher.patch_missing_shares(co["symbol"], co["company_name"])
+            filled, _ = fetcher.patch_missing_shares(
+                co["symbol"], co["company_name"])
             patched += filled
         except Exception:
             pass
@@ -205,22 +207,23 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
 
 def _run_document_download(conn, job_id: str, payload: dict) -> list:
     """Download documents for each company in payload — parallel."""
-    companies         = payload.get("companies", [])
-    years             = payload.get("years")           # may be None (all years)
-    content_types     = payload.get("content_types", [1])
-    force_reload      = payload.get("force_reload", False)
-    use_storage       = payload.get("use_storage", True)
-    output_dir        = payload.get("output_dir", None)
+    companies = payload.get("companies", [])
+    years = payload.get("years")           # may be None (all years)
+    content_types = payload.get("content_types", [1])
+    force_reload = payload.get("force_reload", False)
+    use_storage = payload.get("use_storage", True)
+    output_dir = payload.get("output_dir", None)
     current_sector_id = payload.get("current_sector_id", None)
-    delay_seconds     = payload.get("delay_seconds", 2.0)
-    bypass_symbols    = set(payload.get("bypass_symbols", []))
-    max_workers       = payload.get("max_workers", 5)
-    total_selected    = len(companies)
+    delay_seconds = payload.get("delay_seconds", 2.0)
+    bypass_symbols = set(payload.get("bypass_symbols", []))
+    max_workers = payload.get("max_workers", 5)
+    total_selected = len(companies)
 
     # Pre-filter bypassed companies
-    companies_to_run = [c for c in companies if c["symbol"] not in bypass_symbols]
+    companies_to_run = [
+        c for c in companies if c["symbol"] not in bypass_symbols]
     bypassed = total_selected - len(companies_to_run)
-    total    = len(companies_to_run)
+    total = len(companies_to_run)
 
     _upd(conn, job_id, total=total, progress=0,
          current_item=f"Initialising — {max_workers} parallel workers…")
@@ -230,10 +233,10 @@ def _run_document_download(conn, job_id: str, payload: dict) -> list:
 
     from Services.SustainabilityReportDownloader import SustainabilityReportDownloader
 
-    results   = []
+    results = []
     completed = 0
-    lock       = threading.Lock()
-    cancelled  = threading.Event()
+    lock = threading.Lock()
+    cancelled = threading.Event()
     active_set: set = set()   # symbols currently being processed
 
     def _process_one(co):
@@ -241,7 +244,7 @@ def _run_document_download(conn, job_id: str, payload: dict) -> list:
         if cancelled.is_set():
             raise _JobCancelled()
         _check_cancel(conn, job_id)
-        sym  = co["symbol"]
+        sym = co["symbol"]
         name = co["company_name"]
         # Each thread gets its own downloader instance (not thread-safe to share)
         dl = SustainabilityReportDownloader(
@@ -259,24 +262,28 @@ def _run_document_download(conn, job_id: str, payload: dict) -> list:
                  current_item=f"⚡ {', '.join(sorted(active_set))}  ({completed}/{total} done)")
         try:
             website = dl.get_company_website(sym, name)
-            result  = dl.process_company(sym, name, website)
-            status_str = result.get("status", "done") if isinstance(result, dict) else str(result)
-            dl_count   = result.get("reports_downloaded", 0) if isinstance(result, dict) else 0
-            err_detail = result.get("error", "") if isinstance(result, dict) else ""
+            result = dl.process_company(sym, name, website)
+            status_str = result.get("status", "done") if isinstance(
+                result, dict) else str(result)
+            dl_count = result.get("reports_downloaded",
+                                  0) if isinstance(result, dict) else 0
+            err_detail = result.get("error", "") if isinstance(
+                result, dict) else ""
             if status_str == "error":
                 icon = "❌"
-                msg  = f"❌ {sym} — {err_detail or 'error returned by downloader'}"
+                msg = f"❌ {sym} — {err_detail or 'error returned by downloader'}"
             elif dl_count == 0 and not status_str.startswith("skipped"):
                 icon = "⚠️"
-                msg  = f"⚠️ {sym} — {status_str} (0 downloads)"
+                msg = f"⚠️ {sym} — {status_str} (0 downloads)"
             else:
                 icon = "✅"
-                msg  = f"✅ {sym} — {status_str}" + (f" ({dl_count} downloads)" if dl_count > 0 else "")
+                msg = f"✅ {sym} — {status_str}" + \
+                    (f" ({dl_count} downloads)" if dl_count > 0 else "")
         except _JobCancelled:
             raise
         except Exception as exc:
             result = {"symbol": sym, "status": "error", "error": str(exc)}
-            msg    = f"❌ {sym} — {exc}"
+            msg = f"❌ {sym} — {exc}"
         finally:
             try:
                 dl._save_metadata()
@@ -300,7 +307,7 @@ def _run_document_download(conn, job_id: str, payload: dict) -> list:
 
     try:
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            futures = {pool.submit(_process_one, co): co for co in companies_to_run}
+            futures = {pool.submit(_process_one, co)                       : co for co in companies_to_run}
             for fut in as_completed(futures):
                 try:
                     fut.result()
