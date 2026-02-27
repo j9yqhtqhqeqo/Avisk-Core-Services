@@ -1,0 +1,28 @@
+[Unit]
+Description=Avisk Background Job Worker
+Documentation=https://github.com/j9yqhtqhqeqo/Avisk-Core-Services
+After=network.target avisk-core-services.service
+
+[Service]
+Type=simple
+User=avisk
+Group=avisk
+WorkingDirectory=/opt/avisk/app
+EnvironmentFile=/opt/avisk/config/.env
+Environment="PATH=/opt/avisk/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="AVISK_LOG_DIR=/opt/avisk/logs"
+
+ExecStart=/opt/avisk/venv/bin/python Services/JobWorker.py
+
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=avisk-job-worker
+
+# Security settings (mirror main service)
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

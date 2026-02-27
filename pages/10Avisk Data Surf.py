@@ -20,7 +20,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 @st.cache_data(ttl=3600, show_spinner=False)
 def _load_sp500_rank_map() -> dict:
     """Load symbol→rank map from sp500_market_cap_ranked.csv (all 500 companies)."""
-    csv_path = Path(__file__).resolve().parent.parent / "Clients" / "sp500_market_cap_ranked.csv"
+    csv_path = Path(__file__).resolve().parent.parent / \
+        "Clients" / "sp500_market_cap_ranked.csv"
     try:
         _df = pd.read_csv(str(csv_path))
         return {str(row['symbol']).upper().strip(): int(row['rank']) for _, row in _df.iterrows()}
@@ -31,12 +32,14 @@ def _load_sp500_rank_map() -> dict:
 @st.cache_data(ttl=3600, show_spinner=False)
 def _load_sp500_csv_df() -> pd.DataFrame:
     """Load full S&P 500 ranked CSV (rank, symbol, company, market_cap, sector)."""
-    csv_path = Path(__file__).resolve().parent.parent / "Clients" / "sp500_market_cap_ranked.csv"
+    csv_path = Path(__file__).resolve().parent.parent / \
+        "Clients" / "sp500_market_cap_ranked.csv"
     df = pd.read_csv(str(csv_path))
     df.columns = [c.strip().lower() for c in df.columns]
     df['symbol'] = df['symbol'].str.upper().str.strip()
     df['company'] = df['company'].str.strip()
-    df['rank'] = pd.to_numeric(df['rank'], errors='coerce').fillna(999).astype(int)
+    df['rank'] = pd.to_numeric(
+        df['rank'], errors='coerce').fillna(999).astype(int)
     return df
 
 
@@ -157,8 +160,10 @@ def _check_company_coverage(
             if name_lower in db_name or db_name in name_lower:
                 matched_combos |= combos
 
-        covered = sum(1 for yr in years for ct in content_types if (yr, ct) in matched_combos)
-        covered_years = sorted({yr for yr in years if any((yr, ct) in matched_combos for ct in content_types)})
+        covered = sum(1 for yr in years for ct in content_types if (
+            yr, ct) in matched_combos)
+        covered_years = sorted({yr for yr in years if any(
+            (yr, ct) in matched_combos for ct in content_types)})
         missing_years = sorted(set(years) - set(covered_years))
 
         if covered == 0:
@@ -663,7 +668,8 @@ with tab3:
         for _c3 in st.session_state.selected_companies:
             _p3 = _c3.split(' - ')[0]
             _tab3_syms.append(_p3.split(' ')[-1])
-            _tab3_names.append(_c3.split(' - ', 1)[1] if ' - ' in _c3 else _p3.split(' ')[-1])
+            _tab3_names.append(_c3.split(' - ', 1)
+                               [1] if ' - ' in _c3 else _p3.split(' ')[-1])
 
     _show_coverage = (
         not force_reload
@@ -720,7 +726,8 @@ with tab3:
                      "Covered Years": ", ".join(str(y) for y in _coverage_data[s]['covered_years'])}
                     for s in sorted(_companies_to_skip)
                 ]
-                st.dataframe(pd.DataFrame(_skip_rows), hide_index=True, use_container_width=True)
+                st.dataframe(pd.DataFrame(_skip_rows),
+                             hide_index=True, use_container_width=True)
                 st.caption(
                     "Switch sidebar to **🔄 Re-download all** to force re-processing these companies.")
 
@@ -736,7 +743,8 @@ with tab3:
                      "Will Fetch": ", ".join(str(y) for y in _coverage_data[s]['missing_years'])}
                     for s in sorted(_companies_partial)
                 ]
-                st.dataframe(pd.DataFrame(_partial_rows), hide_index=True, use_container_width=True)
+                st.dataframe(pd.DataFrame(_partial_rows),
+                             hide_index=True, use_container_width=True)
 
     # Validation
     can_download = True
@@ -759,312 +767,216 @@ with tab3:
     # Download button
     st.markdown("---")
 
-    if st.session_state.is_downloading:
-        st.info("⏳ Download in progress — please wait...")
-    elif can_download:
-        _effective = company_count - len(_companies_to_skip) if not force_reload else company_count
+    # ── Active job check ─────────────────────────────────────────────────────
+    _dl_active_job = st.session_state.get("active_dl_job_id")
+
+    if not _dl_active_job and can_download:
+        _effective = company_count - \
+            len(_companies_to_skip) if not force_reload else company_count
         col1, col2 = st.columns([2, 1])
         with col1:
             if _companies_to_skip and not force_reload:
                 st.markdown(
                     f"**Ready!** **{len(_companies_to_skip)}** fully-covered companies will be "
-                    f"skipped. **{_effective}** companies will be processed."
+                    f"skipped. **{_effective}** companies will be queued."
                 )
             else:
                 st.markdown(
-                    "**Ready to download!** Click the button below to start downloading."
+                    "**Ready to queue!** Click the button below to submit a background job."
                 )
         with col2:
             estimated_time = max(_effective, 1) * delay_seconds * 10
             st.caption(f"⏱️ Estimated time: ~{estimated_time/60:.1f} minutes")
 
-    # Button click only sets state and triggers a rerun so the button
-    # renders as disabled BEFORE the (blocking) download loop starts.
-    if st.button("🚀 Start Download", type="primary", use_container_width=True,
-                 disabled=not can_download or st.session_state.is_downloading):
-        # Persist coverage data into session state for the download loop
-        st.session_state['_bypass_symbols'] = set(_companies_to_skip) if not force_reload else set()
-        st.session_state.is_downloading = True
-        st.session_state.download_complete = False
-        st.rerun()
+    if not _dl_active_job:
+        if st.button("🚀 Queue Background Download", type="primary", use_container_width=True,
+                     disabled=not can_download):
+            try:
+                from Services.JobQueue import submit_job, ensure_jobs_table
+                ensure_jobs_table()
+                _dl_payload = {
+                    "companies": [
+                        {"symbol": _s, "company_name": _n}
+                        for _s, _n in zip(_tab3_syms, _tab3_names)
+                    ],
+                    "years":             list(_tab3_years) if _tab3_years else [],
+                    "content_types":     list(content_types),
+                    "force_reload":      force_reload,
+                    "use_storage":       use_storage,
+                    "output_dir":        output_dir,
+                    "current_sector_id": current_sector_id,
+                    "delay_seconds":     delay_seconds,
+                    "bypass_symbols":    list(_companies_to_skip) if not force_reload else [],
+                }
+                _dl_jid = submit_job("document_download", _dl_payload)
+                st.session_state["active_dl_job_id"] = _dl_jid
+                st.success(
+                    f"✅ Download job queued! ID: `{_dl_jid}`  \n"
+                    "The background worker will process it server-side — "
+                    "**you can safely close this browser tab** and return later."
+                )
+                st.rerun()
+            except Exception as _dje:
+                st.error(f"Failed to queue download job: {_dje}")
 
-    # Run the download on the render where is_downloading=True and the
-    # button is already shown as disabled.
-    if st.session_state.is_downloading and not st.session_state.download_complete:
+    # ── Live download job status panel ──────────────────────────────────────
+    if _dl_active_job:
+        import time as _dl_time
+        from Services.JobQueue import get_job as _dl_get_job, cancel_job as _dl_cancel_job
 
-        # Get year filter from session state
-        years_filter = st.session_state.get('years_to_download')
+        try:
+            _djdata = _dl_get_job(_dl_active_job)
+        except Exception as _dgje:
+            st.error(f"Could not fetch job status: {_dgje}")
+            _djdata = {}
 
-        # Initialize downloader with year filter and content types
-        downloader = SustainabilityReportDownloader(
-            download_dir=output_dir,
-            delay_seconds=delay_seconds,
-            current_sector_id=current_sector_id,
-            use_storage=use_storage,
-            year_filter=years_filter,
-            content_types=content_types,
-            force_reload=force_reload
-        )
+        _djstatus  = _djdata.get("status", "unknown")
+        _djprog    = _djdata.get("progress", 0)
+        _djtotal   = _djdata.get("total", 0)
+        _djcurrent = _djdata.get("current_item", "")
+        _djlog     = _djdata.get("log_lines", "")
+        _djerr     = _djdata.get("error_msg", "")
+        _djcreated = _djdata.get("created_at")
 
-        if years_filter:
-            st.info(f"📅 Filtering downloads to years: {years_filter}")
+        _dj_icon = {
+            "queued":      "🔵",
+            "running":     "⏳",
+            "cancelling":  "🛑",
+            "completed":   "✅",
+            "failed":      "❌",
+            "cancelled":   "🚫",
+        }.get(_djstatus, "❓")
 
-        # Show content types being downloaded
-        type_names = {1: 'Sustainability/ESG',
-                      2: 'Annual/10K', 3: 'Other', 4: 'Earnings Transcripts'}
-        selected_types = [type_names.get(
-            ct, f'Type {ct}') for ct in content_types]
-        st.info(f"📄 Downloading: {', '.join(selected_types)}")
+        st.markdown(f"### {_dj_icon} Download Job Status: **{_djstatus.title()}**")
+        st.caption(f"Job ID: `{_dl_active_job}`")
 
-        # Create progress containers
-        st.subheader("📊 Progress")
+        _djc1, _djc2, _djc3, _djc4 = st.columns(4)
+        _djc1.metric("Progress",  f"{_djprog}/{_djtotal}" if _djtotal else str(_djprog))
+        _djc2.metric("Current",   (_djcurrent or "—")[:40])
+        _djc3.metric("Status",    _djstatus.title())
+        _djc4.metric("Queued",    str(_djcreated)[:16] if _djcreated else "—")
 
-        # Year progress (show when years are filtered, or track years found for "all years")
-        year_progress_label = st.empty()
-        if years_filter:
-            year_progress_bar = st.progress(0)
-        else:
-            year_progress_bar = None  # Will show "Years found" metric instead
+        if _djtotal > 0:
+            st.progress(min(_djprog / _djtotal, 1.0))
 
-        # Company progress
-        company_progress_label = st.empty()
-        company_progress_bar = st.progress(0)
-        status_text = st.empty()
+        with st.expander("📋 Live Log", expanded=_djstatus == "running"):
+            st.text(_djlog[-6000:] if _djlog else "(no log yet)")
 
-        # Get selected companies data
-        if st.session_state.companies_df is not None:
-            df = st.session_state.companies_df
-            # Extract symbol from format: "#1 AAPL - Apple Inc."
-            selected_symbols = []
-            for c in st.session_state.selected_companies:
-                parts = c.split(' - ')[0]  # "#1 AAPL"
-                symbol = parts.split(' ')[-1]  # "AAPL"
-                selected_symbols.append(symbol)
-        else:
-            st.error("Please load company list first")
-            st.stop()
+        _djbtn1, _djbtn2 = st.columns(2)
 
-        # ── Pre-flight bypass: remove fully-covered companies from the run ──
-        _bypass_set = st.session_state.pop('_bypass_symbols', set())
-        symbols_to_run = [s for s in selected_symbols if s not in _bypass_set]
-        bypassed_count = len(selected_symbols) - len(symbols_to_run)
+        if _djstatus in ("running", "queued", "cancelling"):
+            if _djstatus == "cancelling":
+                st.warning(
+                    "🛑 **Stop requested** — the worker will finish the current "
+                    "company then halt. This page auto-refreshes."
+                )
+            else:
+                st.info(
+                    "🔄 Auto-refreshing every 5 seconds — "
+                    "**safe to close this browser tab and return later.**"
+                )
+                with _djbtn1:
+                    if st.button("🚫 Cancel Job", key="dl_cancel_job"):
+                        _dcr = _dl_cancel_job(_dl_active_job)
+                        if _dcr == "cancelled":
+                            st.success("✅ Job removed from queue.")
+                        elif _dcr == "cancelling":
+                            st.info(
+                                "🛑 Stop requested — worker will halt "
+                                "after the current company."
+                            )
+                        else:
+                            st.warning("Job not in a cancellable state.")
+                        st.rerun()
+            _dl_time.sleep(5)
+            st.rerun()
 
-        col1, col2, col3, col4, col5 = st.columns(5)
-        metric_processed = col1.empty()
-        metric_found = col2.empty()
-        metric_downloaded = col3.empty()
-        metric_failed = col4.empty()
-        metric_skipped = col5.empty()
-        if bypassed_count > 0:
-            metric_skipped.metric("⏭️ Bypassed", bypassed_count)
-
-        companies_to_process = df[df['Symbol'].isin(symbols_to_run)]
-
-        total_companies = len(companies_to_process)
-        total_years = len(years_filter) if years_filter else 1
-        results = []
-
-        if bypassed_count > 0:
-            status_text.success(
-                f"⏭️ Skipped {bypassed_count} fully-covered companies. "
-                f"Processing {total_companies} remaining..."
+        elif _djstatus == "completed":
+            st.success(
+                "✅ Download job completed! "
+                "Switch to the 📁 Files tab to view downloaded reports."
             )
-        else:
-            status_text.info(
-                f"Processing {total_companies} companies across {total_years} year(s)...")
+            if _djbtn1.button("🗑️ Clear & Start New Job", key="dl_clear_job"):
+                del st.session_state["active_dl_job_id"]
+                st.rerun()
 
-        # OPTIMIZED: Process each company ONCE and filter for ALL years at once
-        # This avoids re-crawling the same website for each year
-        if years_filter:
-            years_filter_sorted = sorted(years_filter)
-            year_progress_label.markdown(
-                f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
-                f"({total_years} years) — 0/{total_years} complete")
-            year_progress_bar.progress(0)
+        elif _djstatus in ("failed", "cancelled"):
+            if _djerr:
+                st.error(f"Job {_djstatus}: {_djerr}")
+            if _djbtn1.button("🗑️ Clear & Retry", key="dl_clear_job_err"):
+                del st.session_state["active_dl_job_id"]
+                st.rerun()
 
-            # Create single downloader with ALL years and content types
-            multi_year_downloader = SustainabilityReportDownloader(
-                download_dir=output_dir,
-                delay_seconds=delay_seconds,
-                current_sector_id=current_sector_id,
-                use_storage=use_storage,
-                year_filter=years_filter,  # ALL years at once
-                content_types=content_types,
-                force_reload=force_reload
-            )
+    # ── Recent download jobs history ─────────────────────────────────────────
+    st.markdown("---")
+    with st.expander("📋 Recent Download Jobs", expanded=False):
+        try:
+            from Services.JobQueue import get_recent_jobs as _dl_recent, ensure_jobs_table as _dl_ensure
+            _dl_ensure()
+            _dl_hist = _dl_recent(job_type="document_download", limit=20)
+            if _dl_hist:
+                _dl_rows = []
+                for _dh in _dl_hist:
+                    _ddur = "—"
+                    if _dh.get("started_at") and _dh.get("completed_at"):
+                        _dsec = (_dh["completed_at"] - _dh["started_at"]).total_seconds()
+                        _ddur = f"{int(_dsec // 60)}m {int(_dsec % 60)}s"
+                    _dl_rows.append({
+                        "Job ID":   str(_dh["job_id"])[:8] + "…",
+                        "Status":   _dh["status"],
+                        "Progress": f"{_dh['progress']}/{_dh['total']}",
+                        "Current":  (_dh["current_item"] or "")[:35],
+                        "Queued":   str(_dh["created_at"])[:16],
+                        "Duration": _ddur,
+                    })
+                st.dataframe(pd.DataFrame(_dl_rows),
+                             hide_index=True, use_container_width=True)
+                _dlhcol1, _dlhcol2 = st.columns(2)
 
-            years_seen: set = set()  # years that have appeared in at least one download
+                # Reattach
+                _dl_resume_opts = {
+                    f"{str(h['job_id'])[:8]}… — {h['status']} @ {str(h['created_at'])[:16]}": str(h["job_id"])
+                    for h in _dl_hist if h["status"] in ("running", "queued", "cancelling", "completed")
+                }
+                with _dlhcol1:
+                    if _dl_resume_opts:
+                        _dl_resume_sel = st.selectbox(
+                            "📎 Reattach to a previous job",
+                            ["(none)"] + list(_dl_resume_opts.keys()),
+                            key="dl_resume_sel",
+                        )
+                        if _dl_resume_sel != "(none)" and st.button("Reattach", key="dl_reattach"):
+                            st.session_state["active_dl_job_id"] = _dl_resume_opts[_dl_resume_sel]
+                            st.rerun()
 
-            for company_idx, (_, row) in enumerate(companies_to_process.iterrows()):
-                symbol = row['Symbol']
-                company = row['Company']
-
-                # Get website
-                website = multi_year_downloader.get_company_website(
-                    symbol, company)
-
-                # Update company progress
-                company_progress_bar.progress(
-                    (company_idx + 1) / total_companies)
-                company_progress_label.markdown(
-                    f"**🏢 Company Progress:** {company_idx + 1}/{total_companies}")
-                status_text.info(
-                    f"Processing {company_idx + 1}/{total_companies}: {company} ({symbol}) "
-                    f"— years {years_filter_sorted[0]}-{years_filter_sorted[-1]}")
-
-                # Process company ONCE for ALL years
-                result = multi_year_downloader.process_company(
-                    symbol, company, website)
-                results.append(result)
-
-                # ── Year progress: scan downloaded reports for newly covered years ──
-                for report in multi_year_downloader.downloaded_reports:
-                    fp_parent = Path(report.get('filepath', '')).parent.name
-                    if re.fullmatch(r'20\d{2}', fp_parent):
-                        years_seen.add(int(fp_parent))
-
-                # Count how many of the requested years are now covered
-                years_covered = [y for y in years_filter if y in years_seen]
-                year_pct = len(years_covered) / \
-                    total_years if total_years > 0 else 1.0
-                year_progress_bar.progress(min(year_pct, 1.0))
-                if years_covered:
-                    year_progress_label.markdown(
-                        f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
-                        f"— {len(years_covered)}/{total_years} complete "
-                        f"({', '.join(str(y) for y in sorted(years_covered))})")
-                else:
-                    year_progress_label.markdown(
-                        f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
-                        f"({total_years} years) — searching...")
-
-                # Update metrics
-                total_downloaded = len(
-                    multi_year_downloader.downloaded_reports)
-                total_failed = len(multi_year_downloader.failed_downloads)
-                _skipped_this = sum(
-                    1 for r in results if r.get('status') == 'skipped_existing')
-                metric_processed.metric(
-                    "Processed", f"{company_idx + 1}/{total_companies}")
-                metric_found.metric(
-                    "Years covered", f"{len(years_covered)}/{total_years}")
-                metric_downloaded.metric("Downloaded", total_downloaded)
-                metric_failed.metric("Failed", total_failed)
-                metric_skipped.metric("⏭️ Bypassed", bypassed_count + _skipped_this)
-
-            # Final year progress
-            year_progress_bar.progress(1.0)
-            years_covered_final = sorted(
-                y for y in years_filter if y in years_seen)
-            missing_years = sorted(
-                y for y in years_filter if y not in years_seen)
-            summary = f"{len(years_covered_final)}/{total_years} years with downloads"
-            if missing_years:
-                summary += f" (no files found for: {', '.join(str(y) for y in missing_years)})"
-            year_progress_label.markdown(
-                f"**📅 Years:** {years_filter_sorted[0]}-{years_filter_sorted[-1]} "
-                f"— ✅ {summary}")
-
-            # Close downloader
-            multi_year_downloader.close()
-
-        else:
-            # Original flow for all years (no filter) - track years found
-            years_found = set()
-            for idx, row in companies_to_process.iterrows():
-                symbol = row['Symbol']
-                company = row['Company']
-
-                # Get website
-                website = downloader.get_company_website(symbol, company)
-
-                # Update progress
-                progress = (len(results) + 1) / total_companies
-                company_progress_bar.progress(progress)
-                company_progress_label.markdown(
-                    f"**🏢 Company Progress:** {len(results) + 1}/{total_companies}")
-                status_text.info(
-                    f"Processing {len(results) + 1}/{total_companies}: {company} ({symbol})")
-
-                # Process company (year filtering happens automatically in downloader)
-                result = downloader.process_company(symbol, company, website)
-                results.append(result)
-
-                # Track years found from downloaded reports
-                for report in downloader.downloaded_reports:
-                    if 'year' in report:
-                        years_found.add(report['year'])
-
-                # Update year label with years found so far
-                if years_found:
-                    sorted_years = sorted(years_found)
-                    year_progress_label.markdown(
-                        f"**📅 Years Found:** {len(years_found)} years ({min(sorted_years)}-{max(sorted_years)})")
-                else:
-                    year_progress_label.markdown(
-                        "**📅 Years Found:** Searching...")
-
-                # Update metrics
-                _skipped_nf = sum(
-                    1 for r in results if r.get('status') == 'skipped_existing')
-                metric_processed.metric(
-                    "Processed", f"{len(results)}/{total_companies}")
-                metric_found.metric("Reports Found", sum(
-                    r.get('reports_found', 0) for r in results))
-                metric_downloaded.metric(
-                    "Downloaded", len(downloader.downloaded_reports))
-                metric_failed.metric("Failed", len(
-                    downloader.failed_downloads))
-                metric_skipped.metric("⏭️ Bypassed", bypassed_count + _skipped_nf)
-
-            # Final year summary
-            if years_found:
-                sorted_years = sorted(years_found)
-                year_progress_label.markdown(
-                    f"**📅 Years Found:** {len(years_found)} years ({min(sorted_years)}-{max(sorted_years)}) - ✅ Complete")
-
-        # Complete
-        company_progress_bar.progress(1.0)
-        company_progress_label.markdown(
-            f"**🏢 Company Progress:** {total_companies}/{total_companies} - ✅ Complete")
-        status_text.success("✅ Download complete!")
-
-        # Save all results to session state BEFORE rerun so they persist.
-        active_dl = multi_year_downloader if years_filter else downloader
-        active_dl._save_metadata()
-        st.session_state.download_results = pd.DataFrame(results)
-        st.session_state.download_summary = {
-            'companies': len(results),
-            'reports_found': sum(r.get('reports_found', 0) for r in results),
-            'downloaded': len(active_dl.downloaded_reports),
-            'failed': len(active_dl.failed_downloads),
-        }
-        active_dl.close()
-
-        st.session_state.is_downloading = False
-        st.session_state.download_complete = True
-        # Rerun so the page re-renders cleanly: no "in progress" banner,
-        # button re-enabled, and summary shown via the download_complete path.
-        st.rerun()
-
-    # Completion banner + summary (shown on the clean re-render after download)
-    if st.session_state.download_complete and not st.session_state.is_downloading:
-        st.success(
-            "✅ **Download complete!** All selected companies have been processed. "
-            "Switch to the 📁 Files tab to view downloaded reports."
-        )
-
-        summary = st.session_state.get('download_summary', {})
-        if summary:
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Companies Processed", summary.get('companies', 0))
-            with col2:
-                st.metric("Reports Found", summary.get('reports_found', 0))
-            with col3:
-                st.metric("Reports Downloaded", summary.get('downloaded', 0))
-            with col4:
-                st.metric("Failed", summary.get('failed', 0))
+                # Cancel from history
+                _dl_cancel_hist_opts = {
+                    f"{str(h['job_id'])[:8]}… — {h['status']} @ {str(h['created_at'])[:16]}": str(h["job_id"])
+                    for h in _dl_hist if h["status"] in ("queued", "running")
+                }
+                with _dlhcol2:
+                    if _dl_cancel_hist_opts:
+                        _dl_cancel_hist_sel = st.selectbox(
+                            "🚫 Cancel a job",
+                            ["(none)"] + list(_dl_cancel_hist_opts.keys()),
+                            key="dl_cancel_hist_sel",
+                        )
+                        if _dl_cancel_hist_sel != "(none)" and st.button(
+                            "Cancel Selected", key="dl_cancel_hist", type="secondary"
+                        ):
+                            from Services.JobQueue import cancel_job as _dlhcj
+                            _dlhcr = _dlhcj(_dl_cancel_hist_opts[_dl_cancel_hist_sel])
+                            if _dlhcr == "cancelled":
+                                st.success("✅ Job removed from queue.")
+                            elif _dlhcr == "cancelling":
+                                st.info("🛑 Stop requested — worker halts after current item.")
+                            else:
+                                st.warning("Job not in a cancellable state.")
+                            st.rerun()
+            else:
+                st.info("No download jobs have been run yet.")
+        except Exception as _dl_he:
+            st.caption(f"Job history unavailable: {_dl_he}")
 
         if st.session_state.download_results is not None:
             st.subheader("📋 Detailed Results")
@@ -1739,7 +1651,8 @@ with tab6:
 # --- S&P 500 Overview Tab ---
 with tab7:
     st.header("📈 S&P 500 Overview")
-    st.markdown("Full S&P 500 universe — market cap rankings, sectors, and document download coverage.")
+    st.markdown(
+        "Full S&P 500 universe — market cap rankings, sectors, and document download coverage.")
 
     # Load S&P 500 CSV
     try:
@@ -1774,7 +1687,8 @@ with tab7:
     # Add coverage flag
     _sp5_view = _sp5_df.copy()
     _sp5_view['has_data'] = _sp5_view['symbol'].isin(_sp5_in_db)
-    _sp5_view['Status'] = _sp5_view['has_data'].apply(lambda x: "✅ In DB" if x else "❌ Missing")
+    _sp5_view['Status'] = _sp5_view['has_data'].apply(
+        lambda x: "✅ In DB" if x else "❌ Missing")
 
     # Summary metrics
     _sp5_total = len(_sp5_view)
@@ -1799,11 +1713,13 @@ with tab7:
         .reset_index()
     )
     _sec_grp['Missing'] = _sec_grp['Companies'] - _sec_grp['In_DB']
-    _sec_grp['Coverage %'] = (_sec_grp['In_DB'] / _sec_grp['Companies'] * 100).round(1)
+    _sec_grp['Coverage %'] = (
+        _sec_grp['In_DB'] / _sec_grp['Companies'] * 100).round(1)
     _sec_grp['Progress'] = _sec_grp['Coverage %'].apply(
         lambda p: "█" * int(p / 5) + "░" * (20 - int(p / 5))
     )
-    _sec_grp = _sec_grp.sort_values('Companies', ascending=False).reset_index(drop=True)
+    _sec_grp = _sec_grp.sort_values(
+        'Companies', ascending=False).reset_index(drop=True)
     _sec_display = _sec_grp.rename(columns={
         'sector': 'Sector', 'In_DB': 'In Database'
     })[['Sector', 'Companies', 'In Database', 'Missing', 'Coverage %', 'Progress']]
@@ -1828,8 +1744,10 @@ with tab7:
 
     ov_f1, ov_f2, ov_f3 = st.columns(3)
     with ov_f1:
-        _ov_sectors = ["All Sectors"] + sorted(_sp5_df['sector'].dropna().unique().tolist())
-        _ov_sec_sel = st.selectbox("Filter by Sector", _ov_sectors, key="ov_sector_sel")
+        _ov_sectors = ["All Sectors"] + \
+            sorted(_sp5_df['sector'].dropna().unique().tolist())
+        _ov_sec_sel = st.selectbox(
+            "Filter by Sector", _ov_sectors, key="ov_sector_sel")
     with ov_f2:
         _ov_stat_sel = st.selectbox(
             "Filter by Status", ["All", "✅ In Database", "❌ No Downloads"], key="ov_status_sel")
@@ -1850,7 +1768,8 @@ with tab7:
             _ov_filt['company'].str.contains(_ov_srch, case=False, na=False)
         ]
 
-    st.caption(f"Showing **{len(_ov_filt)}** of **{_sp5_total}** S&P 500 companies")
+    st.caption(
+        f"Showing **{len(_ov_filt)}** of **{_sp5_total}** S&P 500 companies")
 
     st.dataframe(
         _ov_filt[['rank', 'symbol', 'company', 'market_cap', 'sector', 'Status']].rename(columns={

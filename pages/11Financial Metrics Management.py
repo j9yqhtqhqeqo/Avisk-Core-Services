@@ -382,199 +382,192 @@ with tab3:
                 f"{len(companies_to_run)} companies."
             )
 
-        if st.button(
-            (f"🚀 Extract Financial Data"
-             f"  ({len(companies_to_run)} companies · {yr_label})"),
-            type="primary",
-        ):
-            import psycopg2
-            from Utilities.Lookups import DB_Connection
-            from Services.FinancialDataScraper import FinancialDataScraper
+        # ── Job submit ──────────────────────────────────────────────────────
+        _fin_active_job = st.session_state.get("active_fin_job_id")
 
-            st.session_state.fin_patch_results = None   # clear stale results
-            db_conn = None
+        if not _fin_active_job:
+            if st.button(
+                f"🚀 Queue Background Extraction  "
+                f"({len(companies_to_run)} companies · {yr_label})",
+                type="primary",
+            ):
+                try:
+                    from Services.JobQueue import submit_job, ensure_jobs_table
+                    ensure_jobs_table()
+                    _jid = submit_job("financial_metrics", {
+                        "companies":      companies_to_run,
+                        "years":          years_now,
+                        "skip_existing":  skip_existing,
+                    })
+                    st.session_state["active_fin_job_id"] = _jid
+                    st.success(
+                        f"✅ Job queued! ID: `{_jid}`  \n"
+                        "The worker will process it in the background — "
+                        "**you can safely close this browser tab** and return later."
+                    )
+                    st.rerun()
+                except Exception as _je:
+                    st.error(f"Failed to queue job: {_je}")
+
+        # ── Live job status panel ────────────────────────────────────────────
+        if _fin_active_job:
+            import time as _time
+            from Services.JobQueue import get_job, get_recent_jobs
+
             try:
-                db_conn = psycopg2.connect(
-                    DB_Connection().DB_CONNECTION_STRING)
-            except Exception as exc:
-                st.error(f"DB connection failed: {exc}")
-                st.stop()
+                _jdata = get_job(_fin_active_job)
+            except Exception as _gje:
+                st.error(f"Could not fetch job status: {_gje}")
+                _jdata = {}
 
-            scraper = FinancialDataScraper(
-                db_connection=db_conn, years_needed=years_now)
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            total = len(companies_to_run)
-            summary_rows = []
+            _jstatus   = _jdata.get("status", "unknown")
+            _jprog     = _jdata.get("progress", 0)
+            _jtotal    = _jdata.get("total", 0)
+            _jcurrent  = _jdata.get("current_item", "")
+            _jlog      = _jdata.get("log_lines", "")
+            _jerr      = _jdata.get("error_msg", "")
+            _jcreated  = _jdata.get("created_at")
+            _jstarted  = _jdata.get("started_at")
+            _jfinished = _jdata.get("completed_at")
 
-            for i, co in enumerate(companies_to_run, 1):
-                sym = co["symbol"]
-                name = co["company_name"]
-                progress_bar.progress(int(i / total * 100))
-                status_text.text(f"Processing {sym} ... ({i}/{total})")
-                try:
-                    # ── Skip check ────────────────────────────────────────────
-                    if skip_existing:
-                        existing_years = scraper.get_existing_years(name)
-                        needed = set(years_now)
-                        if needed and needed.issubset(existing_years):
-                            summary_rows.append({
-                                "Symbol": sym, "Company": name,
-                                "Years saved": 0,
-                                "Years available": len(existing_years),
-                                "Status": "⏭️ Skipped (already in DB)",
-                            })
-                            continue
+            _status_icon = {
+                "queued":      "🔵",
+                "running":     "⏳",
+                "cancelling":  "🛑",
+                "completed":   "✅",
+                "failed":      "❌",
+                "cancelled":   "🚫",
+            }.get(_jstatus, "❓")
 
-                    # ── Single EDGAR fetch — scrape_and_save returns (rows, saved) ──
-                    rows, saved = scraper.scrape_and_save(sym, name)
-                    if saved > 0:
-                        icon = "✅"
-                    elif rows:
-                        icon = "⚠️ No DB write"
-                    else:
-                        icon = "⚠️ No XBRL data"
-                    summary_rows.append({
-                        "Symbol": sym, "Company": name,
-                        "Years saved": saved, "Years available": len(rows),
-                        "Status": icon,
-                    })
-                except Exception as exc:
-                    summary_rows.append({
-                        "Symbol": sym, "Company": name,
-                        "Years saved": 0, "Years available": 0,
-                        "Status": f"❌ {exc}",
-                    })
+            st.markdown(f"### {_status_icon} Job Status: **{_jstatus.title()}**")
+            st.caption(f"Job ID: `{_fin_active_job}`")
 
-            progress_bar.progress(100)
-            status_text.text("✅ Extraction done — patching missing shares...")
-            st.session_state.fin_extract_results = summary_rows
+            _jc1, _jc2, _jc3, _jc4 = st.columns(4)
+            _jc1.metric("Progress", f"{_jprog}/{_jtotal}" if _jtotal else str(_jprog))
+            _jc2.metric("Current", _jcurrent or "—")
+            _jc3.metric("Status", _jstatus.title())
+            _jc4.metric("Queued", str(_jcreated)[:16] if _jcreated else "—")
 
-            # ── Auto-patch: fill NULL shares_outstanding ───────────────────────
-            # Runs immediately after extraction on the same DB connection.
-            # Two-layer strategy: EDGAR re-scrape first, yfinance fallback second.
-            # Historical ticker aliases (FB→META, UTX→RTX, PX→LIN) are applied
-            # automatically inside patch_missing_shares.
-            from Services.MarketDataFetcher import MarketDataFetcher
-            _patch_fetcher_auto = MarketDataFetcher(db_conn)
-            _patch_prog = st.progress(0)
-            _patch_stat = st.empty()
-            _patch_n = len(companies_to_run)
-            _auto_patched = 0
-            _auto_still_missing: list = []
+            if _jtotal > 0:
+                st.progress(min(_jprog / _jtotal, 1.0))
 
-            for _pi, _co_p in enumerate(companies_to_run, 1):
-                _sym_p = _co_p["symbol"]
-                _name_p = _co_p["company_name"]
-                _patch_prog.progress(int(_pi / _patch_n * 100))
-                _patch_stat.text(
-                    f"Patching shares: {_sym_p} … ({_pi}/{_patch_n})")
-                try:
-                    _filled_p, _missing_p = \
-                        _patch_fetcher_auto.patch_missing_shares(
-                            _sym_p, _name_p)
-                    _auto_patched += _filled_p
-                    for _m in _missing_p:
-                        _auto_still_missing.append({
-                            "Company":        _name_p,
-                            "Symbol":         _sym_p,
-                            "Year":           _m["year"],
-                            "Fiscal Year End": _m["fiscal_year_end"],
-                            "Reason":         _m["reason"],
+            with st.expander("📋 Live Log", expanded=_jstatus == "running"):
+                st.text(_jlog[-6000:] if _jlog else "(no log yet)")
+
+            _jbtn1, _jbtn2 = st.columns(2)
+
+            if _jstatus in ("running", "queued", "cancelling"):
+                if _jstatus == "cancelling":
+                    st.warning(
+                        "🛑 **Stop requested** — the worker will finish the current "
+                        "company then halt. This page auto-refreshes."
+                    )
+                else:
+                    st.info(
+                        "🔄 Auto-refreshing every 5 seconds — "
+                        "**safe to close this browser tab and return later.**"
+                    )
+                    with _jbtn1:
+                        if st.button("🚫 Cancel Job", key="fin_cancel_job"):
+                            from Services.JobQueue import cancel_job
+                            _cr = cancel_job(_fin_active_job)
+                            if _cr == "cancelled":
+                                st.success("✅ Job removed from queue.")
+                            elif _cr == "cancelling":
+                                st.info(
+                                    "🛑 Stop requested — worker will halt "
+                                    "after the current company."
+                                )
+                            else:
+                                st.warning("Job not in a cancellable state.")
+                            st.rerun()
+                _time.sleep(5)
+                st.rerun()
+
+            elif _jstatus == "completed":
+                st.success("✅ Extraction job completed successfully!")
+                st.cache_data.clear()
+                if _jbtn1.button("🗑️ Clear & Start New Job", key="fin_clear_job"):
+                    del st.session_state["active_fin_job_id"]
+                    st.rerun()
+
+            elif _jstatus in ("failed", "cancelled"):
+                if _jerr:
+                    st.error(f"Job {_jstatus}: {_jerr}")
+                if _jbtn1.button("🗑️ Clear & Retry", key="fin_clear_job_err"):
+                    del st.session_state["active_fin_job_id"]
+                    st.rerun()
+
+        # ── Recent jobs history ──────────────────────────────────────────────
+        st.markdown("---")
+        with st.expander("📋 Recent Extraction Jobs", expanded=False):
+            try:
+                from Services.JobQueue import get_recent_jobs, ensure_jobs_table
+                ensure_jobs_table()
+                _hist = get_recent_jobs(job_type="financial_metrics", limit=20)
+                if _hist:
+                    _hist_rows = []
+                    for _h in _hist:
+                        _dur = "—"
+                        if _h.get("started_at") and _h.get("completed_at"):
+                            _sec = (_h["completed_at"] - _h["started_at"]).total_seconds()
+                            _dur = f"{int(_sec // 60)}m {int(_sec % 60)}s"
+                        _hist_rows.append({
+                            "Job ID":    str(_h["job_id"])[:8] + "…",
+                            "Status":    _h["status"],
+                            "Progress":  f"{_h['progress']}/{_h['total']}",
+                            "Current":   (_h["current_item"] or "")[:40],
+                            "Queued":    str(_h["created_at"])[:16],
+                            "Duration":  _dur,
                         })
-                except Exception:
-                    pass   # patch errors are non-fatal
+                    st.dataframe(pd.DataFrame(_hist_rows),
+                                 hide_index=True, use_container_width=True)
+                    _hcol1, _hcol2 = st.columns(2)
 
-            _patch_prog.progress(100)
-            _patch_stat.text("Done!")
-            st.session_state.fin_patch_results = {
-                "patched":       _auto_patched,
-                "still_missing": _auto_still_missing,
-            }
+                    # Reattach to a previous job
+                    _resume_opts = {
+                        f"{str(h['job_id'])[:8]}… — {h['status']} @ {str(h['created_at'])[:16]}": str(h["job_id"])
+                        for h in _hist if h["status"] in ("running", "queued", "cancelling", "completed")
+                    }
+                    with _hcol1:
+                        if _resume_opts:
+                            _resume_sel = st.selectbox(
+                                "📎 Reattach to a previous job",
+                                ["(none)"] + list(_resume_opts.keys()),
+                                key="fin_resume_sel",
+                            )
+                            if _resume_sel != "(none)" and st.button("Reattach", key="fin_reattach"):
+                                st.session_state["active_fin_job_id"] = _resume_opts[_resume_sel]
+                                st.rerun()
 
-            if db_conn:
-                try:
-                    db_conn.close()
-                except Exception:
-                    pass
-
-            st.cache_data.clear()
-
-        if st.session_state.fin_extract_results:
-            summary_df = pd.DataFrame(st.session_state.fin_extract_results)
-            total_saved = int(summary_df["Years saved"].sum())
-            skipped = int((summary_df["Status"].str.startswith("⏭️")).sum())
-            with_data = int((summary_df["Years saved"] > 0).sum())
-
-            st.success("✅ Extraction complete!")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Companies processed", len(summary_df))
-            c2.metric("Year-rows saved",     total_saved)
-            c3.metric("With data",           with_data)
-            c4.metric("Skipped (in DB)",     skipped)
-
-            st.markdown("### 📋 Results")
-            st.dataframe(summary_df, use_container_width=True)
-
-            # Preview the first company that had rows saved — read from DB
-            first_ok = summary_df[summary_df["Years saved"] > 0]
-            if not first_ok.empty:
-                prev_sym = first_ok.iloc[0]["Symbol"]
-                prev_name = first_ok.iloc[0]["Company"]
-                st.markdown(f"### 🔍 Preview: {prev_sym} - {prev_name}")
-                try:
-                    import psycopg2
-                    from Utilities.Lookups import DB_Connection
-                    _conn = psycopg2.connect(
-                        DB_Connection().DB_CONNECTION_STRING)
-                    _sql = """
-                        SELECT reporting_year, revenue, net_income, assets,
-                               liabilities, equity, operating_income_ebitda,
-                               cash_flow_operations, free_cash_flow, eps
-                        FROM   t_financial_metrics
-                        WHERE  company_name = %s
-                        ORDER  BY reporting_year DESC
-                    """
-                    prev_df = pd.read_sql(_sql, _conn, params=(prev_name,))
-                    _conn.close()
-                    _bn = ["revenue", "net_income", "assets", "liabilities",
-                           "equity", "operating_income_ebitda",
-                           "cash_flow_operations", "free_cash_flow"]
-                    for _c in _bn:
-                        if _c in prev_df.columns:
-                            prev_df[_c] = prev_df[_c].apply(
-                                lambda x: f"${x/1e9:,.2f}B" if x is not None else "-")
-                    st.dataframe(prev_df, use_container_width=True)
-                except Exception as _exc:
-                    st.warning(f"Preview unavailable: {_exc}")
-
-        # ── Shares patch results (auto-populated after extraction) ─────────────
-        _pr = st.session_state.get("fin_patch_results")
-        if _pr is not None:
-            st.markdown("### 🩹 Shares Patch Results")
-            _pc1, _pc2 = st.columns(2)
-            _pc1.metric("Rows patched", _pr["patched"])
-            _pc2.metric("Still missing", len(_pr["still_missing"]))
-            if _pr["patched"]:
-                st.success(
-                    f"✅ Patched **{_pr['patched']}** company-year rows with "
-                    "shares outstanding.")
-            if _pr["still_missing"]:
-                st.warning(
-                    f"⚠️ **{len(_pr['still_missing'])}** company-year row(s) "
-                    "still have no shares outstanding (see below). "
-                    "Truly unsolvable rows (Palantir pre-2020, Linde pre-2018, "
-                    "AbbVie 2012) are expected."
-                )
-                _miss_df = pd.DataFrame(_pr["still_missing"])[
-                    ["Company", "Symbol", "Year", "Fiscal Year End", "Reason"]
-                ]
-                st.dataframe(
-                    _miss_df, use_container_width=True, hide_index=True)
-            elif _pr["patched"] == 0:
-                st.info("All shares already populated — nothing to patch.")
-            else:
-                st.success("✅ All rows now have shares outstanding.")
+                    # Cancel a job from history
+                    _cancel_hist_opts = {
+                        f"{str(h['job_id'])[:8]}… — {h['status']} @ {str(h['created_at'])[:16]}": str(h["job_id"])
+                        for h in _hist if h["status"] in ("queued", "running")
+                    }
+                    with _hcol2:
+                        if _cancel_hist_opts:
+                            _cancel_hist_sel = st.selectbox(
+                                "🚫 Cancel a job",
+                                ["(none)"] + list(_cancel_hist_opts.keys()),
+                                key="fin_cancel_hist_sel",
+                            )
+                            if _cancel_hist_sel != "(none)" and st.button(
+                                "Cancel Selected", key="fin_cancel_hist", type="secondary"
+                            ):
+                                from Services.JobQueue import cancel_job as _hcj
+                                _hcr = _hcj(_cancel_hist_opts[_cancel_hist_sel])
+                                if _hcr == "cancelled":
+                                    st.success("✅ Job removed from queue.")
+                                elif _hcr == "cancelling":
+                                    st.info("🛑 Stop requested — worker halts after current item.")
+                                else:
+                                    st.warning("Job not in a cancellable state.")
+                                st.rerun()
+                else:
+                    st.info("No extraction jobs have been run yet.")
+            except Exception as _he:
+                st.caption(f"Job history unavailable: {_he}")
 
 
 # =============================================================================
@@ -1885,7 +1878,8 @@ with tab7:
                 # ── Breakdown by field ────────────────────────────────────────
                 st.markdown("#### Discrepancies by Field")
                 _by_field = (
-                    _disc_df[pd.to_numeric(_disc_df["Diff %"], errors="coerce").notna()]
+                    _disc_df[pd.to_numeric(
+                        _disc_df["Diff %"], errors="coerce").notna()]
                     .assign(**{"Diff %": pd.to_numeric(_disc_df["Diff %"], errors="coerce")})
                     .groupby("Field")
                     .agg(
@@ -2062,6 +2056,7 @@ with tab8:
             r = _10k_sorted.iloc[i]
             ev = r["EDGAR Value"]
             yv = r["Yahoo Value"]
+
             def _short(v):
                 if not isinstance(v, (int, float)):
                     return str(v)
@@ -2086,13 +2081,13 @@ with tab8:
         )
 
         _10k_row = _10k_sorted.iloc[_10k_sel_idx]
-        _10k_sym    = _10k_row["Symbol"]
-        _10k_name   = _10k_row["Company"]
-        _10k_year   = int(_10k_row["Year"])
-        _10k_field  = _10k_row["Field"]
-        _10k_edgar  = float(_10k_row["EDGAR Value"])
-        _10k_yahoo  = float(_10k_row["Yahoo Value"])
-        _10k_pct    = float(_10k_row["Diff %"])
+        _10k_sym = _10k_row["Symbol"]
+        _10k_name = _10k_row["Company"]
+        _10k_year = int(_10k_row["Year"])
+        _10k_field = _10k_row["Field"]
+        _10k_edgar = float(_10k_row["EDGAR Value"])
+        _10k_yahoo = float(_10k_row["Yahoo Value"])
+        _10k_pct = float(_10k_row["Diff %"])
 
         def _fmt_val(v: float) -> str:
             if abs(v) >= 1e12:
@@ -2159,7 +2154,8 @@ with tab8:
                     f"CIK{_10k_cik:010d}.json"
                 )
                 try:
-                    _subs_r = _r10.get(_subs_url, headers=_EDGAR_HDR, timeout=30)
+                    _subs_r = _r10.get(
+                        _subs_url, headers=_EDGAR_HDR, timeout=30)
                     _subs_r.raise_for_status()
                     _subs = _subs_r.json()
                 except Exception as _exc10:
@@ -2200,7 +2196,8 @@ with tab8:
                         + _fentry.get("name", "")
                     )
                     try:
-                        _sf2 = _r10.get(_sub_url2, headers=_EDGAR_HDR, timeout=20)
+                        _sf2 = _r10.get(
+                            _sub_url2, headers=_EDGAR_HDR, timeout=20)
                         _sf2.raise_for_status()
                         _accn, _fdate, _rdate = _find_accn(
                             _sf2.json(), _10k_year
@@ -2311,27 +2308,34 @@ with tab8:
             if _10k_field == "Free Cash Flow":
                 _vmap10 = {r["Line Item"]: r["10-K Value"]
                            for r in _concept_rows_10k}
-                _cfo10  = (
+                _cfo10 = (
                     _vmap10.get("CF – Operations")
                     or _vmap10.get("CF – Operations (continuing)")
                 )
-                _ppe10   = _vmap10.get("CapEx – PP&E",                          0) or 0
-                _impr10  = _vmap10.get("CapEx – Capital Improvements",          0) or 0
-                _umb10   = _vmap10.get("CapEx – Productive Assets (umbrella)",  0) or 0
-                _soft10  = _vmap10.get("CapEx – Capitalized Software",          0) or 0
-                _int10   = _vmap10.get("CapEx – Intangibles & Licenses",        0) or 0
-                _fin10   = _vmap10.get("Finance Lease Principal Payments",      0) or 0
-                _oth10   = _vmap10.get("CapEx – Other / Discontinued",          0) or 0
+                _ppe10 = _vmap10.get("CapEx – PP&E",
+                                     0) or 0
+                _impr10 = _vmap10.get(
+                    "CapEx – Capital Improvements",          0) or 0
+                _umb10 = _vmap10.get(
+                    "CapEx – Productive Assets (umbrella)",  0) or 0
+                _soft10 = _vmap10.get(
+                    "CapEx – Capitalized Software",          0) or 0
+                _int10 = _vmap10.get(
+                    "CapEx – Intangibles & Licenses",        0) or 0
+                _fin10 = _vmap10.get(
+                    "Finance Lease Principal Payments",      0) or 0
+                _oth10 = _vmap10.get(
+                    "CapEx – Other / Discontinued",          0) or 0
 
                 # Three tiers of CapEx breadth
-                _capex_narrow  = max(_umb10, _ppe10 + _impr10)
-                _capex_broad   = _capex_narrow + _soft10 + _int10
-                _capex_widest  = _capex_broad + _fin10 + _oth10
+                _capex_narrow = max(_umb10, _ppe10 + _impr10)
+                _capex_broad = _capex_narrow + _soft10 + _int10
+                _capex_widest = _capex_broad + _fin10 + _oth10
 
                 if _cfo10 is not None:
-                    _fcf_narrow  = _cfo10 - _capex_narrow
-                    _fcf_broad   = _cfo10 - _capex_broad
-                    _fcf_widest  = _cfo10 - _capex_widest
+                    _fcf_narrow = _cfo10 - _capex_narrow
+                    _fcf_broad = _cfo10 - _capex_broad
+                    _fcf_widest = _cfo10 - _capex_widest
 
                     def _pct_diff(a, b):
                         d = abs(b)
