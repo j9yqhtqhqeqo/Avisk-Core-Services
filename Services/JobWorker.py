@@ -81,7 +81,8 @@ def _get_conn():
 def _log(conn, job_id: str, line: str) -> None:
     from Services.JobQueue import append_log
     try:
-        append_log(conn, job_id, f"[{datetime.now().strftime('%H:%M:%S')}] {line}")
+        append_log(
+            conn, job_id, f"[{datetime.now().strftime('%H:%M:%S')}] {line}")
     except Exception:
         pass  # logging failures are non-fatal
 
@@ -98,10 +99,10 @@ def _upd(conn, job_id: str, **fields) -> None:
 
 def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
     """Extract EDGAR XBRL metrics for each company in payload."""
-    companies  = payload.get("companies", [])
-    years      = payload.get("years", [])
+    companies = payload.get("companies", [])
+    years = payload.get("years", [])
     skip_exist = payload.get("skip_existing", True)
-    total      = len(companies)
+    total = len(companies)
 
     _upd(conn, job_id, total=total, progress=0, current_item="Initialising…")
     _log(conn, job_id,
@@ -117,7 +118,7 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
 
     for i, co in enumerate(companies, 1):
         _check_cancel(conn, job_id)          # ← honour frontend cancel request
-        sym  = co["symbol"]
+        sym = co["symbol"]
         name = co["company_name"]
         _upd(conn, job_id, progress=i, current_item=f"{sym} ({i}/{total})")
         _log(conn, job_id, f"[{i}/{total}] {sym} — {name}")
@@ -126,7 +127,8 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
             if skip_exist:
                 existing = scraper.get_existing_years(name)
                 if set(years).issubset(existing):
-                    summary.append({"symbol": sym, "status": "skipped", "saved": 0})
+                    summary.append(
+                        {"symbol": sym, "status": "skipped", "saved": 0})
                     _log(conn, job_id, f"  → skipped (all years in DB)")
                     continue
 
@@ -157,22 +159,22 @@ def _run_financial_metrics(conn, job_id: str, payload: dict) -> list:
 
 def _run_document_download(conn, job_id: str, payload: dict) -> list:
     """Download documents for each company in payload."""
-    companies        = payload.get("companies", [])
-    years            = payload.get("years")          # may be None (all years)
-    content_types    = payload.get("content_types", [1])
-    force_reload     = payload.get("force_reload", False)
-    use_storage      = payload.get("use_storage", True)
-    output_dir       = payload.get("output_dir", None)
+    companies = payload.get("companies", [])
+    years = payload.get("years")          # may be None (all years)
+    content_types = payload.get("content_types", [1])
+    force_reload = payload.get("force_reload", False)
+    use_storage = payload.get("use_storage", True)
+    output_dir = payload.get("output_dir", None)
     current_sector_id = payload.get("current_sector_id", None)
-    delay_seconds    = payload.get("delay_seconds", 2.0)
-    bypass_symbols   = set(payload.get("bypass_symbols", []))
-    total_selected   = len(companies)
+    delay_seconds = payload.get("delay_seconds", 2.0)
+    bypass_symbols = set(payload.get("bypass_symbols", []))
+    total_selected = len(companies)
 
     # Pre-filter bypassed companies
     companies_to_run = [c for c in companies
                         if c["symbol"] not in bypass_symbols]
     bypassed = total_selected - len(companies_to_run)
-    total    = len(companies_to_run)
+    total = len(companies_to_run)
 
     _upd(conn, job_id, total=total, progress=0, current_item="Initialising…")
     _log(conn, job_id,
@@ -194,20 +196,21 @@ def _run_document_download(conn, job_id: str, payload: dict) -> list:
     results = []
     for i, co in enumerate(companies_to_run, 1):
         _check_cancel(conn, job_id)          # ← honour frontend cancel request
-        sym  = co["symbol"]
+        sym = co["symbol"]
         name = co["company_name"]
         _upd(conn, job_id, progress=i, current_item=f"{sym} ({i}/{total})")
         _log(conn, job_id, f"[{i}/{total}] {sym} — {name}")
 
         try:
             website = downloader.get_company_website(sym, name)
-            result  = downloader.process_company(sym, name, website)
+            result = downloader.process_company(sym, name, website)
             results.append(result)
             status_str = result.get("status", "done")
-            dl_count   = result.get("reports_downloaded", 0)
+            dl_count = result.get("reports_downloaded", 0)
             _log(conn, job_id, f"  → {status_str} ({dl_count} downloads)")
         except Exception as exc:
-            results.append({"symbol": sym, "status": "error", "error": str(exc)})
+            results.append(
+                {"symbol": sym, "status": "error", "error": str(exc)})
             _log(conn, job_id, f"  → ERROR: {exc}")
 
     try:

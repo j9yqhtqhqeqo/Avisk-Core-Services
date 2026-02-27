@@ -44,6 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_scraping_jobs_created
 # Internals
 # ---------------------------------------------------------------------------
 
+
 def _conn():
     from Utilities.Lookups import DB_Connection
     return psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)

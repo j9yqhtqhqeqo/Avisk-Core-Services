@@ -420,14 +420,14 @@ with tab3:
                 st.error(f"Could not fetch job status: {_gje}")
                 _jdata = {}
 
-            _jstatus   = _jdata.get("status", "unknown")
-            _jprog     = _jdata.get("progress", 0)
-            _jtotal    = _jdata.get("total", 0)
-            _jcurrent  = _jdata.get("current_item", "")
-            _jlog      = _jdata.get("log_lines", "")
-            _jerr      = _jdata.get("error_msg", "")
-            _jcreated  = _jdata.get("created_at")
-            _jstarted  = _jdata.get("started_at")
+            _jstatus = _jdata.get("status", "unknown")
+            _jprog = _jdata.get("progress", 0)
+            _jtotal = _jdata.get("total", 0)
+            _jcurrent = _jdata.get("current_item", "")
+            _jlog = _jdata.get("log_lines", "")
+            _jerr = _jdata.get("error_msg", "")
+            _jcreated = _jdata.get("created_at")
+            _jstarted = _jdata.get("started_at")
             _jfinished = _jdata.get("completed_at")
 
             _status_icon = {
@@ -439,11 +439,13 @@ with tab3:
                 "cancelled":   "🚫",
             }.get(_jstatus, "❓")
 
-            st.markdown(f"### {_status_icon} Job Status: **{_jstatus.title()}**")
+            st.markdown(
+                f"### {_status_icon} Job Status: **{_jstatus.title()}**")
             st.caption(f"Job ID: `{_fin_active_job}`")
 
             _jc1, _jc2, _jc3, _jc4 = st.columns(4)
-            _jc1.metric("Progress", f"{_jprog}/{_jtotal}" if _jtotal else str(_jprog))
+            _jc1.metric(
+                "Progress", f"{_jprog}/{_jtotal}" if _jtotal else str(_jprog))
             _jc2.metric("Current", _jcurrent or "—")
             _jc3.metric("Status", _jstatus.title())
             _jc4.metric("Queued", str(_jcreated)[:16] if _jcreated else "—")
@@ -510,7 +512,8 @@ with tab3:
                     for _h in _hist:
                         _dur = "—"
                         if _h.get("started_at") and _h.get("completed_at"):
-                            _sec = (_h["completed_at"] - _h["started_at"]).total_seconds()
+                            _sec = (_h["completed_at"] -
+                                    _h["started_at"]).total_seconds()
                             _dur = f"{int(_sec // 60)}m {int(_sec % 60)}s"
                         _hist_rows.append({
                             "Job ID":    str(_h["job_id"])[:8] + "…",
@@ -556,13 +559,16 @@ with tab3:
                                 "Cancel Selected", key="fin_cancel_hist", type="secondary"
                             ):
                                 from Services.JobQueue import cancel_job as _hcj
-                                _hcr = _hcj(_cancel_hist_opts[_cancel_hist_sel])
+                                _hcr = _hcj(
+                                    _cancel_hist_opts[_cancel_hist_sel])
                                 if _hcr == "cancelled":
                                     st.success("✅ Job removed from queue.")
                                 elif _hcr == "cancelling":
-                                    st.info("🛑 Stop requested — worker halts after current item.")
+                                    st.info(
+                                        "🛑 Stop requested — worker halts after current item.")
                                 else:
-                                    st.warning("Job not in a cancellable state.")
+                                    st.warning(
+                                        "Job not in a cancellable state.")
                                 st.rerun()
                 else:
                     st.info("No extraction jobs have been run yet.")

@@ -830,12 +830,12 @@ with tab3:
             st.error(f"Could not fetch job status: {_dgje}")
             _djdata = {}
 
-        _djstatus  = _djdata.get("status", "unknown")
-        _djprog    = _djdata.get("progress", 0)
-        _djtotal   = _djdata.get("total", 0)
+        _djstatus = _djdata.get("status", "unknown")
+        _djprog = _djdata.get("progress", 0)
+        _djtotal = _djdata.get("total", 0)
         _djcurrent = _djdata.get("current_item", "")
-        _djlog     = _djdata.get("log_lines", "")
-        _djerr     = _djdata.get("error_msg", "")
+        _djlog = _djdata.get("log_lines", "")
+        _djerr = _djdata.get("error_msg", "")
         _djcreated = _djdata.get("created_at")
 
         _dj_icon = {
@@ -847,11 +847,13 @@ with tab3:
             "cancelled":   "🚫",
         }.get(_djstatus, "❓")
 
-        st.markdown(f"### {_dj_icon} Download Job Status: **{_djstatus.title()}**")
+        st.markdown(
+            f"### {_dj_icon} Download Job Status: **{_djstatus.title()}**")
         st.caption(f"Job ID: `{_dl_active_job}`")
 
         _djc1, _djc2, _djc3, _djc4 = st.columns(4)
-        _djc1.metric("Progress",  f"{_djprog}/{_djtotal}" if _djtotal else str(_djprog))
+        _djc1.metric(
+            "Progress",  f"{_djprog}/{_djtotal}" if _djtotal else str(_djprog))
         _djc2.metric("Current",   (_djcurrent or "—")[:40])
         _djc3.metric("Status",    _djstatus.title())
         _djc4.metric("Queued",    str(_djcreated)[:16] if _djcreated else "—")
@@ -919,7 +921,8 @@ with tab3:
                 for _dh in _dl_hist:
                     _ddur = "—"
                     if _dh.get("started_at") and _dh.get("completed_at"):
-                        _dsec = (_dh["completed_at"] - _dh["started_at"]).total_seconds()
+                        _dsec = (_dh["completed_at"] -
+                                 _dh["started_at"]).total_seconds()
                         _ddur = f"{int(_dsec // 60)}m {int(_dsec % 60)}s"
                     _dl_rows.append({
                         "Job ID":   str(_dh["job_id"])[:8] + "…",
@@ -965,11 +968,13 @@ with tab3:
                             "Cancel Selected", key="dl_cancel_hist", type="secondary"
                         ):
                             from Services.JobQueue import cancel_job as _dlhcj
-                            _dlhcr = _dlhcj(_dl_cancel_hist_opts[_dl_cancel_hist_sel])
+                            _dlhcr = _dlhcj(
+                                _dl_cancel_hist_opts[_dl_cancel_hist_sel])
                             if _dlhcr == "cancelled":
                                 st.success("✅ Job removed from queue.")
                             elif _dlhcr == "cancelling":
-                                st.info("🛑 Stop requested — worker halts after current item.")
+                                st.info(
+                                    "🛑 Stop requested — worker halts after current item.")
                             else:
                                 st.warning("Job not in a cancellable state.")
                             st.rerun()
