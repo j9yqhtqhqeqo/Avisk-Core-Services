@@ -52,7 +52,8 @@ if not st.session_state.get("active_fin_job_id"):
         _init_fin_et()
         for _init_fin_r in _init_fin_rj(job_type="financial_metrics", limit=5):
             if _init_fin_r["status"] in ("running", "queued", "cancelling"):
-                st.session_state["active_fin_job_id"] = str(_init_fin_r["job_id"])
+                st.session_state["active_fin_job_id"] = str(
+                    _init_fin_r["job_id"])
                 break
     except Exception:
         pass
