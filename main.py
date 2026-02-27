@@ -1,3 +1,4 @@
+from Utilities.mobile import inject_mobile_css
 from version import get_version_string, get_build_string, get_build_date_string, ENVIRONMENT
 from Utilities.Lookups import Lookups, Processing_Type
 from DBEntities.LookupsDBManager import LookupsDBManager
@@ -7,8 +8,6 @@ from pathlib import Path
 import os
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-
-from Utilities.mobile import inject_mobile_css
 
 # Configure page
 st.set_page_config(
