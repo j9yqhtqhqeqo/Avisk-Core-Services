@@ -21,6 +21,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+from Utilities.mobile import inject_mobile_css  # noqa: E402
+inject_mobile_css()
+
 st.title("💰 Financial Data Management Studio")
 st.markdown(
     "Pulls structured annual financial data directly from **SEC EDGAR XBRL** "

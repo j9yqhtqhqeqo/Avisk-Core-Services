@@ -192,6 +192,9 @@ st.set_page_config(
     layout="wide"
 )
 
+from Utilities.mobile import inject_mobile_css  # noqa: E402
+inject_mobile_css()
+
 # Initialize session state
 if 'companies_df' not in st.session_state:
     st.session_state.companies_df = None

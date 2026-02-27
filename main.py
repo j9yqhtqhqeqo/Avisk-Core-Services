@@ -8,6 +8,8 @@ import os
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 
+from Utilities.mobile import inject_mobile_css
+
 # Configure page
 st.set_page_config(
     page_title="Dashboard",
@@ -15,6 +17,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+inject_mobile_css()
 
 
 def main():

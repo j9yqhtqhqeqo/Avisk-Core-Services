@@ -30,6 +30,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from Utilities.mobile import inject_mobile_css  # noqa: E402
+inject_mobile_css()
+
 st.title("⚙️ Admin — Service Management")
 st.markdown(f"Control and monitor the **`{SERVICE}`** systemd service.")
 

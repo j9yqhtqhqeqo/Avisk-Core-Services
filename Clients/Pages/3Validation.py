@@ -21,6 +21,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+from Utilities.mobile import inject_mobile_css  # noqa: E402
+inject_mobile_css()
+
 # Page header
 st.title("✅ Keyword Validation")
 st.markdown("---")
