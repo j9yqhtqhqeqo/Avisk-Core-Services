@@ -469,7 +469,11 @@ with tab3:
                 st.progress(min(_jprog / _jtotal, 1.0))
 
             with st.expander("📋 Live Log", expanded=_jstatus == "running"):
-                st.text(_jlog[-6000:] if _jlog else "(no log yet)")
+                _jlog_display = (
+                    "\n".join(reversed(_jlog.splitlines()))
+                    if _jlog else "(no log yet)"
+                )
+                st.text(_jlog_display)
 
             _jbtn1, _jbtn2 = st.columns(2)
 

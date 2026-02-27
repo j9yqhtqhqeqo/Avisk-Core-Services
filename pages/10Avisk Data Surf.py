@@ -574,7 +574,7 @@ with tab2:
                 "Start Year",
                 min_value=_yr_min,
                 max_value=_yr_max,
-                value=min(_yr_min + 2, _yr_max),
+                value=max(_yr_min, min(2012, _yr_max)),
                 help="Download reports from this year onwards"
             )
 
@@ -582,7 +582,7 @@ with tab2:
                 "End Year",
                 min_value=start_year,
                 max_value=_yr_max,
-                value=_yr_max,
+                value=max(start_year, current_year - 1),
                 help="Download reports up to this year"
             )
 
@@ -760,7 +760,7 @@ with tab3:
                 st.dataframe(pd.DataFrame(_partial_rows),
                              hide_index=True, use_container_width=True)
 
-    # Validation
+    # Validation — skip warnings if a background job is already active
     can_download = True
     warnings = []
 
@@ -775,8 +775,9 @@ with tab3:
             "(Sustainability/ESG, Annual Reports/10K, or Earnings Call Transcripts) in the sidebar.")
         can_download = False
 
-    for warning in warnings:
-        st.warning(warning)
+    if not st.session_state.get("active_dl_job_id"):
+        for warning in warnings:
+            st.warning(warning)
 
     # Download button
     st.markdown("---")
@@ -876,7 +877,11 @@ with tab3:
             st.progress(min(_djprog / _djtotal, 1.0))
 
         with st.expander("📋 Live Log", expanded=_djstatus == "running"):
-            st.text(_djlog[-6000:] if _djlog else "(no log yet)")
+            _djlog_display = (
+                "\n".join(reversed(_djlog.splitlines()))
+                if _djlog else "(no log yet)"
+            )
+            st.text(_djlog_display)
 
         _djbtn1, _djbtn2 = st.columns(2)
 
