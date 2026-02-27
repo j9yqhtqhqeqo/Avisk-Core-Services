@@ -229,22 +229,22 @@ st.sidebar.header("⚙️ Configuration")
 st.sidebar.subheader("📄 Content Types to Download")
 download_sustainability = st.sidebar.checkbox(
     "🌱 Sustainability/ESG Reports",
-    value=False,
+    value=True,
     help="Download sustainability reports, ESG reports, corporate responsibility reports"
 )
 download_annual = st.sidebar.checkbox(
     "📊 Annual Reports/10K Filings",
-    value=False,
+    value=True,
     help="Download annual reports, 10-K SEC filings"
 )
 download_other = st.sidebar.checkbox(
     "📁 Other Filings (EDGAR)",
-    value=False,
+    value=True,
     help="Download other EDGAR filings and miscellaneous company documents (content type 3)"
 )
 download_transcripts = st.sidebar.checkbox(
     "🎙️ Earnings Call Transcripts",
-    value=False,
+    value=True,
     help="Download earnings call transcripts, investor call transcripts"
 )
 
@@ -297,9 +297,22 @@ delay_seconds = st.sidebar.slider(
     "Delay Between Requests (seconds)",
     min_value=0.5,
     max_value=5.0,
-    value=2.0,
+    value=0.5,
     step=0.5,
     help="Time to wait between requests to be respectful to servers"
+)
+
+max_workers = st.sidebar.slider(
+    "⚡ Parallel Workers",
+    min_value=1,
+    max_value=20,
+    value=5,
+    step=1,
+    help=(
+        "Number of companies processed simultaneously. "
+        "5 workers ≈ 5× faster than sequential. "
+        "Keep ≤ 10 to avoid EDGAR / Yahoo rate-limiting."
+    ),
 )
 
 # Sector ID configuration
@@ -556,7 +569,7 @@ with tab2:
 
         year_selection_mode = st.radio(
             "Year Selection Mode",
-            ["All Available Years", "Specific Year Range", "Single Year"],
+            ["Specific Year Range", "Single Year"],
             help="Choose how to filter reports by year"
         )
 
@@ -588,7 +601,7 @@ with tab2:
 
             years_to_download = list(range(start_year, end_year + 1))
 
-        elif year_selection_mode == "Single Year":
+        else:  # Single Year
             single_year = st.selectbox(
                 "Select Year",
                 options=_ds_years,
@@ -596,9 +609,6 @@ with tab2:
                 help="Download reports only from this specific year"
             )
             years_to_download = [single_year]
-
-        else:
-            years_to_download = None  # All years
 
     with col2:
         st.subheader("📊 Year Summary")
@@ -821,6 +831,7 @@ with tab3:
                     "output_dir":        output_dir,
                     "current_sector_id": current_sector_id,
                     "delay_seconds":     delay_seconds,
+                    "max_workers":       max_workers,
                     "bypass_symbols":    list(_companies_to_skip) if not force_reload else [],
                 }
                 _dl_jid = submit_job("document_download", _dl_payload)

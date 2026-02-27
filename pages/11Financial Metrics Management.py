@@ -381,6 +381,19 @@ with tab3:
         )
         skip_existing = reload_mode.startswith("Skip")
 
+        fin_max_workers = st.slider(
+            "⚡ Parallel Workers",
+            min_value=1,
+            max_value=20,
+            value=5,
+            step=1,
+            help=(
+                "Number of companies processed simultaneously. "
+                "5 workers ≈ 5× faster than sequential. "
+                "Keep ≤ 10 to avoid EDGAR rate-limiting."
+            ),
+        )
+
         # ETA estimate: ~4 s/company (EDGAR fetch + share patch)
         _est_mins = max(1, round(len(companies_to_run) * 4 / 60))
         if len(companies_to_run) > 100:
@@ -413,6 +426,7 @@ with tab3:
                         "companies":      companies_to_run,
                         "years":          years_now,
                         "skip_existing":  skip_existing,
+                        "max_workers":    fin_max_workers,
                     })
                     st.session_state["active_fin_job_id"] = _jid
                     st.success(

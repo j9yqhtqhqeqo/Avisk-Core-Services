@@ -4289,6 +4289,8 @@ class SustainabilityReportDownloader:
             logger.error(f"Error processing {company_name}: {e}")
             result['status'] = 'error'
             result['error'] = str(e)
+            # Preserve whatever was downloaded before the error occurred
+            result['reports_downloaded'] = downloaded_count
 
         return result
 
