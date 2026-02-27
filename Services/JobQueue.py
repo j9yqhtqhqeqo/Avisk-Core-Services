@@ -72,7 +72,7 @@ def ensure_jobs_table() -> None:
 
 def submit_job(job_type: str, payload: dict) -> str:
     """
-    Insert a new job into the queue.
+    Insert a new job into the queue and notify any listening worker immediately.
     Returns the new job_id (UUID as str).
     """
     c = _conn()
@@ -83,6 +83,8 @@ def submit_job(job_type: str, payload: dict) -> str:
             (job_type, psycopg2.extras.Json(payload)),
         )
         job_id = str(cur.fetchone()[0])
+        # Wake the worker immediately via PostgreSQL LISTEN/NOTIFY
+        cur.execute("NOTIFY avisk_job_queue, %s", (job_id,))
     c.commit()
     c.close()
     return job_id
@@ -133,24 +135,37 @@ def cancel_job(job_id: str) -> str:
     - 'running' → marked 'cancelling'; worker stops after the current company;
                   returns 'cancelling'
     - other     → no change; returns '' (job already terminal)
+
+    In both cancellable cases the error_msg and log are updated to record
+    that the cancellation was requested from the frontend.
     """
+    import datetime as _dt
+    _ts = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _note = f"[{_ts}] Cancelled by user from frontend."
+
     c = _conn()
     result = ""
     with c.cursor() as cur:
         # Queued → cancel instantly
         cur.execute(
-            "UPDATE t_scraping_jobs SET status = 'cancelled', completed_at = NOW() "
+            "UPDATE t_scraping_jobs "
+            "SET status = 'cancelled', completed_at = NOW(), "
+            "    error_msg = %s, "
+            "    log_lines = COALESCE(log_lines, '') || %s "
             "WHERE job_id = %s AND status = 'queued' RETURNING job_id",
-            (job_id,),
+            (_note, "\n" + _note, job_id),
         )
         if cur.fetchone():
             result = "cancelled"
         else:
             # Running → request graceful stop
             cur.execute(
-                "UPDATE t_scraping_jobs SET status = 'cancelling' "
+                "UPDATE t_scraping_jobs "
+                "SET status = 'cancelling', "
+                "    error_msg = %s, "
+                "    log_lines = COALESCE(log_lines, '') || %s "
                 "WHERE job_id = %s AND status = 'running' RETURNING job_id",
-                (job_id,),
+                (_note, "\n" + _note, job_id),
             )
             if cur.fetchone():
                 result = "cancelling"

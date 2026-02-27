@@ -43,6 +43,20 @@ for _k, _v in {
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
+# ── Auto-restore active job after browser reconnect ────────────────────
+# session_state is wiped when the tab closes; re-populate from DB on every
+# fresh page load so the live status panel reappears automatically.
+if not st.session_state.get("active_fin_job_id"):
+    try:
+        from Services.JobQueue import get_recent_jobs as _init_fin_rj, ensure_jobs_table as _init_fin_et
+        _init_fin_et()
+        for _init_fin_r in _init_fin_rj(job_type="financial_metrics", limit=5):
+            if _init_fin_r["status"] in ("running", "queued", "cancelling"):
+                st.session_state["active_fin_job_id"] = str(_init_fin_r["job_id"])
+                break
+    except Exception:
+        pass
+
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_companies() -> pd.DataFrame:

@@ -48,8 +48,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("JobWorker")
 
-POLL_INTERVAL_SECONDS = 5  # seconds between polls when queue is empty
-
 
 # ── Cancellation support ───────────────────────────────────────────────────
 
@@ -266,42 +264,123 @@ def _process_job(conn, job_id: str, job_type: str, payload: dict) -> None:
 
 # ── Entry point ────────────────────────────────────────────────────────────
 
+def _drain_queue() -> None:
+    """
+    Claim and execute every currently-queued job, then return.
+    Called after each NOTIFY (or the 60s fallback timeout).
+    """
+    from Services.JobQueue import claim_next_job
+    while True:
+        try:
+            conn = _get_conn()
+            row = claim_next_job(conn)
+            if not row:
+                conn.close()
+                return          # queue empty — go back to sleep
+            job_id, job_type, payload = row
+            logger.info(f"▶  Claimed job {job_id}  type={job_type}")
+            _process_job(conn, job_id, job_type, payload)
+            conn.close()
+        except Exception as exc:
+            logger.error(f"Error draining queue: {exc}")
+            time.sleep(5)
+            return
+
+
 def main() -> None:
-    from Services.JobQueue import ensure_jobs_table, claim_next_job
+    import select as _select
+    from Services.JobQueue import ensure_jobs_table
 
     logger.info("Avisk Job Worker starting up…")
 
-    # Ensure the jobs table exists
     try:
         ensure_jobs_table()
         logger.info("t_scraping_jobs table ready.")
     except Exception as exc:
         logger.error(f"Could not ensure jobs table: {exc}")
 
-    consecutive_errors = 0
+    # ── Stale job recovery ─────────────────────────────────────────────────
+    # If a previous worker was killed mid-job, those jobs are still marked
+    # 'running' in the DB but nothing is executing them.  Mark them failed
+    # so the UI doesn't show phantom progress and the user can resubmit.
+    try:
+        _rc = _get_conn()
+        with _rc.cursor() as _rcur:
+            _rcur.execute(
+                """
+                UPDATE t_scraping_jobs
+                SET status       = 'failed',
+                    completed_at = NOW(),
+                    error_msg    = 'Worker process was restarted while this job was running. '
+                                   'Please resubmit the job.',
+                    current_item = 'Failed ❌ (worker restarted)'
+                WHERE status IN ('running', 'cancelling')
+                RETURNING job_id
+                """
+            )
+            stale = _rcur.fetchall()
+        _rc.commit()
+        _rc.close()
+        if stale:
+            logger.warning(
+                f"Marked {len(stale)} stale job(s) as failed on startup: "
+                + ", ".join(str(r[0]) for r in stale)
+            )
+        else:
+            logger.info("No stale running jobs found.")
+    except Exception as exc:
+        logger.error(f"Stale job recovery failed: {exc}")
+
+    # ── LISTEN/NOTIFY loop ─────────────────────────────────────────────────
+    # The worker blocks here consuming zero CPU/resources until submit_job()
+    # sends a NOTIFY.  Falls back to a 60-second safety-net poll.
+    # No constant polling — no resource waste when the queue is empty.
+    LISTEN_TIMEOUT = 60   # seconds; safety-net re-check even with no NOTIFY
+
+    listen_conn = None
+
+    def _connect_listener():
+        c = _get_conn()
+        c.autocommit = True
+        with c.cursor() as cur:
+            cur.execute("LISTEN avisk_job_queue;")
+        logger.info(
+            "Listening on avisk_job_queue (idle until a job is submitted).")
+        return c
 
     while True:
+        # (Re-)establish the LISTEN connection if needed
+        if listen_conn is None or listen_conn.closed:
+            try:
+                listen_conn = _connect_listener()
+                # Drain anything queued while we were reconnecting
+                _drain_queue()
+            except Exception as exc:
+                logger.error(f"Could not connect listener: {exc}")
+                time.sleep(10)
+                continue
+
         try:
-            conn = _get_conn()
-            row = claim_next_job(conn)
-            if row:
-                job_id, job_type, payload = row
-                logger.info(f"▶  Claimed job {job_id}  type={job_type}")
-                _process_job(conn, job_id, job_type, payload)
-                consecutive_errors = 0
-            conn.close()
+            # Block until a NOTIFY arrives or the timeout expires — zero CPU
+            readable = _select.select([listen_conn], [], [], LISTEN_TIMEOUT)[0]
+
+            if readable:
+                listen_conn.poll()              # consume the notification
+                while listen_conn.notifies:     # clear the notification list
+                    n = listen_conn.notifies.pop(0)
+                    logger.info(f"NOTIFY received  payload={n.payload}")
+
+            # Whether woken by NOTIFY or timeout, drain all queued jobs
+            _drain_queue()
 
         except Exception as exc:
-            consecutive_errors += 1
-            wait = min(60, POLL_INTERVAL_SECONDS * consecutive_errors)
-            logger.error(
-                f"Worker loop error (attempt {consecutive_errors}): {exc}  "
-                f"Retrying in {wait}s…"
-            )
-            time.sleep(wait)
-            continue
-
-        time.sleep(POLL_INTERVAL_SECONDS)
+            logger.error(f"Listener error: {exc} — reconnecting…")
+            try:
+                listen_conn.close()
+            except Exception:
+                pass
+            listen_conn = None
+            time.sleep(5)
 
 
 if __name__ == "__main__":

@@ -204,6 +204,20 @@ if 'is_downloading' not in st.session_state:
 if 'download_complete' not in st.session_state:
     st.session_state.download_complete = False
 
+# ── Auto-restore active download job after browser reconnect ─────────────────
+# session_state is wiped when the tab closes; re-populate from DB on every
+# fresh page load so the live status panel reappears automatically.
+if not st.session_state.get("active_dl_job_id"):
+    try:
+        from Services.JobQueue import get_recent_jobs as _init_rj, ensure_jobs_table as _init_et
+        _init_et()
+        for _init_r in _init_rj(job_type="document_download", limit=5):
+            if _init_r["status"] in ("running", "queued", "cancelling"):
+                st.session_state["active_dl_job_id"] = str(_init_r["job_id"])
+                break
+    except Exception:
+        pass
+
 # Title
 st.title("📊 Document Downloader")
 st.markdown("Download sustainability reports, annual reports/10K filings, and earnings transcripts from S&P 500 companies")
@@ -983,23 +997,19 @@ with tab3:
         except Exception as _dl_he:
             st.caption(f"Job history unavailable: {_dl_he}")
 
-        if st.session_state.download_results is not None:
-            st.subheader("📋 Detailed Results")
-            st.dataframe(st.session_state.download_results,
-                         use_container_width=True)
-            csv = st.session_state.download_results.to_csv(index=False)
-            st.download_button(
-                label="📥 Download Results CSV",
-                data=csv,
-                file_name="download_results.csv",
-                mime="text/csv"
-            )
-
-    # Show previous results if available (no completed download this session)
-    elif st.session_state.download_results is not None:
+    # Show any persisted download results from a previous job
+    if st.session_state.get("download_results") is not None:
+        st.markdown("---")
         st.subheader("📋 Previous Download Results")
         st.dataframe(st.session_state.download_results,
                      use_container_width=True)
+        csv = st.session_state.download_results.to_csv(index=False)
+        st.download_button(
+            label="📥 Download Results CSV",
+            data=csv,
+            file_name="download_results.csv",
+            mime="text/csv"
+        )
 
 with tab4:
     st.header("Downloaded Files")
