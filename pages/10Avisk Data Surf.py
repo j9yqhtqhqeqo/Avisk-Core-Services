@@ -17,36 +17,32 @@ import os
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 
-# Top 150 S&P 500 by market cap - scraped from marketcap.company (Feb 2026)
-# Companies ranked #1-150 by market capitalization
-TOP_SP500_MARKET_CAP_ORDER = [
-    # 1-50
-    'NVDA', 'AAPL', 'GOOG', 'MSFT', 'AMZN', 'META', 'TSLA', 'LLY', 'JPM', 'XOM',
-    'JNJ', 'V', 'MA', 'MU', 'COST', 'ABBV', 'BAC', 'HD', 'GE', 'PG',
-    'AMD', 'CVX', 'PLTR', 'NFLX', 'KO', 'CSCO', 'LRCX', 'PM', 'WFC', 'AMAT',
-    'CAT', 'ORCL', 'UNH', 'MRK', 'IBM', 'GS', 'RTX', 'MCD', 'LIN', 'MS',
-    'C', 'PEP', 'ABT', 'TMO', 'DIS', 'AXP', 'KLAC', 'GILD', 'T', 'AMGN',
-    # 51-100
-    'BA', 'NEE', 'GEV', 'TJX', 'ISRG', 'APH', 'INTC', 'CRM', 'VZ', 'DE',
-    'ADI', 'SCHW', 'LOW', 'BLK', 'QCOM', 'ANET', 'TXN', 'HON', 'UBER', 'PFE',
-    'WELL', 'UNP', 'ACN', 'AVGO', 'BKNG', 'ETN', 'DHR', 'SYK', 'PLD', 'COF',
-    'SPGI', 'PH', 'COP', 'BMY', 'PGR', 'CB', 'MDT', 'TMUS', 'VRTX', 'PANW',
-    'BSX', 'CMCSA', 'CME', 'MCK', 'ADBE', 'LMT', 'INTU', 'CRWD', 'GLW', 'CVS',
-    # 101-150
-    'SO', 'BX', 'SBUX', 'MO', 'DUK', 'NEM', 'STX', 'PNC', 'MMC', 'WM',
-    'CEG', 'MMM', 'GD', 'USB', 'UPS', 'ICE', 'TT', 'ADP', 'MAR', 'AMT',
-    'SHW', 'RCL', 'HCA', 'EQIX', 'BK', 'ECL', 'NOC', 'SNPS', 'REGN', 'ITW',
-    'ORLY', 'CDNS', 'EMR', 'CSX', 'NKE', 'ELV', 'JCI', 'MDLZ', 'WDC', 'WMB',
-    'TDG', 'FDX', 'CI', 'CMI', 'NSC', 'HLT', 'KKR', 'MCO', 'FCX', 'RSG'
-]
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_sp500_rank_map() -> dict:
+    """Load symbol→rank map from sp500_market_cap_ranked.csv (all 500 companies)."""
+    csv_path = Path(__file__).resolve().parent.parent / "Clients" / "sp500_market_cap_ranked.csv"
+    try:
+        _df = pd.read_csv(str(csv_path))
+        return {str(row['symbol']).upper().strip(): int(row['rank']) for _, row in _df.iterrows()}
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_sp500_csv_df() -> pd.DataFrame:
+    """Load full S&P 500 ranked CSV (rank, symbol, company, market_cap, sector)."""
+    csv_path = Path(__file__).resolve().parent.parent / "Clients" / "sp500_market_cap_ranked.csv"
+    df = pd.read_csv(str(csv_path))
+    df.columns = [c.strip().lower() for c in df.columns]
+    df['symbol'] = df['symbol'].str.upper().str.strip()
+    df['company'] = df['company'].str.strip()
+    df['rank'] = pd.to_numeric(df['rank'], errors='coerce').fillna(999).astype(int)
+    return df
 
 
 def get_market_cap_rank(symbol: str) -> int:
-    """Get market cap rank from pre-built list. Returns 999 for unknown symbols."""
-    try:
-        return TOP_SP500_MARKET_CAP_ORDER.index(symbol) + 1
-    except ValueError:
-        return 999  # Not in top 150
+    """Get market cap rank from CSV (all 500 S&P 500 companies). Returns 999 for unknown symbols."""
+    return _load_sp500_rank_map().get(str(symbol).upper().strip(), 999)
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -101,6 +97,89 @@ def _read_file_bytes(path: str) -> bytes:
         return f.read()
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def _check_company_coverage(
+    symbols_tuple: tuple,          # tuple so it's hashable for cache
+    company_names_tuple: tuple,
+    years_tuple: tuple,
+    content_types_tuple: tuple,
+) -> dict:
+    """
+    Query t_data_source and return a per-company coverage summary.
+    Returns dict keyed by symbol:
+      {
+        'symbol': str,
+        'company': str,
+        'covered_combos': int,   # (year, ct) pairs already in DB
+        'total_combos': int,     # total requested (year, ct) pairs
+        'status': 'full' | 'partial' | 'new',
+        'covered_years': list[int],
+        'missing_years': list[int],
+      }
+    """
+    import psycopg2
+    from Utilities.Lookups import DB_Connection
+
+    symbols = list(symbols_tuple)
+    companies = list(company_names_tuple)
+    years = list(years_tuple)
+    content_types = list(content_types_tuple)
+
+    # Build lookup: lower(company_name) → {(year, ct), ...}
+    db_index: dict = {}
+    try:
+        conn_str = DB_Connection().DB_CONNECTION_STRING
+        if conn_str:
+            conn = psycopg2.connect(conn_str)
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT LOWER(TRIM(company_name)), year, content_type
+                FROM t_data_source
+                WHERE year = ANY(%s) AND content_type = ANY(%s)
+                """,
+                (years, content_types)
+            )
+            for (name_lower, yr, ct) in cur.fetchall():
+                db_index.setdefault(name_lower, set()).add((yr, ct))
+            cur.close()
+            conn.close()
+    except Exception:
+        pass  # If DB is unreachable return empty → all companies flagged as 'new'
+
+    total_combos = len(years) * len(content_types)
+    result = {}
+    for sym, company in zip(symbols, companies):
+        name_lower = company.lower().strip()
+        # fuzzy match: check if any DB key is a substring or superset of name
+        matched_combos: set = set()
+        for db_name, combos in db_index.items():
+            if name_lower in db_name or db_name in name_lower:
+                matched_combos |= combos
+
+        covered = sum(1 for yr in years for ct in content_types if (yr, ct) in matched_combos)
+        covered_years = sorted({yr for yr in years if any((yr, ct) in matched_combos for ct in content_types)})
+        missing_years = sorted(set(years) - set(covered_years))
+
+        if covered == 0:
+            status = 'new'
+        elif covered >= total_combos:
+            status = 'full'
+        else:
+            status = 'partial'
+
+        result[sym] = {
+            'symbol': sym,
+            'company': company,
+            'covered_combos': covered,
+            'total_combos': total_combos,
+            'status': status,
+            'covered_years': covered_years,
+            'missing_years': missing_years,
+        }
+    return result
+
+
 # Page configuration
 st.set_page_config(
     page_title="Document Downloader",
@@ -152,13 +231,14 @@ download_transcripts = st.sidebar.checkbox(
 
 # Reload mode — shown indented under Investor Transcripts
 reload_mode = st.sidebar.radio(
-    "Reload",
-    options=["Skip existing", "Re-download existing"],
+    "Reload mode",
+    options=["⏭️ Skip already processed", "🔄 Re-download all"],
     index=0,
-    help="Skip existing: skip companies/years already in the database (default). "
-         "Re-download existing: force re-download even when records already exist.",
+    help=("⏭️ Skip already processed: bypass companies/years that already have "
+          "records in the database (faster, avoids duplicates). \n"
+          "🔄 Re-download all: force re-download even when records exist."),
 )
-force_reload = reload_mode == "Re-download existing"
+force_reload = reload_mode == "🔄 Re-download all"
 
 # Build content_types list based on selections
 content_types = []
@@ -223,8 +303,8 @@ else:
     current_sector_id = None
 
 # Main content
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files", "📊 Today's Downloads", "🔍 Missing Reports"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files", "📊 Today's Downloads", "🔍 Missing Reports", "📈 S&P 500 Overview"])
 
 with tab1:
     st.header("Select Companies to Download")
@@ -278,8 +358,14 @@ with tab1:
             # Quick select options
             quick_select = st.selectbox(
                 "Quick Select",
-                ["Custom Selection", "All Companies", "Top 10 (by Market Cap)", "Top 50 (by Market Cap)",
-                    "Top 100 (by Market Cap)", "Tech Companies", "Energy Companies"]
+                ["Custom Selection", "All Companies",
+                 "Top 10 (by Market Cap)", "Top 50 (by Market Cap)",
+                 "Top 100 (by Market Cap)", "Top 200 (by Market Cap)",
+                 "Top 500 (All S&P 500)",
+                 "Tech Companies", "Energy Companies", "Healthcare Companies",
+                 "Financial Companies", "Industrial Companies",
+                 "Real Estate Companies", "Consumer Companies",
+                 "Communication Services", "Utilities"]
             )
 
         # Apply filters
@@ -305,6 +391,10 @@ with tab1:
             filtered_df = filtered_df.sort_values('market_cap_rank').head(50)
         elif quick_select == "Top 100 (by Market Cap)":
             filtered_df = filtered_df.sort_values('market_cap_rank').head(100)
+        elif quick_select == "Top 200 (by Market Cap)":
+            filtered_df = filtered_df.sort_values('market_cap_rank').head(200)
+        elif quick_select in ("Top 500 (All S&P 500)", "All Companies"):
+            filtered_df = filtered_df.sort_values('market_cap_rank')
         elif quick_select == "Tech Companies":
             sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
             if sector_col in df.columns:
@@ -315,6 +405,41 @@ with tab1:
             if sector_col in df.columns:
                 filtered_df = filtered_df[filtered_df[sector_col].str.contains(
                     'Energy', case=False, na=False)]
+        elif quick_select == "Healthcare Companies":
+            sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
+            if sector_col in df.columns:
+                filtered_df = filtered_df[filtered_df[sector_col].str.contains(
+                    'Health', case=False, na=False)]
+        elif quick_select == "Financial Companies":
+            sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
+            if sector_col in df.columns:
+                filtered_df = filtered_df[filtered_df[sector_col].str.contains(
+                    'Financ', case=False, na=False)]
+        elif quick_select == "Industrial Companies":
+            sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
+            if sector_col in df.columns:
+                filtered_df = filtered_df[filtered_df[sector_col].str.contains(
+                    'Industrial', case=False, na=False)]
+        elif quick_select == "Real Estate Companies":
+            sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
+            if sector_col in df.columns:
+                filtered_df = filtered_df[filtered_df[sector_col].str.contains(
+                    'Real Estate', case=False, na=False)]
+        elif quick_select == "Consumer Companies":
+            sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
+            if sector_col in df.columns:
+                filtered_df = filtered_df[filtered_df[sector_col].str.contains(
+                    'Consumer|Discretionary|Staples|Cyclical|Defensive', case=False, na=False)]
+        elif quick_select == "Communication Services":
+            sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
+            if sector_col in df.columns:
+                filtered_df = filtered_df[filtered_df[sector_col].str.contains(
+                    'Communication', case=False, na=False)]
+        elif quick_select == "Utilities":
+            sector_col = 'Sector' if 'Sector' in df.columns else 'GICS Sector'
+            if sector_col in df.columns:
+                filtered_df = filtered_df[filtered_df[sector_col].str.contains(
+                    'Utilities|Utility', case=False, na=False)]
 
         # Always sort by market cap rank for display
         filtered_df = filtered_df.sort_values('market_cap_rank')
@@ -530,6 +655,89 @@ with tab3:
         st.metric(
             "Sector ID", current_sector_id if enable_sector_mapping else "Not Set")
 
+    # ── Coverage pre-flight check ─────────────────────────────────────────
+    _tab3_years = st.session_state.get('years_to_download')
+    _tab3_syms: list = []
+    _tab3_names: list = []
+    if st.session_state.selected_companies:
+        for _c3 in st.session_state.selected_companies:
+            _p3 = _c3.split(' - ')[0]
+            _tab3_syms.append(_p3.split(' ')[-1])
+            _tab3_names.append(_c3.split(' - ', 1)[1] if ' - ' in _c3 else _p3.split(' ')[-1])
+
+    _show_coverage = (
+        not force_reload
+        and len(_tab3_syms) > 0
+        and content_types
+        and _tab3_years
+    )
+
+    _coverage_data: dict = {}
+    _companies_to_skip: set = set()   # symbols fully covered → skip entirely
+    _companies_partial: set = set()   # symbols partially covered
+    _companies_new: set = set()       # symbols with no data yet
+
+    if _show_coverage:
+        with st.spinner("🔍 Checking database coverage..."):
+            try:
+                _coverage_data = _check_company_coverage(
+                    tuple(_tab3_syms),
+                    tuple(_tab3_names),
+                    tuple(sorted(_tab3_years)),
+                    tuple(sorted(content_types)),
+                )
+                for _sym, _info in _coverage_data.items():
+                    if _info['status'] == 'full':
+                        _companies_to_skip.add(_sym)
+                    elif _info['status'] == 'partial':
+                        _companies_partial.add(_sym)
+                    else:
+                        _companies_new.add(_sym)
+            except Exception as _cov_e:
+                st.caption(f"Coverage check unavailable: {_cov_e}")
+
+        st.markdown("---")
+        st.subheader("📊 Pre-Download Coverage Check")
+
+        _cv1, _cv2, _cv3, _cv4 = st.columns(4)
+        _cv1.metric("🆕 Will Download", len(_companies_new),
+                    help="No records in DB — full download needed")
+        _cv2.metric("⚡ Partial Update", len(_companies_partial),
+                    help="Some years present — only missing years will be fetched")
+        _cv3.metric("⏭️ Will Skip", len(_companies_to_skip),
+                    help="All requested year/content combinations already in DB")
+        _actual_to_run = len(_tab3_syms) - len(_companies_to_skip)
+        _cv4.metric("▶️ Effective Run", _actual_to_run,
+                    help="Companies that will actually be processed")
+
+        if _companies_to_skip:
+            with st.expander(
+                f"⏭️ {len(_companies_to_skip)} companies will be **skipped** (all years already in DB)",
+                expanded=len(_companies_to_skip) <= 20,
+            ):
+                _skip_rows = [
+                    {"Symbol": s, "Company": _coverage_data[s]['company'],
+                     "Covered Years": ", ".join(str(y) for y in _coverage_data[s]['covered_years'])}
+                    for s in sorted(_companies_to_skip)
+                ]
+                st.dataframe(pd.DataFrame(_skip_rows), hide_index=True, use_container_width=True)
+                st.caption(
+                    "Switch sidebar to **🔄 Re-download all** to force re-processing these companies.")
+
+        if _companies_partial:
+            with st.expander(
+                f"⚡ {len(_companies_partial)} companies need **partial update** (some years missing)",
+                expanded=False,
+            ):
+                _partial_rows = [
+                    {"Symbol": s,
+                     "Company": _coverage_data[s]['company'],
+                     "Already Have": ", ".join(str(y) for y in _coverage_data[s]['covered_years']),
+                     "Will Fetch": ", ".join(str(y) for y in _coverage_data[s]['missing_years'])}
+                    for s in sorted(_companies_partial)
+                ]
+                st.dataframe(pd.DataFrame(_partial_rows), hide_index=True, use_container_width=True)
+
     # Validation
     can_download = True
     warnings = []
@@ -554,20 +762,28 @@ with tab3:
     if st.session_state.is_downloading:
         st.info("⏳ Download in progress — please wait...")
     elif can_download:
+        _effective = company_count - len(_companies_to_skip) if not force_reload else company_count
         col1, col2 = st.columns([2, 1])
         with col1:
-            st.markdown("""
-            **Ready to download!** Click the button below to start downloading sustainability reports 
-            for the selected companies.
-            """)
+            if _companies_to_skip and not force_reload:
+                st.markdown(
+                    f"**Ready!** **{len(_companies_to_skip)}** fully-covered companies will be "
+                    f"skipped. **{_effective}** companies will be processed."
+                )
+            else:
+                st.markdown(
+                    "**Ready to download!** Click the button below to start downloading."
+                )
         with col2:
-            estimated_time = company_count * delay_seconds * 10  # rough estimate
+            estimated_time = max(_effective, 1) * delay_seconds * 10
             st.caption(f"⏱️ Estimated time: ~{estimated_time/60:.1f} minutes")
 
     # Button click only sets state and triggers a rerun so the button
     # renders as disabled BEFORE the (blocking) download loop starts.
     if st.button("🚀 Start Download", type="primary", use_container_width=True,
                  disabled=not can_download or st.session_state.is_downloading):
+        # Persist coverage data into session state for the download loop
+        st.session_state['_bypass_symbols'] = set(_companies_to_skip) if not force_reload else set()
         st.session_state.is_downloading = True
         st.session_state.download_complete = False
         st.rerun()
@@ -615,12 +831,6 @@ with tab3:
         company_progress_bar = st.progress(0)
         status_text = st.empty()
 
-        col1, col2, col3, col4 = st.columns(4)
-        metric_processed = col1.empty()
-        metric_found = col2.empty()
-        metric_downloaded = col3.empty()
-        metric_failed = col4.empty()
-
         # Get selected companies data
         if st.session_state.companies_df is not None:
             df = st.session_state.companies_df
@@ -630,17 +840,38 @@ with tab3:
                 parts = c.split(' - ')[0]  # "#1 AAPL"
                 symbol = parts.split(' ')[-1]  # "AAPL"
                 selected_symbols.append(symbol)
-            companies_to_process = df[df['Symbol'].isin(selected_symbols)]
         else:
             st.error("Please load company list first")
             st.stop()
+
+        # ── Pre-flight bypass: remove fully-covered companies from the run ──
+        _bypass_set = st.session_state.pop('_bypass_symbols', set())
+        symbols_to_run = [s for s in selected_symbols if s not in _bypass_set]
+        bypassed_count = len(selected_symbols) - len(symbols_to_run)
+
+        col1, col2, col3, col4, col5 = st.columns(5)
+        metric_processed = col1.empty()
+        metric_found = col2.empty()
+        metric_downloaded = col3.empty()
+        metric_failed = col4.empty()
+        metric_skipped = col5.empty()
+        if bypassed_count > 0:
+            metric_skipped.metric("⏭️ Bypassed", bypassed_count)
+
+        companies_to_process = df[df['Symbol'].isin(symbols_to_run)]
 
         total_companies = len(companies_to_process)
         total_years = len(years_filter) if years_filter else 1
         results = []
 
-        status_text.info(
-            f"Processing {total_companies} companies across {total_years} year(s)...")
+        if bypassed_count > 0:
+            status_text.success(
+                f"⏭️ Skipped {bypassed_count} fully-covered companies. "
+                f"Processing {total_companies} remaining..."
+            )
+        else:
+            status_text.info(
+                f"Processing {total_companies} companies across {total_years} year(s)...")
 
         # OPTIMIZED: Process each company ONCE and filter for ALL years at once
         # This avoids re-crawling the same website for each year
@@ -711,12 +942,15 @@ with tab3:
                 total_downloaded = len(
                     multi_year_downloader.downloaded_reports)
                 total_failed = len(multi_year_downloader.failed_downloads)
+                _skipped_this = sum(
+                    1 for r in results if r.get('status') == 'skipped_existing')
                 metric_processed.metric(
                     "Processed", f"{company_idx + 1}/{total_companies}")
                 metric_found.metric(
                     "Years covered", f"{len(years_covered)}/{total_years}")
                 metric_downloaded.metric("Downloaded", total_downloaded)
                 metric_failed.metric("Failed", total_failed)
+                metric_skipped.metric("⏭️ Bypassed", bypassed_count + _skipped_this)
 
             # Final year progress
             year_progress_bar.progress(1.0)
@@ -771,6 +1005,8 @@ with tab3:
                         "**📅 Years Found:** Searching...")
 
                 # Update metrics
+                _skipped_nf = sum(
+                    1 for r in results if r.get('status') == 'skipped_existing')
                 metric_processed.metric(
                     "Processed", f"{len(results)}/{total_companies}")
                 metric_found.metric("Reports Found", sum(
@@ -779,6 +1015,7 @@ with tab3:
                     "Downloaded", len(downloader.downloaded_reports))
                 metric_failed.metric("Failed", len(
                     downloader.failed_downloads))
+                metric_skipped.metric("⏭️ Bypassed", bypassed_count + _skipped_nf)
 
             # Final year summary
             if years_found:
@@ -1498,6 +1735,145 @@ with tab6:
             st.caption(
                 f"Showing **{len(matrix_df)}** companies  |  ✅ All types present  |  ⚠️ Partial  |  ❌ None")
             st.dataframe(matrix_df, hide_index=True, use_container_width=True)
+
+# --- S&P 500 Overview Tab ---
+with tab7:
+    st.header("📈 S&P 500 Overview")
+    st.markdown("Full S&P 500 universe — market cap rankings, sectors, and document download coverage.")
+
+    # Load S&P 500 CSV
+    try:
+        _sp5_df = _load_sp500_csv_df()
+    except Exception as _sp5_e:
+        st.error(f"❌ Failed to load S&P 500 data: {_sp5_e}")
+        st.stop()
+
+    # Load DB coverage (which tickers have any record in t_data_source)
+    _sp5_in_db: set = set()
+    _sp5_db_err = None
+    try:
+        import psycopg2
+        from Utilities.Lookups import DB_Connection as _OvDBConn
+        _sp5_cs = _OvDBConn().DB_CONNECTION_STRING
+        if _sp5_cs:
+            _sp5_conn = psycopg2.connect(_sp5_cs)
+            _sp5_cur = _sp5_conn.cursor()
+            _sp5_cur.execute(
+                "SELECT DISTINCT UPPER(TRIM(ticker)) FROM t_data_source "
+                "WHERE ticker IS NOT NULL AND TRIM(ticker) != ''"
+            )
+            _sp5_in_db = {row[0] for row in _sp5_cur.fetchall()}
+            _sp5_cur.close()
+            _sp5_conn.close()
+    except Exception as _sp5_dbe:
+        _sp5_db_err = str(_sp5_dbe)
+
+    if _sp5_db_err:
+        st.warning(f"⚠️ Could not load DB coverage data: {_sp5_db_err}")
+
+    # Add coverage flag
+    _sp5_view = _sp5_df.copy()
+    _sp5_view['has_data'] = _sp5_view['symbol'].isin(_sp5_in_db)
+    _sp5_view['Status'] = _sp5_view['has_data'].apply(lambda x: "✅ In DB" if x else "❌ Missing")
+
+    # Summary metrics
+    _sp5_total = len(_sp5_view)
+    _sp5_in_n = int(_sp5_view['has_data'].sum())
+    _sp5_miss_n = _sp5_total - _sp5_in_n
+    _sp5_cov = _sp5_in_n / _sp5_total * 100 if _sp5_total > 0 else 0
+
+    ov_c1, ov_c2, ov_c3, ov_c4 = st.columns(4)
+    ov_c1.metric("🏢 S&P 500 Universe", _sp5_total)
+    ov_c2.metric("✅ Has Downloads", _sp5_in_n)
+    ov_c3.metric("❌ No Downloads", _sp5_miss_n)
+    ov_c4.metric("📈 Coverage", f"{_sp5_cov:.1f}%")
+
+    st.markdown("---")
+
+    # Sector breakdown table with inline progress bars
+    st.subheader("📊 Coverage by Sector")
+
+    _sec_grp = (
+        _sp5_view.groupby('sector')
+        .agg(Companies=('symbol', 'count'), In_DB=('has_data', 'sum'))
+        .reset_index()
+    )
+    _sec_grp['Missing'] = _sec_grp['Companies'] - _sec_grp['In_DB']
+    _sec_grp['Coverage %'] = (_sec_grp['In_DB'] / _sec_grp['Companies'] * 100).round(1)
+    _sec_grp['Progress'] = _sec_grp['Coverage %'].apply(
+        lambda p: "█" * int(p / 5) + "░" * (20 - int(p / 5))
+    )
+    _sec_grp = _sec_grp.sort_values('Companies', ascending=False).reset_index(drop=True)
+    _sec_display = _sec_grp.rename(columns={
+        'sector': 'Sector', 'In_DB': 'In Database'
+    })[['Sector', 'Companies', 'In Database', 'Missing', 'Coverage %', 'Progress']]
+    st.dataframe(_sec_display, hide_index=True, use_container_width=True)
+
+    st.markdown("---")
+
+    # Top 25 by market cap with status
+    st.subheader("🏆 Top 25 Companies by Market Cap")
+    _top25 = _sp5_view.sort_values('rank').head(25)[
+        ['rank', 'symbol', 'company', 'market_cap', 'sector', 'Status']
+    ].rename(columns={
+        'rank': '#', 'symbol': 'Symbol', 'company': 'Company',
+        'market_cap': 'Market Cap', 'sector': 'Sector'
+    })
+    st.dataframe(_top25, hide_index=True, use_container_width=True)
+
+    st.markdown("---")
+
+    # Full S&P 500 browser
+    st.subheader("🔍 S&P 500 Company Browser")
+
+    ov_f1, ov_f2, ov_f3 = st.columns(3)
+    with ov_f1:
+        _ov_sectors = ["All Sectors"] + sorted(_sp5_df['sector'].dropna().unique().tolist())
+        _ov_sec_sel = st.selectbox("Filter by Sector", _ov_sectors, key="ov_sector_sel")
+    with ov_f2:
+        _ov_stat_sel = st.selectbox(
+            "Filter by Status", ["All", "✅ In Database", "❌ No Downloads"], key="ov_status_sel")
+    with ov_f3:
+        _ov_srch = st.text_input(
+            "Search Symbol or Company", placeholder="e.g. AAPL, Apple", key="ov_search")
+
+    _ov_filt = _sp5_view.copy()
+    if _ov_sec_sel != "All Sectors":
+        _ov_filt = _ov_filt[_ov_filt['sector'] == _ov_sec_sel]
+    if _ov_stat_sel == "✅ In Database":
+        _ov_filt = _ov_filt[_ov_filt['has_data']]
+    elif _ov_stat_sel == "❌ No Downloads":
+        _ov_filt = _ov_filt[~_ov_filt['has_data']]
+    if _ov_srch:
+        _ov_filt = _ov_filt[
+            _ov_filt['symbol'].str.contains(_ov_srch, case=False, na=False) |
+            _ov_filt['company'].str.contains(_ov_srch, case=False, na=False)
+        ]
+
+    st.caption(f"Showing **{len(_ov_filt)}** of **{_sp5_total}** S&P 500 companies")
+
+    st.dataframe(
+        _ov_filt[['rank', 'symbol', 'company', 'market_cap', 'sector', 'Status']].rename(columns={
+            'rank': '#', 'symbol': 'Symbol', 'company': 'Company',
+            'market_cap': 'Market Cap', 'sector': 'Sector'
+        }),
+        hide_index=True, use_container_width=True
+    )
+
+    # Export missing list
+    _sp5_missing_df = _sp5_view[~_sp5_view['has_data']][
+        ['rank', 'symbol', 'company', 'market_cap', 'sector']
+    ].rename(columns={'rank': 'Rank', 'symbol': 'Symbol', 'company': 'Company',
+                      'market_cap': 'Market Cap', 'sector': 'Sector'})
+    if len(_sp5_missing_df) > 0:
+        st.markdown("---")
+        st.download_button(
+            label=f"⬇️ Export {len(_sp5_missing_df)} Missing Companies to CSV",
+            data=_sp5_missing_df.to_csv(index=False),
+            file_name="sp500_missing_downloads.csv",
+            mime="text/csv",
+        )
+
 
 # Footer
 st.markdown("---")

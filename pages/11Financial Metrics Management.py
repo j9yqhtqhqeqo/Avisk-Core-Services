@@ -120,7 +120,7 @@ def _load_ds_companies() -> list:
     return companies
 
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "🏢 Select Companies",
     "📅 Select Years",
     "🚀 Extract Financial Data",
@@ -128,6 +128,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🔍 Search Financial Metrics",
     "🔬 Data Quality",
     "🔎 Cross-Source Verification",
+    "📄 10-K Validation",
 ])
 
 # =============================================================================
@@ -161,7 +162,9 @@ with tab1:
                 "Quick Select",
                 ["Custom Selection", "All Companies",
                  "Top 10 (by Market Cap)", "Top 50 (by Market Cap)",
-                 "Top 100 (by Market Cap)", "Tech Companies", "Energy Companies",
+                 "Top 100 (by Market Cap)", "Top 200 (by Market Cap)",
+                 "Top 500 (All S&P 500)",
+                 "Tech Companies", "Energy Companies",
                  "Financial Companies", "Healthcare Companies"],
             )
 
@@ -198,7 +201,10 @@ with tab1:
         elif quick_select == "Top 100 (by Market Cap)":
             fdf = df.sort_values("rank").head(
                 100) if "rank" in df.columns else df.head(100)
-        elif quick_select == "All Companies":
+        elif quick_select == "Top 200 (by Market Cap)":
+            fdf = df.sort_values("rank").head(
+                200) if "rank" in df.columns else df.head(200)
+        elif quick_select in ("Top 500 (All S&P 500)", "All Companies"):
             fdf = df.copy()
 
         rank_col = "rank" if "rank" in fdf.columns else None
@@ -359,6 +365,22 @@ with tab3:
             horizontal=True,
         )
         skip_existing = reload_mode.startswith("Skip")
+
+        # ETA estimate: ~4 s/company (EDGAR fetch + share patch)
+        _est_mins = max(1, round(len(companies_to_run) * 4 / 60))
+        if len(companies_to_run) > 100:
+            st.info(
+                f"⏱️ **Estimated time: ~{_est_mins} minutes** for "
+                f"{len(companies_to_run)} companies.  "
+                "Use **Skip companies already in DB** to only process new/missing companies "
+                "and significantly reduce run time on subsequent extractions.  "
+                "Keep this browser tab open throughout."
+            )
+        elif len(companies_to_run) > 50:
+            st.info(
+                f"⏱️ Estimated time: ~{_est_mins} minutes for "
+                f"{len(companies_to_run)} companies."
+            )
 
         if st.button(
             (f"🚀 Extract Financial Data"
@@ -1768,6 +1790,8 @@ with tab7:
 
             _ver_progress.progress(100)
             _ver_status.text("Done!")
+            # Persist for Tab 8 (10-K Validation)
+            st.session_state["ver_discrepancies_last"] = all_discrepancies
 
             # ── Summary metrics ───────────────────────────────────────────────
             _total_checked = len(all_discrepancies) + len(all_matches)
@@ -1861,7 +1885,8 @@ with tab7:
                 # ── Breakdown by field ────────────────────────────────────────
                 st.markdown("#### Discrepancies by Field")
                 _by_field = (
-                    _disc_df[_disc_df["Diff %"] != "—"]
+                    _disc_df[pd.to_numeric(_disc_df["Diff %"], errors="coerce").notna()]
+                    .assign(**{"Diff %": pd.to_numeric(_disc_df["Diff %"], errors="coerce")})
                     .groupby("Field")
                     .agg(
                         Count=("Diff %", "count"),
@@ -1896,3 +1921,557 @@ with tab7:
                     file_name="avisk_verification_discrepancies.csv",
                     mime="text/csv",
                 )
+
+# =============================================================================
+# TAB 8 - 10-K Validation (third-source confirmation via EDGAR XBRL)
+# =============================================================================
+with tab8:
+    st.header("📄 10-K Validation")
+    st.markdown(
+        "Drill into individual discrepancies by fetching the raw XBRL concept "
+        "values directly from the **SEC EDGAR 10-K filing** for that company and year.  "
+        "This is a **third data source** — it shows exactly what each 10-K reported at "
+        "the XBRL concept level so you can identify which value (our extraction or "
+        "Yahoo Finance) is correct, and diagnose the root cause of every difference."
+    )
+    st.info(
+        "💡 **How to use:** Run **Cross-Source Verification** (Tab 7) first.  "
+        "Then return here and select any flagged discrepancy from the dropdown.  "
+        "Clicking **Fetch 10-K Data** makes ~2 EDGAR API calls and shows the full "
+        "XBRL concept breakdown from that specific filing."
+    )
+    st.markdown("---")
+
+    # ── Diagnostic concept map: field → {friendly label: [xbrl_concepts]} ──────
+    _10k_diag = {
+        "Free Cash Flow": {
+            "CF – Operations": [
+                "NetCashProvidedByUsedInOperatingActivities",
+                "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+            ],
+            "CapEx – PP&E": [
+                "PaymentsToAcquirePropertyPlantAndEquipment",
+            ],
+            "CapEx – Capital Improvements": [
+                "PaymentsForCapitalImprovements",
+            ],
+            "CapEx – Productive Assets (umbrella)": [
+                "PaymentsToAcquireProductiveAssets",
+            ],
+            "CapEx – Capitalized Software": [
+                "PaymentsForSoftware",
+                "PaymentsToDevelopSoftware",
+            ],
+            "CapEx – Intangibles & Licenses": [
+                "PaymentsToAcquireIntangibleAssets",
+                "PaymentsToAcquireOtherIntangibleAssets",
+            ],
+            "Finance Lease Principal Payments": [
+                "FinanceLeasePrincipalPayments",
+            ],
+            "CapEx – Other / Discontinued": [
+                "CapitalExpenditureDiscontinuedOperations",
+                "PaymentsForProceedsFromOtherProductiveAssets",
+            ],
+        },
+        "Revenue": {
+            "Revenue – ASC 606 (excl. assessed tax)": [
+                "RevenueFromContractWithCustomerExcludingAssessedTax",
+            ],
+            "Revenue – ASC 606 (incl. assessed tax)": [
+                "RevenueFromContractWithCustomerIncludingAssessedTax",
+            ],
+            "Revenues (generic)": ["Revenues"],
+            "Sales Revenue, Net": ["SalesRevenueNet"],
+            "Total Revenues": ["TotalRevenues"],
+            "Interest & Dividend Income": ["InterestAndDividendIncomeOperating"],
+            "Net Interest Income": ["InterestIncomeExpenseNet"],
+            "Regulated / Utility Revenue": [
+                "RegulatedAndUnregulatedOperatingRevenue",
+            ],
+            "Real Estate Revenue (REIT)": ["RealEstateRevenueNet"],
+        },
+        "Net Income": {
+            "Net Income / Loss": ["NetIncomeLoss"],
+            "Profit / Loss (incl. NCI)": ["ProfitLoss"],
+            "Net Income to Common": [
+                "NetIncomeLossAvailableToCommonStockholdersBasic",
+            ],
+            "Income from Continuing Ops": [
+                "IncomeLossFromContinuingOperations",
+            ],
+        },
+        "Total Assets": {
+            "Total Assets": ["Assets"],
+        },
+        "Total Liabilities": {
+            "Liabilities (GAAP)": ["Liabilities"],
+            "Redeemable NCI": [
+                "RedeemableNoncontrollingInterestEquityCarryingAmount",
+            ],
+            "Temporary / Redeemable Equity": [
+                "TemporaryEquityCarryingAmountAttributableToParent",
+                "TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests",
+            ],
+        },
+        "Equity": {
+            "Stockholders' Equity (parent only)": ["StockholdersEquity"],
+            "Stockholders' Equity (incl. NCI)": [
+                "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+            ],
+            "Noncontrolling Interest (NCI)": ["MinorityInterest"],
+            "Redeemable / Temp. Equity": [
+                "TemporaryEquityCarryingAmountAttributableToParent",
+            ],
+        },
+        "Cash Flow \u2013 Operations": {
+            "CF – Operations": [
+                "NetCashProvidedByUsedInOperatingActivities",
+            ],
+            "CF – Operations (continuing)": [
+                "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+            ],
+        },
+    }
+
+    # ── Load discrepancies from session_state ────────────────────────────────
+    _disc_cache = st.session_state.get("ver_discrepancies_last", [])
+
+    if not _disc_cache:
+        st.warning(
+            "No discrepancy data found.  "
+            "Run **Cross-Source Verification** (Tab 7) first, then return here."
+        )
+    else:
+        _10k_all = pd.DataFrame(_disc_cache)
+        # Keep only numeric Diff % rows (filter out error sentinel rows)
+        _10k_all = _10k_all[
+            _10k_all["Diff %"].apply(lambda x: isinstance(x, (int, float)))
+        ].reset_index(drop=True)
+
+        st.markdown(
+            f"**{len(_10k_all)} discrepancies** loaded from the last Tab 7 run — "
+            "sorted by magnitude (largest first)."
+        )
+
+        _10k_sorted = _10k_all.sort_values(
+            "Diff %", ascending=False
+        ).reset_index(drop=True)
+
+        def _disc_label(i: int) -> str:
+            r = _10k_sorted.iloc[i]
+            ev = r["EDGAR Value"]
+            yv = r["Yahoo Value"]
+            def _short(v):
+                if not isinstance(v, (int, float)):
+                    return str(v)
+                if abs(v) >= 1e12:
+                    return f"${v/1e12:.2f}T"
+                if abs(v) >= 1e9:
+                    return f"${v/1e9:.2f}B"
+                if abs(v) >= 1e6:
+                    return f"${v/1e6:.1f}M"
+                return f"${v:,.0f}"
+            return (
+                f"{r['Symbol']} | {r['Year']} | {r['Field']} "
+                f"→  EDGAR {_short(ev)}  /  Yahoo {_short(yv)}  "
+                f"({r['Diff %']:.1f}% diff)"
+            )
+
+        _10k_sel_idx = st.selectbox(
+            "Select a discrepancy to investigate",
+            options=range(len(_10k_sorted)),
+            format_func=_disc_label,
+            key="10k_sel_idx",
+        )
+
+        _10k_row = _10k_sorted.iloc[_10k_sel_idx]
+        _10k_sym    = _10k_row["Symbol"]
+        _10k_name   = _10k_row["Company"]
+        _10k_year   = int(_10k_row["Year"])
+        _10k_field  = _10k_row["Field"]
+        _10k_edgar  = float(_10k_row["EDGAR Value"])
+        _10k_yahoo  = float(_10k_row["Yahoo Value"])
+        _10k_pct    = float(_10k_row["Diff %"])
+
+        def _fmt_val(v: float) -> str:
+            if abs(v) >= 1e12:
+                return f"${v/1e12:,.3f}T"
+            if abs(v) >= 1e9:
+                return f"${v/1e9:,.2f}B"
+            if abs(v) >= 1e6:
+                return f"${v/1e6:,.1f}M"
+            return f"${v:,.0f}"
+
+        mc1, mc2, mc3 = st.columns(3)
+        mc1.metric("Our EDGAR Value", _fmt_val(_10k_edgar))
+        mc2.metric("Yahoo Finance Value", _fmt_val(_10k_yahoo))
+        mc3.metric("Difference", f"{_10k_pct:.1f}%")
+        if _10k_row.get("Note"):
+            st.caption(f"🔎 {_10k_row['Note']}")
+
+        if st.button(
+            f"🔍 Fetch {_10k_year} 10-K XBRL Data for {_10k_sym}",
+            type="primary",
+            key="10k_fetch_btn",
+        ):
+            import requests as _r10
+            import psycopg2 as _pg10
+            from Utilities.Lookups import DB_Connection as _DBC10
+
+            _EDGAR_HDR = {
+                "User-Agent": "Avisk Research contact@avisk.com",
+                "Accept": "application/json",
+            }
+
+            # ── Step 1: Look up CIK from DB ──────────────────────────────────
+            _10k_cik = None
+            try:
+                _c10 = _pg10.connect(_DBC10().DB_CONNECTION_STRING)
+                _cur10 = _c10.cursor()
+                _cur10.execute(
+                    "SELECT edgar_cik FROM t_financial_metrics "
+                    "WHERE company_name = %s AND edgar_cik IS NOT NULL "
+                    "LIMIT 1",
+                    (_10k_name,),
+                )
+                _r10_row = _cur10.fetchone()
+                if _r10_row:
+                    _10k_cik = int(_r10_row[0])
+                _cur10.close()
+                _c10.close()
+            except Exception as _exc10:
+                st.error(f"DB lookup failed: {_exc10}")
+
+            if not _10k_cik:
+                st.error(
+                    f"No `edgar_cik` found for **{_10k_name}**.  "
+                    "Run an extraction in Tab 3 first to populate that column."
+                )
+                st.stop()
+
+            # ── Step 2: Find the 10-K accession for the target fiscal year ───
+            with st.spinner(
+                f"Looking up EDGAR filings for CIK {_10k_cik} …"
+            ):
+                _subs_url = (
+                    f"https://data.sec.gov/submissions/"
+                    f"CIK{_10k_cik:010d}.json"
+                )
+                try:
+                    _subs_r = _r10.get(_subs_url, headers=_EDGAR_HDR, timeout=30)
+                    _subs_r.raise_for_status()
+                    _subs = _subs_r.json()
+                except Exception as _exc10:
+                    st.error(f"EDGAR submissions API failed: {_exc10}")
+                    st.stop()
+
+            def _find_accn(filings_dict: dict, target_year: int):
+                """Return (accn, filingDate, reportDate) for the 10-K matching target_year."""
+                _forms = filings_dict.get("form", [])
+                _accns = filings_dict.get("accessionNumber", [])
+                _fdates = filings_dict.get("filingDate", [])
+                _rdates = filings_dict.get("reportDate", [])
+                for _f, _a, _fd, _rd in zip(_forms, _accns, _fdates, _rdates):
+                    if _f not in {"10-K", "10-K405", "10-KSB", "10-KT"}:
+                        continue
+                    if not _rd or len(_rd) < 4:
+                        continue
+                    _rdy = int(_rd[:4])
+                    # Adjust for 52/53-week fiscal years that end in early January
+                    if len(_rd) >= 10:
+                        _rdm = int(_rd[5:7])
+                        _rdd = int(_rd[8:10])
+                        if _rdm == 1 and _rdd <= 10:
+                            _rdy -= 1
+                    if _rdy == target_year:
+                        return _a, _fd, _rd
+                return None, None, None
+
+            _accn, _fdate, _rdate = _find_accn(
+                _subs.get("filings", {}).get("recent", {}), _10k_year
+            )
+
+            # If not found in recent, check older history files
+            if not _accn:
+                for _fentry in _subs.get("filings", {}).get("files", []):
+                    _sub_url2 = (
+                        "https://data.sec.gov/submissions/"
+                        + _fentry.get("name", "")
+                    )
+                    try:
+                        _sf2 = _r10.get(_sub_url2, headers=_EDGAR_HDR, timeout=20)
+                        _sf2.raise_for_status()
+                        _accn, _fdate, _rdate = _find_accn(
+                            _sf2.json(), _10k_year
+                        )
+                    except Exception:
+                        pass
+                    if _accn:
+                        break
+
+            if not _accn:
+                st.error(
+                    f"No 10-K filing found for **{_10k_sym}** FY{_10k_year} in EDGAR.  "
+                    "The company may use a non-standard fiscal year or the filing "
+                    "may not yet be indexed."
+                )
+                st.stop()
+
+            _accn_nodash = _accn.replace("-", "")
+            _filing_idx_url = (
+                f"https://www.sec.gov/Archives/edgar/data/"
+                f"{_10k_cik}/{_accn_nodash}/"
+            )
+            _filings_list_url = (
+                f"https://www.sec.gov/cgi-bin/browse-edgar"
+                f"?action=getcompany&CIK={_10k_cik}&type=10-K"
+            )
+
+            st.success(
+                f"✅ Found 10-K — accession **{_accn}** "
+                f"(filed {_fdate}, period ending {_rdate})"
+            )
+            st.markdown(
+                f"📎 [View filing index on EDGAR]({_filing_idx_url})  &nbsp;|&nbsp;  "
+                f"[All {_10k_sym} 10-K filings]({_filings_list_url})"
+            )
+
+            # ── Step 3: Fetch company facts and filter by this accession ─────
+            with st.spinner(
+                "Fetching XBRL concept values from the 10-K filing …"
+            ):
+                _cf_url = (
+                    f"https://data.sec.gov/api/xbrl/companyfacts/"
+                    f"CIK{_10k_cik:010d}.json"
+                )
+                try:
+                    _cf_r = _r10.get(_cf_url, headers=_EDGAR_HDR, timeout=60)
+                    _cf_r.raise_for_status()
+                    _us_gaap = _cf_r.json().get("facts", {}).get("us-gaap", {})
+                except Exception as _exc10:
+                    st.error(f"Company facts fetch failed: {_exc10}")
+                    st.stop()
+
+            def _concept_val(concept: str, accn: str):
+                """Get the value for a concept from a specific 10-K accession."""
+                cd = _us_gaap.get(concept, {})
+                fy_val = None
+                any_val = None
+                for _units in cd.get("units", {}).values():
+                    for _e in _units:
+                        if _e.get("accn") != accn:
+                            continue
+                        _v = _e.get("val")
+                        if _v is None:
+                            continue
+                        any_val = float(_v)
+                        if _e.get("fp") == "FY":
+                            fy_val = float(_v)
+                return fy_val if fy_val is not None else any_val
+
+            # ── Step 4: Collect all diagnostic concepts for the field ────────
+            _diag_groups = _10k_diag.get(_10k_field, {})
+            _concept_rows_10k = []
+            for _lbl, _concepts in _diag_groups.items():
+                _found_val = None
+                _found_concept = None
+                for _c in _concepts:
+                    _v = _concept_val(_c, _accn)
+                    if _v is not None:
+                        _found_val = _v
+                        _found_concept = _c
+                        break
+                _concept_rows_10k.append({
+                    "Line Item":    _lbl,
+                    "XBRL Concept": _found_concept or "— not tagged —",
+                    "10-K Value":   _found_val,
+                })
+
+            _cdf = pd.DataFrame(_concept_rows_10k)
+            _cdf["10-K Value (fmt)"] = _cdf["10-K Value"].apply(
+                lambda v: (
+                    _fmt_val(v) if isinstance(v, (int, float)) and v is not None
+                    else "—"
+                )
+            )
+
+            st.markdown(
+                f"#### XBRL Breakdown — **{_10k_field}** | {_10k_sym} FY{_10k_year}"
+            )
+            st.dataframe(
+                _cdf[["Line Item", "XBRL Concept", "10-K Value (fmt)"]].rename(
+                    columns={"10-K Value (fmt)": "10-K Value"}
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+            # ── FCF reconciliation ───────────────────────────────────────────
+            if _10k_field == "Free Cash Flow":
+                _vmap10 = {r["Line Item"]: r["10-K Value"]
+                           for r in _concept_rows_10k}
+                _cfo10  = (
+                    _vmap10.get("CF – Operations")
+                    or _vmap10.get("CF – Operations (continuing)")
+                )
+                _ppe10   = _vmap10.get("CapEx – PP&E",                          0) or 0
+                _impr10  = _vmap10.get("CapEx – Capital Improvements",          0) or 0
+                _umb10   = _vmap10.get("CapEx – Productive Assets (umbrella)",  0) or 0
+                _soft10  = _vmap10.get("CapEx – Capitalized Software",          0) or 0
+                _int10   = _vmap10.get("CapEx – Intangibles & Licenses",        0) or 0
+                _fin10   = _vmap10.get("Finance Lease Principal Payments",      0) or 0
+                _oth10   = _vmap10.get("CapEx – Other / Discontinued",          0) or 0
+
+                # Three tiers of CapEx breadth
+                _capex_narrow  = max(_umb10, _ppe10 + _impr10)
+                _capex_broad   = _capex_narrow + _soft10 + _int10
+                _capex_widest  = _capex_broad + _fin10 + _oth10
+
+                if _cfo10 is not None:
+                    _fcf_narrow  = _cfo10 - _capex_narrow
+                    _fcf_broad   = _cfo10 - _capex_broad
+                    _fcf_widest  = _cfo10 - _capex_widest
+
+                    def _pct_diff(a, b):
+                        d = abs(b)
+                        return f"{abs(a-b)/max(d,1)*100:.1f}%" if d > 0 else "—"
+
+                    st.markdown("#### FCF Reconciliation")
+                    st.markdown(
+                        f"| CapEx Definition | CFO | CapEx | Computed FCF | "
+                        f"vs. Our EDGAR ({_fmt_val(_10k_edgar)}) | "
+                        f"vs. Yahoo ({_fmt_val(_10k_yahoo)}) |\n"
+                        f"|---|---|---|---|---|---|\n"
+                        f"| **Narrow** — PP&E + Improvements only | "
+                        f"{_fmt_val(_cfo10)} | {_fmt_val(_capex_narrow)} | "
+                        f"**{_fmt_val(_fcf_narrow)}** | "
+                        f"{_pct_diff(_fcf_narrow, _10k_edgar)} | "
+                        f"{_pct_diff(_fcf_narrow, _10k_yahoo)} |\n"
+                        f"| **Broad** — + Software + Intangibles/Licenses | "
+                        f"{_fmt_val(_cfo10)} | {_fmt_val(_capex_broad)} | "
+                        f"**{_fmt_val(_fcf_broad)}** | "
+                        f"{_pct_diff(_fcf_broad, _10k_edgar)} | "
+                        f"{_pct_diff(_fcf_broad, _10k_yahoo)} |\n"
+                        f"| **Widest** — + Finance Leases + Other | "
+                        f"{_fmt_val(_cfo10)} | {_fmt_val(_capex_widest)} | "
+                        f"**{_fmt_val(_fcf_widest)}** | "
+                        f"{_pct_diff(_fcf_widest, _10k_edgar)} | "
+                        f"{_pct_diff(_fcf_widest, _10k_yahoo)} |\n"
+                    )
+
+                    # Advisory message
+                    _extra_capex = _capex_widest - _capex_narrow
+                    if _extra_capex > abs(_10k_edgar - _10k_yahoo) * 0.3:
+                        _closest = min(
+                            [("Narrow", _fcf_narrow),
+                             ("Broad", _fcf_broad),
+                             ("Widest", _fcf_widest)],
+                            key=lambda x: abs(x[1] - _10k_yahoo),
+                        )
+                        st.info(
+                            f"💡 **{_closest[0]}** CapEx definition "
+                            f"({_fmt_val(_closest[1])}) is closest to Yahoo Finance "
+                            f"({_fmt_val(_10k_yahoo)}).  "
+                            f"Additional CapEx beyond PP&E: {_fmt_val(_extra_capex)} — "
+                            "consider extending the CapEx concept map if this pattern "
+                            "is consistent across years."
+                        )
+
+            # ── Revenue: identify which concept Yahoo Finance is likely using ─
+            elif _10k_field == "Revenue":
+                _rev_vals10 = {
+                    r["Line Item"]: r["10-K Value"]
+                    for r in _concept_rows_10k
+                    if r["10-K Value"] is not None
+                }
+                if _rev_vals10:
+                    _best_lbl, _best_v, _best_d = None, None, float("inf")
+                    for _lbl10, _v10 in _rev_vals10.items():
+                        _d = abs(_v10 - _10k_yahoo)
+                        if _d < _best_d:
+                            _best_d = _d
+                            _best_lbl = _lbl10
+                            _best_v = _v10
+                    _match_pct = _best_d / max(abs(_10k_yahoo), 1) * 100
+                    if _match_pct < 5:
+                        st.success(
+                            f"✅ Yahoo Finance value matches **{_best_lbl}** "
+                            f"({_fmt_val(_best_v)}) from the 10-K — "
+                            f"only {_match_pct:.1f}% apart.  "
+                            "Consider adding that XBRL concept to the revenue "
+                            "fallback list if it is consistently more accurate."
+                        )
+                    elif _match_pct < 15:
+                        st.warning(
+                            f"⚠️ Closest match to Yahoo Finance is "
+                            f"**{_best_lbl}** ({_fmt_val(_best_v)}) — "
+                            f"{_match_pct:.1f}% diff.  "
+                            "Partial revenue alignment; Yahoo may be summing "
+                            "multiple line items."
+                        )
+                    else:
+                        st.error(
+                            f"❌ No single XBRL concept is close to Yahoo Finance "
+                            f"({_fmt_val(_10k_yahoo)}).  Yahoo likely aggregates "
+                            "multiple revenue streams not captured in any single "
+                            "XBRL tag."
+                        )
+
+            # ── Equity: NCI reconciliation ───────────────────────────────────
+            elif _10k_field == "Equity":
+                _eq_incl = next(
+                    (r["10-K Value"] for r in _concept_rows_10k
+                     if r["Line Item"] == "Stockholders' Equity (incl. NCI)"
+                     and r["10-K Value"] is not None),
+                    None,
+                )
+                _eq_par = next(
+                    (r["10-K Value"] for r in _concept_rows_10k
+                     if r["Line Item"] == "Stockholders' Equity (parent only)"
+                     and r["10-K Value"] is not None),
+                    None,
+                )
+                _nci = next(
+                    (r["10-K Value"] for r in _concept_rows_10k
+                     if r["Line Item"] == "Noncontrolling Interest (NCI)"
+                     and r["10-K Value"] is not None),
+                    None,
+                )
+                if _eq_incl is not None or _eq_par is not None:
+                    st.markdown("#### Equity Reconciliation")
+                    _rows_eq = []
+                    if _eq_incl is not None:
+                        _rows_eq.append(
+                            ("Equity incl. NCI (our stored value)",
+                             _fmt_val(_eq_incl),
+                             f"{abs(_eq_incl - _10k_edgar)/max(abs(_10k_edgar),1)*100:.1f}% vs. our EDGAR")
+                        )
+                    if _nci is not None:
+                        _rows_eq.append(("Less: Noncontrolling Interest (NCI)",
+                                         _fmt_val(_nci), ""))
+                    if _eq_incl is not None and _nci is not None:
+                        _eq_implied = _eq_incl - _nci
+                        _rows_eq.append((
+                            "**Implied parent-only equity**",
+                            f"**{_fmt_val(_eq_implied)}**",
+                            f"{abs(_eq_implied - _10k_yahoo)/max(abs(_10k_yahoo),1)*100:.1f}% vs. Yahoo",
+                        ))
+                    if _eq_par is not None:
+                        _rows_eq.append((
+                            "Parent-only equity (direct tag)",
+                            _fmt_val(_eq_par),
+                            f"{abs(_eq_par - _10k_yahoo)/max(abs(_10k_yahoo),1)*100:.1f}% vs. Yahoo",
+                        ))
+                    _rows_eq.append(("Yahoo Finance Equity",
+                                     _fmt_val(_10k_yahoo), ""))
+                    _rows_eq.append(("Our EDGAR stored value",
+                                     _fmt_val(_10k_edgar), ""))
+                    st.dataframe(
+                        pd.DataFrame(
+                            _rows_eq,
+                            columns=["Component", "Value", "Note"],
+                        ),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
