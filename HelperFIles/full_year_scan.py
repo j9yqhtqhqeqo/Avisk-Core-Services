@@ -25,6 +25,9 @@ Usage:
   python3 full_year_scan.py [--dry-run] [--min-uid 0] [--limit 0] [--audit-csv /tmp/year_fixes.csv]
 """
 
+from Utilities.Lookups import DB_Connection
+import psycopg2.extras
+import psycopg2
 import argparse
 import csv
 import os
@@ -37,8 +40,6 @@ from typing import Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 os.chdir(str(Path(__file__).resolve().parent.parent))
 
-import psycopg2
-import psycopg2.extras
 
 try:
     import fitz
@@ -54,10 +55,10 @@ except ImportError:
     BS4_AVAILABLE = False
     print("⚠️  BeautifulSoup not available — HTM text extraction disabled")
 
-from Utilities.Lookups import DB_Connection
 
 THIS_YEAR = 2026
-DOWNLOAD_DIR_DEFAULT = Path("/opt/avisk/gcs-data/Development/data/Stage0SourcePDFFiles")
+DOWNLOAD_DIR_DEFAULT = Path(
+    "/opt/avisk/gcs-data/Development/data/Stage0SourcePDFFiles")
 
 # ── High-confidence year patterns ─────────────────────────────────────────────
 # Each must have a contextual keyword near the year.
@@ -194,8 +195,10 @@ def main():
     parser.add_argument('--min-uid', type=int, default=0,
                         help="Resume: process only uid > this value")
     parser.add_argument('--limit', type=int, default=0)
-    parser.add_argument('--download-dir', type=Path, default=DOWNLOAD_DIR_DEFAULT)
-    parser.add_argument('--audit-csv', type=Path, default=Path('/tmp/year_fixes.csv'))
+    parser.add_argument('--download-dir', type=Path,
+                        default=DOWNLOAD_DIR_DEFAULT)
+    parser.add_argument('--audit-csv', type=Path,
+                        default=Path('/tmp/year_fixes.csv'))
     args = parser.parse_args()
 
     download_dir: Path = args.download_dir
@@ -229,7 +232,8 @@ def main():
     # ── Audit CSV setup ───────────────────────────────────────────────────────
     csv_file = open(args.audit_csv, 'w', newline='')
     writer = csv.writer(csv_file)
-    writer.writerow(['uid', 'company', 'old_year', 'new_year', 'source', 'filename'])
+    writer.writerow(['uid', 'company', 'old_year',
+                    'new_year', 'source', 'filename'])
 
     # ── Counters ──────────────────────────────────────────────────────────────
     updated = correct = no_file = no_hc = errors = 0
@@ -280,7 +284,8 @@ def main():
 
         # Year mismatch — log and queue update
         print(f"  UID {uid} | {company} | {filename[:60]}", flush=True)
-        print(f"    DB year={db_year}  →  doc year={doc_year}  [{source}]", flush=True)
+        print(
+            f"    DB year={db_year}  →  doc year={doc_year}  [{source}]", flush=True)
 
         writer.writerow([uid, company, db_year, doc_year, source, filename])
         csv_file.flush()
@@ -299,7 +304,8 @@ def main():
                     )
                     update_cur.close()
                     conn.commit()
-                    print(f"  ✔  Committed batch of {len(pending_updates)} updates", flush=True)
+                    print(
+                        f"  ✔  Committed batch of {len(pending_updates)} updates", flush=True)
                     pending_updates.clear()
                 except Exception as exc:
                     conn.rollback()
@@ -319,7 +325,8 @@ def main():
             )
             update_cur.close()
             conn.commit()
-            print(f"  ✔  Final commit: {len(pending_updates)} updates", flush=True)
+            print(
+                f"  ✔  Final commit: {len(pending_updates)} updates", flush=True)
         except Exception as exc:
             conn.rollback()
             print(f"  ❌ Final commit error: {exc}", flush=True)

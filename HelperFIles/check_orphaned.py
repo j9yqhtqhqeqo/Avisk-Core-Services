@@ -5,13 +5,16 @@ Looks for:
   2. Rows with 2+ URL years that were updated to a year NOT in the URL
      (would indicate a bad DB update without a matching rollback)
 """
-import os, sys, re
+import psycopg2.extras
+import psycopg2
+from Utilities.Lookups import DB_Connection
+import os
+import sys
+import re
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 os.chdir(str(Path(__file__).resolve().parent.parent))
 
-import psycopg2, psycopg2.extras
-from Utilities.Lookups import DB_Connection
 
 conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
 cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -49,9 +52,11 @@ cur.execute("""
     LIMIT 20
 """)
 rows = cur.fetchall()
-print(f"\nRows where stored year is NOT in URL (orphaned candidates): {len(rows)}")
+print(
+    f"\nRows where stored year is NOT in URL (orphaned candidates): {len(rows)}")
 for r in rows:
-    print(f"  uid={r['unique_id']} | {r['company_name']} | year={r['year']} | {r['original_source_url'][:80]}")
+    print(
+        f"  uid={r['unique_id']} | {r['company_name']} | year={r['year']} | {r['original_source_url'][:80]}")
 
 cur.close()
 conn.close()

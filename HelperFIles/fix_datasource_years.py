@@ -20,6 +20,9 @@ Usage:
     --limit N : process at most N rows (default: unlimited).
 """
 
+from Utilities.Lookups import DB_Connection
+import psycopg2.extras
+import psycopg2
 import argparse
 import os
 import re
@@ -33,8 +36,6 @@ from urllib.parse import urlparse
 # ── Bootstrap path so local modules import cleanly ────────────────────────────
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import psycopg2
-import psycopg2.extras
 
 try:
     import fitz  # PyMuPDF
@@ -44,7 +45,6 @@ except ImportError:
     print("⚠️  PyMuPDF not installed — PDF content extraction unavailable. "
           "Will fall back to filename-stem heuristic only.")
 
-from Utilities.Lookups import DB_Connection
 
 # ── Config ────────────────────────────────────────────────────────────────────
 # Base directory where PDFs are stored (year sub-folders live here)
@@ -133,7 +133,8 @@ def locate_file(download_dir: Path, db_year: int, filename: str) -> Optional[Pat
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Fix t_data_source year values")
+    parser = argparse.ArgumentParser(
+        description="Fix t_data_source year values")
     parser.add_argument('--dry-run', action='store_true',
                         help="Print changes without writing to DB or disk")
     parser.add_argument('--limit', type=int, default=0,
@@ -181,7 +182,8 @@ def main():
                   flush=True)
 
     total_ambiguous = len(ambiguous)
-    print(f"\n  {total_ambiguous} rows have >=2 distinct years in original_source_url.\n")
+    print(
+        f"\n  {total_ambiguous} rows have >=2 distinct years in original_source_url.\n")
 
     updated = skipped_no_file = skipped_same_year = skipped_no_pdf_year = 0
     errors = 0
@@ -198,7 +200,8 @@ def main():
         elapsed = time.monotonic() - _t_start
         avg_sec = elapsed / _idx
         remaining = avg_sec * (total_ambiguous - _idx)
-        eta_str = time.strftime('%H:%M:%S', time.gmtime(remaining)) if _idx > 1 else '??:??:??'
+        eta_str = time.strftime('%H:%M:%S', time.gmtime(
+            remaining)) if _idx > 1 else '??:??:??'
         print(f"\n[{_idx}/{total_ambiguous}] uid={uid} | {company} "
               f"| DB year={db_year} | ETA {eta_str}", flush=True)
 
@@ -220,7 +223,8 @@ def main():
             # For HTM/TXT/other files PyMuPDF gives unreliable results;
             # rely solely on the filename date.
             pdf_year = None
-            print(f"    ℹ️  Non-PDF file ({filepath.suffix}) — skipping content extraction")
+            print(
+                f"    ℹ️  Non-PDF file ({filepath.suffix}) — skipping content extraction")
 
         if pdf_year is None:
             # Fall back: first year in filename stem
@@ -228,9 +232,11 @@ def main():
             m = re.search(r'20\d{2}', fname_stem)
             if m:
                 pdf_year = int(m.group())
-                print(f"    📄 {'PDF inconclusive' if is_pdf else 'Filename'} — using filename year: {pdf_year}")
+                print(
+                    f"    📄 {'PDF inconclusive' if is_pdf else 'Filename'} — using filename year: {pdf_year}")
             else:
-                print(f"    ❓ Could not determine year from {'PDF or ' if is_pdf else ''}filename — skipping")
+                print(
+                    f"    ❓ Could not determine year from {'PDF or ' if is_pdf else ''}filename — skipping")
                 skipped_no_pdf_year += 1
                 continue
         else:
@@ -270,19 +276,23 @@ def main():
                     shutil.move(str(filepath), str(new_path))
                     print(f"    📁 Moved: {filepath} → {new_path}")
                 else:
-                    print(f"    📁 Target already exists, leaving file in place: {filepath}")
+                    print(
+                        f"    📁 Target already exists, leaving file in place: {filepath}")
             except PermissionError as pe:
-                print(f"    ⚠️  File move skipped (permission denied on GCS mount): {pe}")
+                print(
+                    f"    ⚠️  File move skipped (permission denied on GCS mount): {pe}")
             except Exception as exc:
                 print(f"    ⚠️  File move failed (DB already updated): {exc}")
         else:
-            print(f"    [DRY RUN] Would update DB year={pdf_year} and move file.")
+            print(
+                f"    [DRY RUN] Would update DB year={pdf_year} and move file.")
             updated += 1
 
     _total_elapsed = time.monotonic() - _t_start
     print(f"\n{'='*60}")
     print(f"Done in {time.strftime('%H:%M:%S', time.gmtime(_total_elapsed))}.")
-    print(f"  Processed      : {total_ambiguous:,} ambiguous rows (of {total_rows:,} total)")
+    print(
+        f"  Processed      : {total_ambiguous:,} ambiguous rows (of {total_rows:,} total)")
     print(f"  Updated        : {updated}")
     print(f"  Same year (OK) : {skipped_same_year}")
     print(f"  File not found : {skipped_no_file}")

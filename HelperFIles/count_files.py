@@ -1,11 +1,12 @@
 """
 count_files.py - quick count of file breakdown
 """
-import sys, os
+from Utilities.Lookups import DB_Connection
+import psycopg2
+import sys
+import os
 sys.path.insert(0, "/opt/avisk/app")
 os.chdir("/opt/avisk/app")
-import psycopg2
-from Utilities.Lookups import DB_Connection
 conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
 cur = conn.cursor()
 cur.execute("""
@@ -26,4 +27,5 @@ print(f"Non-EDGAR       : {r[2]:,}")
 print(f"PDFs            : {r[3]:,}")
 print(f"HTMs            : {r[4]:,}")
 print(f"TXTs            : {r[5]:,}")
-cur.close(); conn.close()
+cur.close()
+conn.close()

@@ -1848,14 +1848,11 @@ with tab8:
     import queue as _queue
     from pathlib import Path as _Path
 
-    _BUCKET     = "avisk-app-data-eb7773c8"
-    _GCS_PREFIX = "Development/data/Stage0SourcePDFFiles"
-    _SCRIPT_DIR = "/opt/avisk/app/HelperFIles"
-    _VALIDATE_SCRIPT = f"{_SCRIPT_DIR}/validate_file_locations.py"
-    _FIX_SCRIPT      = f"{_SCRIPT_DIR}/fix_wrong_folders.py"
-    _VALIDATE_LOG    = "/tmp/validate_tab.log"
-    _VALIDATE_CSV    = "/tmp/validate_tab.csv"
-    _FIX_LOG         = "/tmp/fix_wrong_tab.log"
+    _BUCKET      = "avisk-app-data-eb7773c8"
+    _GCS_PREFIX  = "Development/data/Stage0SourcePDFFiles"
+    _VALIDATE_LOG = "/tmp/validate_tab.log"
+    _VALIDATE_CSV = "/tmp/validate_tab.csv"
+    _FIX_LOG      = "/tmp/fix_wrong_tab.log"
 
     # ── helpers ──────────────────────────────────────────────────────────────
     def _is_on_vm() -> bool:
@@ -1863,18 +1860,118 @@ with tab8:
         return _Path("/opt/avisk/app").exists()
 
     def _run_validate():
-        """Run validate_file_locations.py and stream output to a queue."""
-        cmd = [
-            "/opt/avisk/venv/bin/python3", _VALIDATE_SCRIPT,
-            "--download-dir", f"/opt/avisk/gcs-data/{_GCS_PREFIX}",
-            "--workers", "40",
-            "--wrong-only",
-            "--csv", _VALIDATE_CSV,
-        ]
-        env = {"PYTHONPATH": "/opt/avisk/app", "PYTHONUNBUFFERED": "1",
-               **__import__("os").environ}
-        with open(_VALIDATE_LOG, "w") as f:
-            _sp.run(cmd, stdout=f, stderr=f, env=env)
+        """Inline validation: DB query + parallel GCS FUSE stat() calls."""
+        import csv as _csv
+        import re as _re
+        import time as _time
+        import psycopg2
+        import psycopg2.extras
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from Utilities.Lookups import DB_Connection
+
+        download_dir = _Path(f"/opt/avisk/gcs-data/{_GCS_PREFIX}")
+        log_lines = []
+
+        def _log(msg):
+            log_lines.append(msg)
+            with open(_VALIDATE_LOG, "w") as _lf:
+                _lf.write("\n".join(log_lines) + "\n")
+
+        if not download_dir.exists():
+            _log(f"❌ Download dir not found: {download_dir}")
+            return
+
+        # Fetch rows from DB
+        _log("Connecting to database…")
+        conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT unique_id, company_name, year, source_url
+            FROM   t_data_source
+            WHERE  source_type = 'file'
+              AND  source_url IS NOT NULL
+              AND  source_url <> ''
+            ORDER  BY unique_id
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        total = len(rows)
+        _log(f"Fetched {total:,} file records — starting validation…")
+
+        correct = [0]; wrong = [0]; missing = [0]; done = [0]
+        results = []
+        lock = _threading.Lock()
+        t0 = _time.monotonic()
+
+        def _check(row):
+            filename = (_Path(row["source_url"]).name
+                        if row["source_url"] else "")
+            db_year  = str(row["year"]) if row["year"] else ""
+            uid      = row["unique_id"]
+            company  = row["company_name"] or ""
+            if not filename or not db_year:
+                return uid, company, db_year, None, "missing", filename
+
+            expected = download_dir / db_year / filename
+            if expected.exists():
+                return uid, company, db_year, db_year, "correct", filename
+
+            # Scan other year folders
+            try:
+                for yd in download_dir.iterdir():
+                    if not yd.is_dir():
+                        continue
+                    if not _re.fullmatch(r'\d{4}', yd.name):
+                        continue
+                    if (yd / filename).exists():
+                        return uid, company, db_year, yd.name, "wrong_folder", filename
+            except Exception:
+                pass
+            return uid, company, db_year, None, "missing", filename
+
+        with ThreadPoolExecutor(max_workers=40) as exe:
+            futs = {exe.submit(_check, r): r for r in rows}
+            for fut in as_completed(futs):
+                uid, company, db_year, actual, status, filename = fut.result()
+                with lock:
+                    done[0] += 1
+                    if status == "correct":
+                        correct[0] += 1
+                    elif status == "wrong_folder":
+                        wrong[0] += 1
+                    else:
+                        missing[0] += 1
+                    results.append({
+                        "uid": uid, "company": company,
+                        "db_year": db_year, "actual_folder": actual or "",
+                        "status": status, "filename": filename,
+                    })
+                    if done[0] % 2000 == 0:
+                        elapsed = _time.monotonic() - t0
+                        _log(f"  {done[0]:,}/{total:,}  ✅{correct[0]:,}  "
+                             f"⚠️{wrong[0]:,}  ❌{missing[0]:,}  "
+                             f"({elapsed:.0f}s)")
+
+        elapsed = _time.monotonic() - t0
+        _log(f"\nDone in {elapsed:.0f}s — "
+             f"✅ correct={correct[0]:,}  "
+             f"⚠️ wrong_folder={wrong[0]:,}  "
+             f"❌ missing={missing[0]:,}")
+
+        # Write CSV (wrong/missing only — skip correct to keep it small)
+        with open(_VALIDATE_CSV, "w", newline="") as _cf:
+            w = _csv.DictWriter(_cf, fieldnames=[
+                "uid", "company", "db_year", "actual_folder", "status", "filename"])
+            w.writeheader()
+            for r in results:
+                if r["status"] != "correct":
+                    w.writerow(r)
+
+        # Also write a summary-counts sidecar so _count_csv_statuses works
+        with open(_VALIDATE_CSV + ".summary", "w") as _sf:
+            _sf.write(f"correct={correct[0]}\nwrong_folder={wrong[0]}\nmissing={missing[0]}\n")
 
     def _run_fix():
         """Move wrong-folder files using gsutil mv via fix_wrong_folders.py."""
@@ -1893,10 +1990,12 @@ with tab8:
                                 capture_output=True, text=True)
                     if r.returncode == 0:
                         moved += 1
-                        lines.append(f"✅ {row['actual_folder']}→{row['db_year']}  {row['filename'][:60]}")
+                        lines.append(
+                            f"✅ {row['actual_folder']}→{row['db_year']}  {row['filename'][:60]}")
                     elif "No URLs matched" in r.stderr or "CommandException" in r.stderr:
                         skipped += 1
-                        lines.append(f"⚠️  already correct: {row['filename'][:60]}")
+                        lines.append(
+                            f"⚠️  already correct: {row['filename'][:60]}")
                     else:
                         errors += 1
                         lines.append(f"❌ {r.stderr.strip()[:80]}")
@@ -1904,7 +2003,8 @@ with tab8:
             lines.append("❌ Validation CSV not found — run Validate first.")
         with open(_FIX_LOG, "w") as f:
             f.write("\n".join(lines))
-            f.write(f"\n\nDone  moved={moved}  skipped={skipped}  errors={errors}\n")
+            f.write(
+                f"\n\nDone  moved={moved}  skipped={skipped}  errors={errors}\n")
 
     def _read_log(path: str) -> str:
         try:
@@ -1914,8 +2014,22 @@ with tab8:
             return ""
 
     def _count_csv_statuses(path: str) -> dict:
-        import csv as _csv
+        """Read counts from the .summary sidecar (fast); fall back to scanning CSV."""
         counts = {"correct": 0, "wrong_folder": 0, "missing": 0}
+        summary_path = path + ".summary"
+        try:
+            with open(summary_path) as sf:
+                for line in sf:
+                    line = line.strip()
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        if k in counts:
+                            counts[k] = int(v)
+            return counts
+        except FileNotFoundError:
+            pass
+        # Fallback: count only wrong/missing from CSV (correct rows not written)
+        import csv as _csv
         try:
             with open(path, newline="") as f:
                 for row in _csv.DictReader(f):
@@ -1927,6 +2041,9 @@ with tab8:
         return counts
 
     # ── UI ────────────────────────────────────────────────────────────────────
+    if "_vfy_running" not in st.session_state:
+        st.session_state["_vfy_running"] = False
+
     if not _is_on_vm():
         st.warning("⚠️ This tab only works when running on the production VM.")
     else:
@@ -1935,11 +2052,18 @@ with tab8:
         # ── Validate panel ───────────────────────────────────────────────────
         with col_v:
             st.subheader("Step 1 — Validate")
-            st.caption("Scans all 62k records and checks each file exists in the correct year folder.")
-            if st.button("▶️ Run Validation", key="btn_validate", use_container_width=True, type="primary"):
+            st.caption(
+                "Scans all 62k records and checks each file exists in the correct year folder.")
+            if st.button("▶️ Run Validation", key="btn_validate",
+                         use_container_width=True, type="primary",
+                         disabled=st.session_state["_vfy_running"]):
+                st.session_state["_vfy_running"] = True
+                st.rerun()
+
+            if st.session_state["_vfy_running"]:
                 with st.spinner("Validating file locations (≈ 1–2 min)…"):
                     _run_validate()
-                st.success("Validation complete — see results below.")
+                st.session_state["_vfy_running"] = False
                 st.rerun()
 
             _vlog = _read_log(_VALIDATE_LOG)
@@ -1956,7 +2080,8 @@ with tab8:
                 if _vcounts["wrong_folder"] > 0 or _vcounts["missing"] > 0:
                     with st.expander(f"⚠️ {_vcounts['wrong_folder']} wrong-folder  /  ❌ {_vcounts['missing']} missing — click to view"):
                         # Show only wrong/missing rows
-                        import csv as _csv2, io as _io
+                        import csv as _csv2
+                        import io as _io
                         _rows = []
                         try:
                             with open(_VALIDATE_CSV, newline="") as _f:
@@ -1967,8 +2092,10 @@ with tab8:
                             pass
                         if _rows:
                             import pandas as _pd2
-                            _df_issues = _pd2.DataFrame(_rows)[["uid", "company", "db_year", "actual_folder", "status", "filename"]]
-                            st.dataframe(_df_issues, hide_index=True, use_container_width=True)
+                            _df_issues = _pd2.DataFrame(
+                                _rows)[["uid", "company", "db_year", "actual_folder", "status", "filename"]]
+                            st.dataframe(_df_issues, hide_index=True,
+                                         use_container_width=True)
                             st.download_button(
                                 "⬇️ Download full CSV",
                                 data=open(_VALIDATE_CSV).read(),
@@ -1985,16 +2112,19 @@ with tab8:
         # ── Fix panel ────────────────────────────────────────────────────────
         with col_f:
             st.subheader("Step 2 — Fix")
-            st.caption("Moves wrong-folder files to the correct year folder using a server-side GCS rename.")
+            st.caption(
+                "Moves wrong-folder files to the correct year folder using a server-side GCS rename.")
 
-            _wrong_count = _count_csv_statuses(_VALIDATE_CSV).get("wrong_folder", 0)
+            _wrong_count = _count_csv_statuses(
+                _VALIDATE_CSV).get("wrong_folder", 0)
             _fix_disabled = _wrong_count == 0
 
             if _fix_disabled:
                 st.info("No wrong-folder files to fix. Run Validate first." if total_checked == 0
                         else "Nothing to fix — all files are in the correct location.")
             else:
-                st.warning(f"**{_wrong_count}** file(s) are in the wrong year folder and will be moved.")
+                st.warning(
+                    f"**{_wrong_count}** file(s) are in the wrong year folder and will be moved.")
 
             if st.button("🔧 Fix Wrong-Folder Files", key="btn_fix",
                          use_container_width=True, type="primary",
@@ -2015,16 +2145,4 @@ with tab8:
                 st.code(_vlog[-5000:], language="")
 
 
-# Footer
-st.markdown("---")
-st.markdown("""
-**📌 Usage Tips:**
-- Select companies in the **Select Companies** tab using filters and search
-- Optionally filter by year range in the **Select Years** tab
-- Start the download in the **Download** tab
-- View organized files in the **Files** tab
-- See today's downloads in the **Today's Downloads** tab
 
-**Note:** This tool searches company websites for publicly available sustainability reports.
-Please respect website terms of service and rate limits.
-""")

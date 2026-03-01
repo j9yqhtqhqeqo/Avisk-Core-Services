@@ -53,7 +53,8 @@ def move_blob(bucket, src_blob_name: str, dst_blob_name: str, dry_run: bool) -> 
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Move files to corrected GCS year folders')
+    parser = argparse.ArgumentParser(
+        description='Move files to corrected GCS year folders')
     parser.add_argument('--audit-csv', default='/tmp/fix_all_years_audit.csv')
     parser.add_argument('--bucket', default='avisk-app-data-eb7773c8')
     parser.add_argument('--gcs-prefix',
@@ -81,7 +82,8 @@ def main():
             rows.append(row)
 
     total = len(rows)
-    print(f"{'[DRY RUN] ' if args.dry_run else ''}Moving files via GCS API (copy_blob+delete)")
+    print(
+        f"{'[DRY RUN] ' if args.dry_run else ''}Moving files via GCS API (copy_blob+delete)")
     print(f"  Bucket     : {args.bucket}")
     print(f"  GCS prefix : {prefix}")
     print(f"  Records    : {total:,}")
@@ -93,22 +95,22 @@ def main():
     bucket = client.bucket(args.bucket)
 
     # Thread-safe counters
-    lock           = threading.Lock()
-    done_count     = [0]
-    moved_count    = [0]
-    skip_count     = [0]   # src_missing + already_correct
-    error_count    = [0]
-    error_log      = []
-    done_event     = threading.Event()
-    t_start        = time.monotonic()
+    lock = threading.Lock()
+    done_count = [0]
+    moved_count = [0]
+    skip_count = [0]   # src_missing + already_correct
+    error_count = [0]
+    error_log = []
+    done_event = threading.Event()
+    t_start = time.monotonic()
 
     def print_progress():
         with lock:
             n, mv, sk, er = done_count[0], moved_count[0], skip_count[0], error_count[0]
         elapsed = time.monotonic() - t_start
-        rate    = n / elapsed if elapsed > 0 else 0
-        eta     = (total - n) / rate if rate > 0 else 0
-        eta_s   = time.strftime('%H:%M:%S', time.gmtime(eta))
+        rate = n / elapsed if elapsed > 0 else 0
+        eta = (total - n) / rate if rate > 0 else 0
+        eta_s = time.strftime('%H:%M:%S', time.gmtime(eta))
         print(f"  [{n:>6,}/{total:,}]  moved={mv:,}  skipped={sk:,}  "
               f"errors={er}  rate={rate:.0f}/s  ETA {eta_s}", flush=True)
 
@@ -123,7 +125,7 @@ def main():
         filename = row['filename']
         src_blob = f"{prefix}/{row['old_year']}/{filename}"
         dst_blob = f"{prefix}/{row['new_year']}/{filename}"
-        result   = move_blob(bucket, src_blob, dst_blob, args.dry_run)
+        result = move_blob(bucket, src_blob, dst_blob, args.dry_run)
 
         with lock:
             done_count[0] += 1
@@ -134,7 +136,7 @@ def main():
             else:
                 error_count[0] += 1
                 error_log.append(f"uid={row['uid']} | {row['old_year']}→{row['new_year']} "
-                                  f"| {filename[:60]} | {result}")
+                                 f"| {filename[:60]} | {result}")
 
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         futures = [pool.submit(worker, row) for row in rows]
@@ -147,12 +149,13 @@ def main():
 
     elapsed = time.monotonic() - t_start
     hh, rem = divmod(int(elapsed), 3600)
-    mm, ss  = divmod(rem, 60)
+    mm, ss = divmod(rem, 60)
 
     print()
     print(f"{'[DRY RUN] ' if args.dry_run else ''}Done in {hh:02d}:{mm:02d}:{ss:02d}")
     print(f"  Moved   : {moved_count[0]:,}")
-    print(f"  Skipped : {skip_count[0]:,}  (src missing or already in correct folder)")
+    print(
+        f"  Skipped : {skip_count[0]:,}  (src missing or already in correct folder)")
     print(f"  Errors  : {error_count[0]:,}")
 
     if error_log:

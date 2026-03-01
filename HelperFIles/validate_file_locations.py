@@ -23,6 +23,9 @@ Options:
     --csv /tmp/validation.csv   Write full results to CSV
 """
 
+from Utilities.Lookups import DB_Connection
+import psycopg2.extras
+import psycopg2
 import argparse
 import csv
 import os
@@ -35,10 +38,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 os.chdir(str(Path(__file__).resolve().parent.parent))
-
-import psycopg2
-import psycopg2.extras
-from Utilities.Lookups import DB_Connection
 
 
 def find_actual_folder(download_dir: Path, db_year: int, filename: str):
@@ -67,7 +66,8 @@ def find_actual_folder(download_dir: Path, db_year: int, filename: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Validate t_data_source file locations')
+    parser = argparse.ArgumentParser(
+        description='Validate t_data_source file locations')
     parser.add_argument('--download-dir',
                         default='/opt/avisk/gcs-data/Development/data/Stage0SourcePDFFiles')
     parser.add_argument('--workers', type=int, default=40)
@@ -105,22 +105,22 @@ def main():
     print()
 
     # Thread-safe counters + results
-    lock         = threading.Lock()
-    correct      = [0]
+    lock = threading.Lock()
+    correct = [0]
     wrong_folder = [0]
-    missing      = [0]
-    done         = [0]
-    results      = []          # list of dicts for CSV
-    done_event   = threading.Event()
-    t_start      = time.monotonic()
+    missing = [0]
+    done = [0]
+    results = []          # list of dicts for CSV
+    done_event = threading.Event()
+    t_start = time.monotonic()
 
     def print_progress():
         with lock:
             n, c, w, m = done[0], correct[0], wrong_folder[0], missing[0]
         elapsed = time.monotonic() - t_start
-        rate    = n / elapsed if elapsed > 0 else 0
-        eta     = (total - n) / rate if rate > 0 else 0
-        eta_s   = time.strftime('%H:%M:%S', time.gmtime(eta))
+        rate = n / elapsed if elapsed > 0 else 0
+        eta = (total - n) / rate if rate > 0 else 0
+        eta_s = time.strftime('%H:%M:%S', time.gmtime(eta))
         print(f"  [{n:>6,}/{total:,}]  ✅ correct={c:,}  "
               f"⚠️  wrong_folder={w:,}  ❌ missing={m:,}  ETA {eta_s}",
               flush=True)
@@ -133,12 +133,13 @@ def main():
     printer.start()
 
     def worker(row):
-        uid      = row['unique_id']
-        company  = row['company_name']
-        db_year  = int(row['year'])
+        uid = row['unique_id']
+        company = row['company_name']
+        db_year = int(row['year'])
         filename = row['source_url']
 
-        actual_folder, status = find_actual_folder(download_dir, db_year, filename)
+        actual_folder, status = find_actual_folder(
+            download_dir, db_year, filename)
 
         with lock:
             done[0] += 1
@@ -176,7 +177,7 @@ def main():
 
     elapsed = time.monotonic() - t_start
     hh, rem = divmod(int(elapsed), 3600)
-    mm, ss  = divmod(rem, 60)
+    mm, ss = divmod(rem, 60)
 
     print()
     print(f"Done in {hh:02d}:{mm:02d}:{ss:02d}")

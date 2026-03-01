@@ -23,6 +23,9 @@ Usage:
         [--workers 25] [--min-uid 0] [--dry-run]
 """
 
+from Utilities.Lookups import DB_Connection
+import psycopg2.extras
+import psycopg2
 import argparse
 import csv
 import os
@@ -40,9 +43,6 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 os.chdir(str(Path(__file__).resolve().parent.parent))
 
-import psycopg2
-import psycopg2.extras
-from Utilities.Lookups import DB_Connection
 
 try:
     import fitz
@@ -365,7 +365,8 @@ def db_writer(db_queue: Queue, conn_str: str, counters: Counter,
             download_dir, old_year, new_year, filepath.name, filepath)
         if result.startswith('error:'):
             with print_lock:
-                print(f"  ⚠️  file move failed uid={uid}: {result[6:]}", flush=True)
+                print(
+                    f"  ⚠️  file move failed uid={uid}: {result[6:]}", flush=True)
 
         db_queue.task_done()
     cur.close()

@@ -2312,7 +2312,8 @@ class SustainabilityReportDownloader:
                         f"PDF content resolved year to {year_str} for {url}")
                 else:
                     # PDF gave no answer — fall back to first year in filename stem
-                    _fname_stem = os.path.splitext(original_filename)[0] if original_filename else ""
+                    _fname_stem = os.path.splitext(original_filename)[
+                        0] if original_filename else ""
                     _fname_match = re.search(r'20\d{2}', _fname_stem)
                     if _fname_match:
                         year_str = _fname_match.group()
