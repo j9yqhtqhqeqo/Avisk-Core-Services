@@ -1848,11 +1848,11 @@ with tab8:
     import queue as _queue
     from pathlib import Path as _Path
 
-    _BUCKET      = "avisk-app-data-eb7773c8"
-    _GCS_PREFIX  = "Development/data/Stage0SourcePDFFiles"
+    _BUCKET = "avisk-app-data-eb7773c8"
+    _GCS_PREFIX = "Development/data/Stage0SourcePDFFiles"
     _VALIDATE_LOG = "/tmp/validate_tab.log"
     _VALIDATE_CSV = "/tmp/validate_tab.csv"
-    _FIX_LOG      = "/tmp/fix_wrong_tab.log"
+    _FIX_LOG = "/tmp/fix_wrong_tab.log"
 
     # ── helpers ──────────────────────────────────────────────────────────────
     def _is_on_vm() -> bool:
@@ -1900,7 +1900,10 @@ with tab8:
         total = len(rows)
         _log(f"Fetched {total:,} file records — starting validation…")
 
-        correct = [0]; wrong = [0]; missing = [0]; done = [0]
+        correct = [0]
+        wrong = [0]
+        missing = [0]
+        done = [0]
         results = []
         lock = _threading.Lock()
         t0 = _time.monotonic()
@@ -1908,9 +1911,9 @@ with tab8:
         def _check(row):
             filename = (_Path(row["source_url"]).name
                         if row["source_url"] else "")
-            db_year  = str(row["year"]) if row["year"] else ""
-            uid      = row["unique_id"]
-            company  = row["company_name"] or ""
+            db_year = str(row["year"]) if row["year"] else ""
+            uid = row["unique_id"]
+            company = row["company_name"] or ""
             if not filename or not db_year:
                 return uid, company, db_year, None, "missing", filename
 
@@ -1971,7 +1974,8 @@ with tab8:
 
         # Also write a summary-counts sidecar so _count_csv_statuses works
         with open(_VALIDATE_CSV + ".summary", "w") as _sf:
-            _sf.write(f"correct={correct[0]}\nwrong_folder={wrong[0]}\nmissing={missing[0]}\n")
+            _sf.write(
+                f"correct={correct[0]}\nwrong_folder={wrong[0]}\nmissing={missing[0]}\n")
 
     def _run_fix():
         """Move wrong-folder files using gsutil mv via fix_wrong_folders.py."""
@@ -2143,6 +2147,3 @@ with tab8:
         if _vlog:
             with st.expander("Full validation log"):
                 st.code(_vlog[-5000:], language="")
-
-
-
