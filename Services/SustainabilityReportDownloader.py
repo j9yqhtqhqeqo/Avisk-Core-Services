@@ -2283,12 +2283,50 @@ class SustainabilityReportDownloader:
             url_path = urlparse(url).path
             original_filename = os.path.basename(url_path)
 
-            # Extract year from URL or filename — pick the most recent plausible year (<= current)
+            # ── Year extraction ───────────────────────────────────────────────
+            # When a URL contains two DIFFERENT years (e.g. a 2025 folder path
+            # but a 2021 document year) the URL alone is ambiguous.  Strategy:
+            #   1. Collect all distinct plausible years from the full URL.
+            #   2. If exactly one → use it.
+            #   3. If two or more → open the PDF and let content/metadata decide.
+            #   4. Fallback: first year found in the filename stem (left-to-right).
+            #   5. Last resort: current year.
             _this_year = datetime.now().year
-            _year_candidates = [int(m) for m in re.findall(r'20\d{2}', url)]
-            _plausible = [
-                y for y in _year_candidates if 2000 <= y <= _this_year]
-            year_str = str(max(_plausible)) if _plausible else None
+            _all_url_years = sorted(
+                {int(m) for m in re.findall(r'20\d{2}', url)
+                 if 2000 <= int(m) <= _this_year}
+            )
+
+            if len(_all_url_years) == 1:
+                # Unambiguous — only one year present
+                year_str = str(_all_url_years[0])
+                logger.debug(f"Single year {year_str} found in URL for {url}")
+            elif len(_all_url_years) >= 2:
+                # Ambiguous — let the PDF content decide
+                logger.debug(
+                    f"Multiple years {_all_url_years} in URL — inspecting PDF "
+                    f"content to determine reporting year for {url}")
+                year_str = self._extract_year_from_pdf(response.content)
+                if year_str:
+                    logger.debug(
+                        f"PDF content resolved year to {year_str} for {url}")
+                else:
+                    # PDF gave no answer — fall back to first year in filename stem
+                    _fname_stem = os.path.splitext(original_filename)[0] if original_filename else ""
+                    _fname_match = re.search(r'20\d{2}', _fname_stem)
+                    if _fname_match:
+                        year_str = _fname_match.group()
+                        logger.debug(
+                            f"PDF inconclusive; using first filename year "
+                            f"{year_str} for {url}")
+                    else:
+                        year_str = str(_all_url_years[0])
+                        logger.debug(
+                            f"PDF inconclusive, no filename year; using "
+                            f"earliest URL year {year_str} for {url}")
+            else:
+                # No year in URL at all
+                year_str = None
 
             # If no plausible year in URL, try PDF content/metadata
             if not year_str:
@@ -3479,6 +3517,244 @@ class SustainabilityReportDownloader:
 
         logger.info(
             f"[EDGAR-T] {len(saved_paths)} transcript(s) saved for {symbol}")
+        return saved_paths
+
+    def download_edgar_press_releases(
+            self, symbol: str, company_name: str,
+            years_needed: Optional[List[int]] = None) -> List[str]:
+        """
+        Download earnings press releases from SEC EDGAR 8-K EX-99.1 exhibits.
+
+        Companies like Apple file their earnings results as an EX-99.1 exhibit
+        on an 8-K instead of attaching a written transcript.  This method is
+        the final transcript-chain fallback: it runs only for years that had no
+        EDGAR transcript, no IR-website transcript, and no FMP transcript.
+
+        Workflow:
+          1. Resolve ticker → CIK(s)
+          2. Fetch 8-K filings within the year scope (filing year + 1 offset)
+          3. Look for EX-99.1 exhibits whose description/filename indicates
+             earnings results (keywords: "earnings", "results", "financial",
+             "press release") but NOT "transcript"
+          4. Download, strip HTML → text, save as
+             {SYMBOL}_earnings_pr_Q{Q}_{YEAR}.txt
+          5. Register in t_data_source (content_type=4)
+
+        Returns:
+            List of local file paths for successfully downloaded press releases.
+        """
+        saved_paths: List[str] = []
+
+        all_ciks = self.get_all_ciks_for_symbol(symbol)
+        if not all_ciks:
+            logger.warning(
+                f"[EDGAR-PR] Cannot find CIK for {symbol} — skipping press releases")
+            return saved_paths
+
+        # Include year+1 because Q4 earnings are often filed in Jan/Feb of next year
+        if years_needed:
+            relevant_filing_years: Optional[Set[int]] = (
+                set(years_needed) | {y + 1 for y in years_needed}
+            )
+        else:
+            relevant_filing_years = None
+
+        base_hdrs = self._get_edgar_session_headers()
+        sub_hdrs = {**base_hdrs, 'Host': 'data.sec.gov'}
+        www_hdrs = {**base_hdrs, 'Host': 'www.sec.gov'}
+
+        _PR_KEYWORDS = frozenset(
+            ['earnings', 'results', 'financial results', 'press release',
+             'quarterly results', 'annual results', 'income'])
+
+        for cik in all_ciks:
+            cik_int = int(cik)
+            submissions_url = self.EDGAR_SUBMISSIONS_URL.format(cik=cik_int)
+            try:
+                resp = requests.get(
+                    submissions_url, headers=sub_hdrs, timeout=30)
+                resp.raise_for_status()
+                sub_data = resp.json()
+            except Exception as exc:
+                logger.warning(
+                    f"[EDGAR-PR] Failed to fetch submissions for CIK {cik}: {exc}")
+                continue
+
+            eight_k_filings: List[Dict] = []
+
+            def _collect_8k_pr(block: dict) -> None:
+                forms = block.get('form', [])
+                accessions = block.get('accessionNumber', [])
+                filing_dates = block.get('filingDate', [])
+                for i, form in enumerate(forms):
+                    if form not in ('8-K', '8-K/A'):
+                        continue
+                    fd = filing_dates[i] if i < len(filing_dates) else ''
+                    if relevant_filing_years and fd:
+                        try:
+                            if int(fd[:4]) not in relevant_filing_years:
+                                continue
+                        except ValueError:
+                            continue
+                    eight_k_filings.append({
+                        'accession': accessions[i],
+                        'filing_date': fd,
+                        'cik': cik_int,
+                    })
+
+            _collect_8k_pr(sub_data.get('filings', {}).get('recent', {}))
+
+            current_year = datetime.now().year
+            if not years_needed or min(years_needed) < current_year - 3:
+                for older_file in sub_data.get('filings', {}).get('files', []):
+                    older_url = (
+                        f"https://data.sec.gov/submissions/{older_file['name']}")
+                    try:
+                        or_ = requests.get(
+                            older_url, headers=sub_hdrs, timeout=30)
+                        or_.raise_for_status()
+                        _collect_8k_pr(or_.json())
+                        time.sleep(0.2)
+                    except Exception as exc:
+                        logger.warning(
+                            f"[EDGAR-PR] Older submissions fetch failed: {exc}")
+
+            logger.info(
+                f"[EDGAR-PR] {len(eight_k_filings)} 8-K filing(s) in scope for "
+                f"{symbol} (CIK: {cik})")
+
+            for filing in eight_k_filings:
+                accession = filing['accession']
+                accession_nodash = accession.replace('-', '')
+                filing_date = filing['filing_date']
+
+                index_url = (
+                    f"{self.EDGAR_ARCHIVES_BASE}{cik_int}/{accession_nodash}/"
+                    f"{accession_nodash}-index.json"
+                )
+                try:
+                    time.sleep(0.15)
+                    idx_resp = requests.get(
+                        index_url, headers=www_hdrs, timeout=15)
+                    if idx_resp.status_code != 200:
+                        continue
+                    idx_data = idx_resp.json()
+                except Exception as exc:
+                    logger.debug(
+                        f"[EDGAR-PR] Index fetch failed for {accession}: {exc}")
+                    continue
+
+                for doc in idx_data.get('documents', []):
+                    doc_type = doc.get('type', '')
+                    description = doc.get('description', '').lower()
+                    doc_fname = doc.get('filename', '').lower()
+
+                    # Only EX-99.1 (primary press release slot)
+                    if doc_type != 'EX-99.1':
+                        continue
+                    # Skip anything explicitly labelled as a transcript
+                    if 'transcript' in description or 'transcript' in doc_fname:
+                        continue
+                    # Must look like an earnings press release
+                    if not any(kw in description or kw in doc_fname
+                               for kw in _PR_KEYWORDS):
+                        continue
+
+                    fiscal_year, quarter = self._quarter_from_filing_date(
+                        filing_date)
+                    if not fiscal_year:
+                        continue
+                    if years_needed and fiscal_year not in years_needed:
+                        continue
+
+                    filename_out = (
+                        f"{symbol}_earnings_pr_Q{quarter}_{fiscal_year}.txt")
+
+                    if self._data_source_exists(
+                            company_name, fiscal_year, filename_out):
+                        logger.info(
+                            f"[EDGAR-PR] Already in DB: {filename_out} — skipping")
+                        fp = self.base_download_dir / \
+                            str(fiscal_year) / filename_out
+                        if fp.exists():
+                            saved_paths.append(str(fp))
+                        continue
+
+                    exhibit_url = (
+                        f"{self.EDGAR_ARCHIVES_BASE}{cik_int}/{accession_nodash}/"
+                        f"{doc.get('filename', '')}"
+                    )
+                    try:
+                        time.sleep(max(self.delay_seconds * 0.25, 0.3))
+                        ex_resp = requests.get(
+                            exhibit_url, headers=www_hdrs, timeout=30)
+                        if ex_resp.status_code != 200:
+                            logger.warning(
+                                f"[EDGAR-PR] HTTP {ex_resp.status_code} "
+                                f"for {exhibit_url}")
+                            continue
+
+                        raw = ex_resp.content
+                        if (doc.get('filename', '').lower().endswith(('.htm', '.html'))
+                                or b'<html' in raw[:200].lower()):
+                            soup = BeautifulSoup(raw, 'lxml')
+                            text = soup.get_text(separator='\n', strip=True)
+                        else:
+                            text = raw.decode('utf-8', errors='replace')
+
+                        if len(text.strip()) < 300:
+                            logger.info(
+                                f"[EDGAR-PR] Skipping near-empty exhibit: "
+                                f"{exhibit_url}")
+                            continue
+
+                        header = (
+                            f"SYMBOL: {symbol}\n"
+                            f"COMPANY: {company_name}\n"
+                            f"QUARTER: Q{quarter} {fiscal_year}\n"
+                            f"DATE: {filing_date}\n"
+                            f"SOURCE: SEC EDGAR 8-K EX-99.1 (Earnings Press Release)"
+                            f" — {accession}\n"
+                            f"{'=' * 80}\n\n"
+                        )
+                        content_bytes = (header + text).encode('utf-8')
+
+                        year_dir = self.base_download_dir / str(fiscal_year)
+                        year_dir.mkdir(parents=True, exist_ok=True)
+                        filepath = year_dir / filename_out
+
+                        if not filepath.exists():
+                            filepath.write_bytes(content_bytes)
+                            logger.info(f"[EDGAR-PR] Saved: {filepath}")
+                        else:
+                            logger.debug(
+                                f"[EDGAR-PR] Already on disk: {filepath}")
+
+                        self._add_to_data_source(
+                            company_name=company_name,
+                            year=fiscal_year,
+                            source_url=exhibit_url,
+                            document_name=filename_out,
+                            filepath=str(filepath),
+                            content_type=4,
+                            file_content=content_bytes,
+                            original_source_url=exhibit_url,
+                            search_query_used=(
+                                f"EDGAR 8-K EX-99.1 Q{quarter} {fiscal_year}"),
+                            search_result_rank=1,
+                            http_response_code=ex_resp.status_code,
+                            company_symbol=symbol,
+                        )
+                        saved_paths.append(str(filepath))
+
+                    except Exception as exc:
+                        logger.warning(
+                            f"[EDGAR-PR] Error downloading exhibit "
+                            f"{exhibit_url}: {exc}")
+                        continue
+
+        logger.info(
+            f"[EDGAR-PR] {len(saved_paths)} press release(s) saved for {symbol}")
         return saved_paths
 
     def download_fmp_transcripts(

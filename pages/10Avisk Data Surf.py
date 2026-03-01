@@ -338,8 +338,8 @@ else:
     current_sector_id = None
 
 # Main content
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
-    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files", "📊 Today's Downloads", "🔍 Missing Reports", "📈 S&P 500 Overview"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+    ["🏢 Select Companies", "📅 Select Years", "📥 Download", "📁 Files", "📊 Today's Downloads", "🔍 Missing Reports", "📈 S&P 500 Overview", "🔎 Validate & Fix Years"])
 
 with tab1:
     st.header("Select Companies to Download")
@@ -883,7 +883,12 @@ with tab3:
         _djc1, _djc2, _djc3, _djc4 = st.columns(4)
         _djc1.metric(
             "Progress",  f"{_djprog}/{_djtotal}" if _djtotal else str(_djprog))
-        _djc2.metric("Current",   (_djcurrent or "—")[:40])
+        with _djc2:
+            st.markdown("**Current**")
+            st.markdown(
+                f"<p style='font-size:0.72rem;line-height:1.3;word-break:break-word;"
+                f"margin:0'>{_djcurrent or '—'}</p>",
+                unsafe_allow_html=True)
         _djc3.metric("Status",    _djstatus.title())
         _djc4.metric("Queued",    str(_djcreated)[:16] if _djcreated else "—")
 
@@ -1826,6 +1831,188 @@ with tab7:
             file_name="sp500_missing_downloads.csv",
             mime="text/csv",
         )
+
+
+# ── Tab 8 : Validate & Fix Years ─────────────────────────────────────────────
+with tab8:
+    st.header("🔎 Validate & Fix File Year Locations")
+    st.markdown("""
+    Checks every record in `t_data_source` and confirms the physical file
+    exists at `Stage0SourcePDFFiles/{year}/{filename}`.  
+    Any file found in the **wrong year folder** can be fixed immediately
+    using a server-side GCS rename (fast — no data transfer).
+    """)
+
+    import subprocess as _sp
+    import threading as _threading
+    import queue as _queue
+    from pathlib import Path as _Path
+
+    _BUCKET     = "avisk-app-data-eb7773c8"
+    _GCS_PREFIX = "Development/data/Stage0SourcePDFFiles"
+    _SCRIPT_DIR = "/opt/avisk/app/HelperFIles"
+    _VALIDATE_SCRIPT = f"{_SCRIPT_DIR}/validate_file_locations.py"
+    _FIX_SCRIPT      = f"{_SCRIPT_DIR}/fix_wrong_folders.py"
+    _VALIDATE_LOG    = "/tmp/validate_tab.log"
+    _VALIDATE_CSV    = "/tmp/validate_tab.csv"
+    _FIX_LOG         = "/tmp/fix_wrong_tab.log"
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+    def _is_on_vm() -> bool:
+        """True when running on the GCP VM (file path exists)."""
+        return _Path("/opt/avisk/app").exists()
+
+    def _run_validate():
+        """Run validate_file_locations.py and stream output to a queue."""
+        cmd = [
+            "/opt/avisk/venv/bin/python3", _VALIDATE_SCRIPT,
+            "--download-dir", f"/opt/avisk/gcs-data/{_GCS_PREFIX}",
+            "--workers", "40",
+            "--wrong-only",
+            "--csv", _VALIDATE_CSV,
+        ]
+        env = {"PYTHONPATH": "/opt/avisk/app", "PYTHONUNBUFFERED": "1",
+               **__import__("os").environ}
+        with open(_VALIDATE_LOG, "w") as f:
+            _sp.run(cmd, stdout=f, stderr=f, env=env)
+
+    def _run_fix():
+        """Move wrong-folder files using gsutil mv via fix_wrong_folders.py."""
+        import csv as _csv
+        import os as _os
+        moved = skipped = errors = 0
+        lines = []
+        try:
+            with open(_VALIDATE_CSV, newline="") as f:
+                for row in _csv.DictReader(f):
+                    if row["status"] != "wrong_folder":
+                        continue
+                    src = f"gs://{_BUCKET}/{_GCS_PREFIX}/{row['actual_folder']}/{row['filename']}"
+                    dst = f"gs://{_BUCKET}/{_GCS_PREFIX}/{row['db_year']}/{row['filename']}"
+                    r = _sp.run(["gsutil", "mv", src, dst],
+                                capture_output=True, text=True)
+                    if r.returncode == 0:
+                        moved += 1
+                        lines.append(f"✅ {row['actual_folder']}→{row['db_year']}  {row['filename'][:60]}")
+                    elif "No URLs matched" in r.stderr or "CommandException" in r.stderr:
+                        skipped += 1
+                        lines.append(f"⚠️  already correct: {row['filename'][:60]}")
+                    else:
+                        errors += 1
+                        lines.append(f"❌ {r.stderr.strip()[:80]}")
+        except FileNotFoundError:
+            lines.append("❌ Validation CSV not found — run Validate first.")
+        with open(_FIX_LOG, "w") as f:
+            f.write("\n".join(lines))
+            f.write(f"\n\nDone  moved={moved}  skipped={skipped}  errors={errors}\n")
+
+    def _read_log(path: str) -> str:
+        try:
+            with open(path) as f:
+                return f.read()
+        except FileNotFoundError:
+            return ""
+
+    def _count_csv_statuses(path: str) -> dict:
+        import csv as _csv
+        counts = {"correct": 0, "wrong_folder": 0, "missing": 0}
+        try:
+            with open(path, newline="") as f:
+                for row in _csv.DictReader(f):
+                    s = row.get("status", "")
+                    if s in counts:
+                        counts[s] += 1
+        except FileNotFoundError:
+            pass
+        return counts
+
+    # ── UI ────────────────────────────────────────────────────────────────────
+    if not _is_on_vm():
+        st.warning("⚠️ This tab only works when running on the production VM.")
+    else:
+        col_v, col_f = st.columns(2)
+
+        # ── Validate panel ───────────────────────────────────────────────────
+        with col_v:
+            st.subheader("Step 1 — Validate")
+            st.caption("Scans all 62k records and checks each file exists in the correct year folder.")
+            if st.button("▶️ Run Validation", key="btn_validate", use_container_width=True, type="primary"):
+                with st.spinner("Validating file locations (≈ 1–2 min)…"):
+                    _run_validate()
+                st.success("Validation complete — see results below.")
+                st.rerun()
+
+            _vlog = _read_log(_VALIDATE_LOG)
+            _vcounts = _count_csv_statuses(_VALIDATE_CSV)
+            total_checked = sum(_vcounts.values())
+
+            if total_checked > 0:
+                st.markdown("**Last validation results:**")
+                v1, v2, v3 = st.columns(3)
+                v1.metric("✅ Correct",     f"{_vcounts['correct']:,}")
+                v2.metric("⚠️ Wrong folder", f"{_vcounts['wrong_folder']:,}")
+                v3.metric("❌ Missing",      f"{_vcounts['missing']:,}")
+
+                if _vcounts["wrong_folder"] > 0 or _vcounts["missing"] > 0:
+                    with st.expander(f"⚠️ {_vcounts['wrong_folder']} wrong-folder  /  ❌ {_vcounts['missing']} missing — click to view"):
+                        # Show only wrong/missing rows
+                        import csv as _csv2, io as _io
+                        _rows = []
+                        try:
+                            with open(_VALIDATE_CSV, newline="") as _f:
+                                for _r in _csv2.DictReader(_f):
+                                    if _r["status"] != "correct":
+                                        _rows.append(_r)
+                        except FileNotFoundError:
+                            pass
+                        if _rows:
+                            import pandas as _pd2
+                            _df_issues = _pd2.DataFrame(_rows)[["uid", "company", "db_year", "actual_folder", "status", "filename"]]
+                            st.dataframe(_df_issues, hide_index=True, use_container_width=True)
+                            st.download_button(
+                                "⬇️ Download full CSV",
+                                data=open(_VALIDATE_CSV).read(),
+                                file_name="validation_results.csv",
+                                mime="text/csv",
+                                key="dl_validate_csv"
+                            )
+                else:
+                    st.success("✅ All files are in the correct year folder!")
+            elif _vlog:
+                st.info("Validation is running or was interrupted — partial log:")
+                st.code(_vlog[-3000:], language="")
+
+        # ── Fix panel ────────────────────────────────────────────────────────
+        with col_f:
+            st.subheader("Step 2 — Fix")
+            st.caption("Moves wrong-folder files to the correct year folder using a server-side GCS rename.")
+
+            _wrong_count = _count_csv_statuses(_VALIDATE_CSV).get("wrong_folder", 0)
+            _fix_disabled = _wrong_count == 0
+
+            if _fix_disabled:
+                st.info("No wrong-folder files to fix. Run Validate first." if total_checked == 0
+                        else "Nothing to fix — all files are in the correct location.")
+            else:
+                st.warning(f"**{_wrong_count}** file(s) are in the wrong year folder and will be moved.")
+
+            if st.button("🔧 Fix Wrong-Folder Files", key="btn_fix",
+                         use_container_width=True, type="primary",
+                         disabled=_fix_disabled):
+                with st.spinner(f"Moving {_wrong_count} files via gsutil mv…"):
+                    _run_fix()
+                st.success("Fix complete — re-run Validate to confirm.")
+                st.rerun()
+
+            _flog = _read_log(_FIX_LOG)
+            if _flog:
+                with st.expander("Last fix output", expanded=True):
+                    st.code(_flog[-3000:], language="")
+
+        # ── Full validate log at bottom ───────────────────────────────────────
+        if _vlog:
+            with st.expander("Full validation log"):
+                st.code(_vlog[-5000:], language="")
 
 
 # Footer
