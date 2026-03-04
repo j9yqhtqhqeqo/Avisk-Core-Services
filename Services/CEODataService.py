@@ -82,6 +82,43 @@ _openai_last = [0.0]
 _OPENAI_RATE_LIMIT = 0.5          # 2 req/s — conservative
 _openai_cache: dict = {}          # (ticker_or_name, year) → name | None
 
+# Thread-local DB connections — psycopg2 connections are NOT thread-safe.
+# Each worker thread gets its own connection via _get_thread_conn().
+_thread_local = threading.local()
+
+
+def _get_thread_conn():
+    """Return a per-thread psycopg2 connection, creating one if needed.
+
+    Detects silently-broken connections via a cheap liveness ping so a
+    stale TCP socket never causes a query to hang indefinitely.
+    statement_timeout=30s provides a hard cap even if the ping passes.
+    """
+    conn = getattr(_thread_local, 'conn', None)
+    if conn is not None and not conn.closed:
+        # Verify the connection is still alive (catches silently-broken TCP).
+        try:
+            conn.cursor().execute('SELECT 1')
+        except Exception:
+            conn = None  # will reconnect below
+    if conn is None or conn.closed:
+        try:
+            conn = psycopg2.connect(
+                DB_Connection().DB_CONNECTION_STRING,
+                connect_timeout=10,
+                options='-c statement_timeout=30000',  # 30-s hard cap on any query
+                keepalives=1,
+                keepalives_idle=30,
+                keepalives_interval=5,
+                keepalives_count=3,
+            )
+            conn.autocommit = True
+            _thread_local.conn = conn
+        except Exception as e:
+            logger.error('_get_thread_conn failed: %s', e)
+            raise
+    return conn
+
 
 def _fmp_get(path: str, params: dict = None) -> list | dict | None:
     """Rate-limited FMP GET."""
@@ -281,7 +318,8 @@ def _filing_url(cik: str, accn: str, doc: str) -> str:
 _NOT_NAME_WORDS = {
     'the', 'a', 'an', 'of', 'in', 'on', 'at', 'by', 'for', 'to', 'from',
     'with', 'and', 'or', 'is', 'was', 'are', 'were', 'be', 'been', 'being',
-    'has', 'have', 'had', 'will', 'would', 'could', 'should', 'might',
+    # 'will' removed — valid CEO surname (Tony Will)
+    'has', 'have', 'had', 'would', 'could', 'should', 'might',
     'this', 'that', 'these', 'those', 'it', 'its', 'he', 'she', 'his', 'her',
     'they', 'their', 'we', 'our', 'you', 'your', 'i', 'my', 'me',
     'prior', 'after', 'before', 'during', 'since', 'until', 'who', 'which',
@@ -363,14 +401,24 @@ _NAME_PARTICLES = frozenset({
 })
 
 
+# Strips honorific prefixes that FMP/OpenAI sometimes include before the name.
+# E.g. 'Dr. F. Thomson Leighton' → 'F. Thomson Leighton' before initial-stripping.
+_HONORIFIC_RE = re.compile(
+    r'^(?:Dr|Mr|Mrs|Ms|Miss|Prof|Sir|Dame|Lord|Hon|Rev|Gen|Col|Lt|Cpl|Capt|Adm)\.?\s+',
+    re.IGNORECASE,
+)
+
+
 def _normalize_name(name: str) -> str:
-    """Strip middle initials AND lowercase name particles for validation.
+    """Strip honorifics, middle initials, and lowercase name particles.
 
     Examples:
-      'Timothy D. Cook'  -> 'Timothy Cook'
-      'Aart J. de Geus'  -> 'Aart Geus'
-      'Jan van Rijswijk' -> 'Jan Rijswijk'
+      'Timothy D. Cook'         -> 'Timothy Cook'
+      'Dr. F. Thomson Leighton' -> 'Thomson Leighton'
+      'Aart J. de Geus'         -> 'Aart Geus'
+      'Jan van Rijswijk'        -> 'Jan Rijswijk'
     """
+    name = _HONORIFIC_RE.sub('', name).strip()
     return ' '.join(
         w for w in name.split()
         if not _INITIAL_RE.fullmatch(w) and w.lower() not in _NAME_PARTICLES
@@ -396,8 +444,11 @@ def _is_valid_name(name: str) -> bool:
     return True
 
 
-# Word-or-initial component for name capture groups
-_W = r'(?:[A-Z]\.?|[A-Z][a-z]{1,24})'
+# Word-or-initial component for name capture groups.
+# Uses [a-zA-Z] (not just [a-z]) so mixed-case surnames like McDonnell,
+# MacKenzie, DeRosa, O'Brien are captured in full by the regex before
+# _is_valid_name validates them with _WORD_RE.
+_W = r'(?:[A-Z]\.?|[A-Z][a-zA-Z]{1,24})'
 
 # Patterns for SEC/10-K structured text — strict, prevent mid-sentence matches
 _SEC_CEO_PATTERNS = [
@@ -414,12 +465,16 @@ _SEC_CEO_PATTERNS = [
         r'(?:^|\n)[ \t]*([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})'
         r'[ \t]+(?:\d+[ \t]+)?Chief Executive Officer'
         r'(?![ \t]+(?:and|of|formerly|since|until|&)\b)', re.M),
-    # 2b. Officer table — multi-line EDGAR format (inline XBRL 10-K):
-    #    "Robert A. Michael\n55\nChairman of the Board and Chief Executive Officer"
-    #    Name on line 1 · age (1-3 digits) on line 2 · title on line 3
+    # 2b. Officer table — ALL multi-line EDGAR formats:
+    #    a) XBRL 3-line:  "Robert A. Michael\n55\nChairman... Chief Executive Officer"
+    #    b) Prose-age:    "Padraig McDonnell\n, 53, has served as ... Chief Executive Officer"
+    #    c) No-age:       "Ron M. Vachris\nPresident and Chief Executive Officer"
+    #    The optional bare-age sub-pattern handles (a); [^\n]{0,100} handles (b) and (c).
     re.compile(
         r'(?:^|\n)[ \t]*([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})'
-        r'[ \t]*\n[ \t]*\d{1,3}[ \t]*\n[^\n]*Chief Executive Officer',
+        r'[ \t]*\n'
+        r'[ \t]*(?:\d{1,3}[ \t]*\n[ \t]*)?'   # optional bare-age line (XBRL)
+        r'[^\n]{0,100}Chief Executive Officer',
         re.M),
     # 3. Reverse — name after title with optional comma or parenthetical:
     #    "Chief Executive Officer  Timothy D. Cook"
@@ -438,6 +493,11 @@ _SEC_CEO_PATTERNS = [
         r'Name:[ \t]*\n[ \t]*([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})'
         r'[ \t]*\n[ \t]*Title:[ \t]*\n?[^\n]*Chief Executive Officer',
         re.M),
+    # 6. Co-CEO: "Co-Chief Executive Officers, Ted Sarandos and Greg Peters"
+    #    Take the first name listed.
+    re.compile(
+        r'[Cc]o[-\s]?Chief Executive Officer[s]?[,\s]+'
+        r'([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})\b'),
 ]
 
 # Patterns for web/DDGS snippets — looser, allow name within 50 chars of title
@@ -785,6 +845,54 @@ def fetch_ceo_from_local_10k(ticker: str, company_name: str, year: int,
 # ticker starting simultaneously) is harmless — one result simply overwrites.
 _fmp_historical_cache: dict[str, list] = {}   # ticker → historical execs list
 _fmp_current_cache: dict[str, list] = {}      # ticker → current execs list
+# ticker → profile dict or None
+_fmp_profile_cache: dict[str, dict | None] = {}
+
+# ── Company existence dates (spinoffs / IPOs) ──────────────────────────────────
+# For these tickers, years STRICTLY BEFORE the value have no standalone CEO
+# (the company was a division of its parent or hadn't yet been formed).
+# CEO identification is skipped for pre-existence years.
+_COMPANY_EXISTS_FROM: dict[str, int] = {
+    'CARR': 2020,   # Carrier Global spun from United Technologies Apr 2020
+    'CEG':  2022,   # Constellation Energy spun from Exelon Feb 2022
+    'EVRG': 2018,   # Evergy formed from Great Plains Energy + Westar Jun 2018
+    'FOX':  2019,   # Fox Corp spun from 21st Century Fox Mar 2019
+    'FOXA': 2019,
+    'FTV':  2016,   # Fortive spun from Danaher Jul 2016
+    'GEHC': 2023,   # GE HealthCare spun from GE Jan 2023
+    'INVH': 2017,   # Invitation Homes IPO Feb 2017
+    'IQV':  2016,   # IQVIA formed from IMS Health + Quintiles Oct 2016
+    'KHC':  2015,   # Kraft Heinz formed Jul 2015
+    'KVUE': 2023,   # Kenvue spun from J&J May 2023
+    'LIN':  2018,   # Linde plc formed Oct 2018 (Praxair + Linde AG)
+    'LW':   2016,   # Lamb Weston spun from ConAgra Nov 2016
+    'MTCH': 2015,   # Match Group spun from IAC Nov 2015
+    'OTIS': 2020,   # Otis Worldwide spun from United Technologies Apr 2020
+    'SOLV': 2024,   # Solventum spun from 3M Apr 2024
+    'SW':   2024,   # Smurfit WestRock formed Jul 2024
+    'SYF':  2014,   # Synchrony Financial IPO Jul 2014
+    'VICI': 2017,   # VICI Properties IPO Oct 2017
+    'VLTO': 2023,   # Veralto spun from Danaher Sep 2023
+    'VST':  2016,   # Vistra Energy emerged from EFH bankruptcy Oct 2016
+    'VTRS': 2020,   # Viatris formed Nov 2020 (Mylan + Upjohn)
+}
+
+# ── Historical ticker aliases ──────────────────────────────────────────────────
+# Companies that changed tickers or names: map year ranges to historical
+# identifiers so FMP + OpenAI can be retried under the former name.
+# Format: current_ticker → [(from_year, to_year, old_ticker, old_company_name)]
+_TICKER_ALIASES: dict[str, list[tuple[int, int, str, str]]] = {
+    'APTV': [(2009, 2016, 'DLPH', 'Delphi Automotive PLC')],
+    'BF':   [(2012, 9999, 'BF.B', 'Brown-Forman Corporation')],
+    'BKR':  [(2012, 2017, 'BHI',  'Baker Hughes Inc')],
+    'BRK':  [(2012, 9999, 'BRK.B', 'Berkshire Hathaway Inc')],
+    'GEN':  [(2012, 2019, 'SYMC', 'Symantec Corp'),
+             (2019, 2022, 'NLOK', 'NortonLifeLock Inc')],
+    'K':    [(2012, 2023, 'K',    'Kellogg Company')],
+    'PARA': [(2012, 2019, 'VIAB', 'Viacom Inc'),
+             (2019, 2022, 'VIAC', 'ViacomCBS Inc')],
+    'RVTY': [(2012, 2023, 'PKI',  'PerkinElmer Inc')],
+}
 
 
 def clear_fmp_cache() -> None:
@@ -792,6 +900,7 @@ def clear_fmp_cache() -> None:
     global _missing_file_count
     _fmp_historical_cache.clear()
     _fmp_current_cache.clear()
+    _fmp_profile_cache.clear()
     _openai_cache.clear()
     with _missing_file_lock:
         _missing_file_count = 0
@@ -820,7 +929,7 @@ def fetch_ceo_from_fmp(ticker: str, year: int = None) -> tuple[Optional[str], st
         if data:
             for exec_ in data:
                 title = (exec_.get('title') or '').lower()
-                if 'chief executive' not in title and title.strip() != 'ceo':
+                if 'chief executive' not in title and 'ceo' not in title:
                     continue
                 active = str(exec_.get('yearActive') or
                              exec_.get('startDate') or '')[:4]
@@ -845,10 +954,26 @@ def fetch_ceo_from_fmp(ticker: str, year: int = None) -> tuple[Optional[str], st
     if data:
         for exec_ in data:
             title = (exec_.get('title') or '').lower()
-            if 'chief executive' in title or title.strip() == 'ceo':
+            if 'chief executive' in title or 'ceo' in title:
                 name = _normalize_name((exec_.get('name') or '').strip())
                 if name and _is_valid_name(name):
                     return name, 'fmp_key_executives'
+
+    # Last resort: company profile endpoint — always has current CEO as plain text.
+    # Most reliable source for 2024+ where historical/key-exec data may lag.
+    if ticker not in _fmp_profile_cache:
+        fetched_profile = _fmp_get('/profile', {'symbol': ticker})
+        if isinstance(fetched_profile, list) and fetched_profile:
+            _fmp_profile_cache[ticker] = fetched_profile[0]
+        elif isinstance(fetched_profile, dict) and fetched_profile:
+            _fmp_profile_cache[ticker] = fetched_profile
+        else:
+            _fmp_profile_cache[ticker] = None
+    prof = _fmp_profile_cache.get(ticker)
+    if isinstance(prof, dict):
+        name = _normalize_name((prof.get('ceo') or '').strip())
+        if name and _is_valid_name(name):
+            return name, 'fmp_profile'
 
     return None, ''
 
@@ -937,6 +1062,7 @@ def fetch_ceo_from_openai(ticker: str, company_name: str,
                 ],
                 max_tokens=60,           # allow full sentence in case model elaborates
                 temperature=0,
+                timeout=30,              # hard cap — prevents holding _openai_lock forever
             )
             raw = (resp.choices[0].message.content or '').strip()
         except Exception as e:
@@ -1157,6 +1283,22 @@ class CEODataService:
         self.conn = psycopg2.connect(DB_Connection().DB_CONNECTION_STRING)
         self.conn.autocommit = True
 
+    def _reconnect(self) -> None:
+        """Close any existing connection and open a fresh one.
+
+        Called at the start of each pipeline run to prevent stale cached
+        connections (the service instance is long-lived via st.cache_resource)
+        from hanging on the first DB query when the TCP connection has gone away.
+        """
+        try:
+            if self.conn and not self.conn.closed:
+                self.conn.close()
+        except Exception:
+            pass
+        self.conn = psycopg2.connect(
+            DB_Connection().DB_CONNECTION_STRING, connect_timeout=15)
+        self.conn.autocommit = True
+
     # ── CEO upsert ─────────────────────────────────────────────────────────────
     def save_ceo(self, company_name: str, ticker: str, year: int,
                  ceo_name: str, source: str,
@@ -1267,6 +1409,15 @@ class CEODataService:
             result['status'] = 'halted'
             return result
 
+        # Skip years before this company existed as a standalone entity
+        # (e.g. CARR pre-2020 was a UTC division with no independent CEO).
+        _exists_from = _COMPANY_EXISTS_FROM.get((ticker or '').upper())
+        if _exists_from and year < _exists_from:
+            result['status'] = 'pre_existence'
+            print(f"[CEO]   ○ pre_existence: {ticker} {year} "
+                  f"(entity exists from {_exists_from})", flush=True)
+            return result
+
         print(
             f"[CEO] Processing: {ticker} | {company_name} | {year}", flush=True)
 
@@ -1278,16 +1429,40 @@ class CEODataService:
             ceo_name: Optional[str] = None
             source: str = ''
 
-            # Try each selected source in the chosen order
+            # For very recent years (2024+) FMP profile is more reliable than
+            # OpenAI whose training data may not cover the full year.
+            # Re-order: FMP first, then AI, then 10K, then Web.
+            if year >= 2024 and 'FMP' in _sources and not ceo_name:
+                ceo_name, source = fetch_ceo_from_fmp(ticker, year)
+
+            # Standard source cascade in user-selected order
             if 'AI' in _sources and not ceo_name:
-                ceo_name, source = fetch_ceo_from_openai(ticker, company_name, year)
+                ceo_name, source = fetch_ceo_from_openai(
+                    ticker, company_name, year)
             if '10K' in _sources and not ceo_name:
                 ceo_name, source = fetch_ceo_from_local_10k(
-                    ticker, company_name, year, self.conn)
+                    ticker, company_name, year, _get_thread_conn())
             if 'FMP' in _sources and not ceo_name:
                 ceo_name, source = fetch_ceo_from_fmp(ticker, year)
             if 'Web Search' in _sources and not ceo_name:
                 ceo_name, source = fetch_ceo_from_ddgs(company_name, year)
+
+            # Retry under historical ticker/name for renamed/rebranded companies.
+            # E.g. GEN (Gen Digital) pre-2023 was SYMC (Symantec) / NLOK (NortonLifeLock).
+            if not ceo_name:
+                for (a_from, a_to, old_ticker,
+                     old_name) in _TICKER_ALIASES.get((ticker or '').upper(), []):
+                    if a_from <= year <= a_to:
+                        if 'FMP' in _sources:
+                            ceo_name, source = fetch_ceo_from_fmp(
+                                old_ticker, year)
+                        if not ceo_name and 'AI' in _sources:
+                            ceo_name, source = fetch_ceo_from_openai(
+                                old_ticker, old_name, year)
+                        if not ceo_name and 'Web Search' in _sources:
+                            ceo_name, source = fetch_ceo_from_ddgs(
+                                old_name, year)
+                        break
 
             if not ceo_name:
                 result['status'] = 'no_ceo'
@@ -1296,7 +1471,22 @@ class CEODataService:
 
             result['ceo_name'] = ceo_name
             result['ceo_source'] = source
-            self.save_ceo(company_name, ticker, year, ceo_name, source)
+            # Use thread-local connection for the insert so concurrent workers
+            # don't race on self.conn (psycopg2 connections are not thread-safe)
+            _tconn = _get_thread_conn()
+            with _tconn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO t_ceo (company_name, ticker, year, ceo_name, source,
+                                       confidence_score, added_dt, modify_dt)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+                    ON CONFLICT (company_name, year)
+                    DO UPDATE SET
+                        ceo_name         = EXCLUDED.ceo_name,
+                        ticker           = COALESCE(EXCLUDED.ticker, t_ceo.ticker),
+                        source           = EXCLUDED.source,
+                        confidence_score = EXCLUDED.confidence_score,
+                        modify_dt        = NOW()
+                """, (company_name, ticker, year, ceo_name, source, 1.0))
             print(f"[CEO]   ✓ {ceo_name} ({source})", flush=True)
 
         except Exception as e:
@@ -1364,20 +1554,27 @@ class CEODataService:
         self,
         companies: list[dict],
         years: list[int],
+        _conn=None,
     ) -> list[tuple[str, str, int]]:
         """
         Return (company_name, ticker, year) tuples from the requested
         companies × years that do NOT yet have a row in t_ceo.
         Uses a single SQL query instead of N per-worker round-trips.
+
+        _conn: optional explicit connection to use (e.g. self.conn from the
+               pipeline thread that just called _reconnect).  When None the
+               caller's thread-local connection is used (render-thread path).
         """
         if not companies or not years:
             return []
 
         tickers = [c.get('ticker', '') for c in companies]
-        ticker_map = {c.get('ticker', ''): c['company_name'] for c in companies}
+        ticker_map = {c.get('ticker', '')
+                            : c['company_name'] for c in companies}
 
         try:
-            with self.conn.cursor() as cur:
+            db = _conn if _conn is not None else _get_thread_conn()
+            with db.cursor() as cur:
                 cur.execute(
                     """
                     SELECT ticker, year
@@ -1419,6 +1616,10 @@ class CEODataService:
                  e.g. ['AI', '10K', 'FMP', 'Web Search']
                  Defaults to ['AI'] when None.
         """
+        # Fresh DB connection — the service instance is cached (st.cache_resource)
+        # and the connection can go stale over hours, causing get_unprocessed_tasks
+        # to hang indefinitely on a dead TCP socket.
+        self._reconnect()
         clear_fmp_cache()  # fresh cache per run
         _sources = sources or ['AI']
         logger.info("run_ceo_pipeline: sources=%s", _sources)
@@ -1426,8 +1627,11 @@ class CEODataService:
         total_requested = len(companies) * len(years)
 
         if skip_existing:
-            # Single SQL join to find gaps — avoids N per-worker DB round-trips
-            tasks = self.get_unprocessed_tasks(companies, years)
+            # Reuse self.conn (just refreshed by _reconnect) — avoids opening
+            # a redundant second connection in the background thread which can
+            # stall if the Cloud SQL proxy is busy.
+            tasks = self.get_unprocessed_tasks(
+                companies, years, _conn=self.conn)
             skipped_count = total_requested - len(tasks)
             logger.info("run_ceo_pipeline: %d/%d tasks after skipping existing",
                         len(tasks), total_requested)
@@ -1438,9 +1642,15 @@ class CEODataService:
             ]
             skipped_count = 0
 
+        # Notify the UI of the actual task count (after skip-existing deduction)
+        # so the progress bar shows pending/pending instead of total/total.
+        if on_progress:
+            on_progress({'status': '_task_count', 'total': len(tasks),
+                         'skipped': skipped_count})
+
         summary = {'total': total_requested, 'ok': 0,
                    'skipped': skipped_count, 'no_ceo': 0,
-                   'error': 0, 'halted': 0}
+                   'pre_existence': 0, 'error': 0, 'halted': 0}
         with ThreadPoolExecutor(max_workers=workers) as exe:
             futs = {
                 exe.submit(self.identify_ceo_one, cname, ticker, year,
@@ -1655,7 +1865,7 @@ class CEODataService:
     # ── Query helpers (for UI) ─────────────────────────────────────────────────
     def get_progress_counts(self) -> dict:
         """How many (company, year) pairs are fully processed."""
-        with self.conn.cursor(
+        with _get_thread_conn().cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("SELECT COUNT(*) AS ceo_rows FROM t_ceo")
             ceo_rows = cur.fetchone()['ceo_rows']
