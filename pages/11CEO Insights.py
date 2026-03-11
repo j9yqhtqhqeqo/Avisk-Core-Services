@@ -426,7 +426,7 @@ with tab3:
     ceo_source = st.radio(
         "Data Source",
         options=_SRC_OPTIONS,
-        index=0,
+        index=2,
         horizontal=True,
         key="ceo_source_radio",
         help=_SRC_HELP,

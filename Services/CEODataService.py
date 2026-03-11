@@ -436,6 +436,9 @@ def _is_valid_name(name: str) -> bool:
     orig_words = name.split()
     if len(orig_words) > 5:
         return False
+    # Reject all-caps names — artifacts from EDGAR "/s/ W. ANTHONY WILL" signature lines
+    if all(w.isupper() for w in words):
+        return False
     for w in words:
         if not _WORD_RE.fullmatch(w):
             return False
@@ -452,52 +455,72 @@ _W = r'(?:[A-Z]\.?|[A-Z][a-zA-Z]{1,24})'
 
 # Patterns for SEC/10-K structured text — strict, prevent mid-sentence matches
 _SEC_CEO_PATTERNS = [
-    # 1. Signature block:  "/s/ Timothy D. Cook" then newlines then "Chief Executive Officer"
+    # 1a. Signature block — properly-cased name after /s/:
+    #     "/s/ Timothy D. Cook\n...\nChief Executive Officer"
     re.compile(
-        r'/s/[ \t]+([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})[ \t]*\n'
+        r'/s/[ \t]+(' + _W + r'(?:[ \t]+' + _W + r'){1,2})[ \t]*\n'
         r'[^\n]*\n[^\n]*Chief Executive Officer', re.M),
-    # 2. Officer table row (line-start anchored):
-    #    "Timothy D. Cook    63    Chief Executive Officer"
-    #    Name must be at line-start; only whitespace/digits before the title.
-    #    Negative lookahead prevents "CEO and Chairman" or "CEO of [Company]"
-    #    (those appear in director-bio sections of proxy statements).
+    # 1b. ALL-CAPS /s/ line followed by properly-cased name on NEXT line:
+    #     "/s/ W. ANTHONY WILL\nW. Anthony Will\nPresident and Chief Executive Officer"
     re.compile(
-        r'(?:^|\n)[ \t]*([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})'
-        r'[ \t]+(?:\d+[ \t]+)?Chief Executive Officer'
-        r'(?![ \t]+(?:and|of|formerly|since|until|&)\b)', re.M),
-    # 2b. Officer table — ALL multi-line EDGAR formats:
-    #    a) XBRL 3-line:  "Robert A. Michael\n55\nChairman... Chief Executive Officer"
-    #    b) Prose-age:    "Padraig McDonnell\n, 53, has served as ... Chief Executive Officer"
-    #    c) No-age:       "Ron M. Vachris\nPresident and Chief Executive Officer"
-    #    The optional bare-age sub-pattern handles (a); [^\n]{0,100} handles (b) and (c).
+        r'/s/[ \t]+[A-Z][A-Z.\s]{1,30}\n'
+        r'[ \t]*(' + _W + r'(?:[ \t]+' + _W + r'){1,2})[ \t]*\n'
+        r'[^\n]*Chief Executive Officer', re.M),
+    # 1c. Signature TABLE layout (EDGAR): /s/ ALL-CAPS row → CEO title → date → printed name:
+    #     "/s/ F. THOMSON LEIGHTON\nChief Executive Officer, President and Director\n"
+    #     "February 24, 2025\nF. Thomson Leighton"  (printed name comes AFTER title+date)
     re.compile(
-        r'(?:^|\n)[ \t]*([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})'
-        r'[ \t]*\n'
-        r'[ \t]*(?:\d{1,3}[ \t]*\n[ \t]*)?'   # optional bare-age line (XBRL)
-        r'[^\n]{0,100}Chief Executive Officer',
+        r'/s/[ \t]+[A-Z][A-Z.\s]{1,30}\n'
+        r'[^\n]*Chief Executive Officer[^\n]*\n'
+        r'(?:[^\n]{0,50}\n)?'    # optional date / short continuation line
+        r'[ \t]*(' + _W + r'(?:[ \t]+' + _W + r'){1,2})[ \t]*(?:\n|$)',
         re.M),
-    # 3. Reverse — name after title with optional comma or parenthetical:
+    # 2. Officer table — single line, line-start anchored:
+    #    "Timothy D. Cook    63    Chief Executive Officer"
+    #    No 'of' exclusion — in 10-K officer sections 'CEO of Company' is always correct.
+    re.compile(
+        r'(?:^|\n)[ \t]*(' + _W + r'(?:[ \t]+' + _W + r'){1,2})'
+        r'[ \t]+(?:\d+[ \t]+)?Chief Executive Officer',
+        re.M),
+    # 2b. Multi-line officer table — name then title within 1-2 lines:
+    #    a) "Name\n55\nChairman and Chief Executive Officer"  (XBRL 3-line)
+    #    b) "Name\n, 53, served as ... Chief Executive Officer"  (prose-age)
+    #    c) "Name\nPresident and Chief Executive Officer"  (no-age)
+    #    d) "Name,\n...\nChief Executive Officer of CVS Health"  (trailing comma + 'of Company')
+    re.compile(
+        r'(?:^|\n)[ \t]*(' + _W + r'(?:[ \t]+' + _W + r'){1,2})'
+        r'[,;]?[ \t]*\n'
+        r'[ \t]*(?:\d{1,3}\.?[ \t]*\n[ \t]*)?'   # optional bare-age line
+        r'[^\n]{0,120}Chief Executive Officer',
+        re.M),
+    # 2c. Bio format: Name (comma), short age/date line, then bio with title:
+    #    "Terrence A. Duffy,\n66.\nMr. Duffy has served as Chairman and Chief Executive Officer"
+    #    "J. David Joyner\n, age 60, President and Chief Executive Officer of CVS Health Corp"
+    re.compile(
+        r'(?:^|\n)[ \t]*(' + _W + r'(?:[ \t]+' + _W + r'){1,2})'
+        r'[,;]?[ \t]*\n'
+        # short line: age, date, or `, age NN,` continuation
+        r'[^\n]{1,60}\n'
+        r'[^\n]{0,250}Chief Executive Officer',
+        re.M),
+    # 3. Reverse — name after title:
     #    "Chief Executive Officer  Timothy D. Cook"
     #    "Chief Executive Officer, Timothy D. Cook"
-    #    "Chief Executive Officer (CEO) Timothy D. Cook"
     re.compile(
         r'Chief Executive Officer(?:\s*\([^)]{1,15}\))?[,]?[ \t]+'
-        r'([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})\b'),
+        r'(' + _W + r'(?:[ \t]+' + _W + r'){1,2})\b'),
     # 4. "CEO John Smith" or "CEO, John Smith"
     re.compile(
-        r'\bCEO[,:\s]+([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})\b'),
-    # 5. Signature block Name:/Title: lines (EDGAR filing signature page):
-    #    "Name:\nRobert A. Michael\nTitle:\nChairman and Chief Executive Officer"
-    #    The title label and title text may be on the same OR successive lines.
+        r'\bCEO[,:\s]+(' + _W + r'(?:[ \t]+' + _W + r'){1,2})\b'),
+    # 5. Name:/Title: signature block
     re.compile(
-        r'Name:[ \t]*\n[ \t]*([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})'
+        r'Name:[ \t]*\n[ \t]*(' + _W + r'(?:[ \t]+' + _W + r'){1,2})'
         r'[ \t]*\n[ \t]*Title:[ \t]*\n?[^\n]*Chief Executive Officer',
         re.M),
     # 6. Co-CEO: "Co-Chief Executive Officers, Ted Sarandos and Greg Peters"
-    #    Take the first name listed.
     re.compile(
         r'[Cc]o[-\s]?Chief Executive Officer[s]?[,\s]+'
-        r'([A-Z][a-z]{1,24}(?:[ \t]+' + _W + r'){1,2})\b'),
+        r'(' + _W + r'(?:[ \t]+' + _W + r'){1,2})\b'),
 ]
 
 # Patterns for web/DDGS snippets — looser, allow name within 50 chars of title
@@ -520,6 +543,9 @@ def _extract_ceo_from_sec_text(text: str) -> Optional[str]:
     """Apply strict 10-K patterns to SEC document plain text; return first valid name."""
     if not text:
         return None
+    # Replace non-breaking spaces (\xa0 / &nbsp;) so EDGAR signature lines like
+    # "/s/\xa0\xa0F. THOMSON LEIGHTON" are matched by [ \t]+ in patterns
+    text = text.replace('\xa0', ' ')
     # Collapse excessive whitespace but keep newlines for signature pattern
     text = re.sub(r'[ \t]{2,}', ' ', text)
     for pat in _SEC_CEO_PATTERNS:
@@ -1429,21 +1455,17 @@ class CEODataService:
             ceo_name: Optional[str] = None
             source: str = ''
 
-            # For very recent years (2024+) FMP profile is more reliable than
-            # OpenAI whose training data may not cover the full year.
-            # Re-order: FMP first, then AI, then 10K, then Web.
-            if year >= 2024 and 'FMP' in _sources and not ceo_name:
-                ceo_name, source = fetch_ceo_from_fmp(ticker, year)
-
-            # Standard source cascade in user-selected order
-            if 'AI' in _sources and not ceo_name:
-                ceo_name, source = fetch_ceo_from_openai(
-                    ticker, company_name, year)
+            # Source cascade — 10K is most authoritative (actual filing text).
+            # FMP has reliable structured data. AI fills historic gaps.
+            # Web Search is last resort only.
             if '10K' in _sources and not ceo_name:
                 ceo_name, source = fetch_ceo_from_local_10k(
                     ticker, company_name, year, _get_thread_conn())
             if 'FMP' in _sources and not ceo_name:
                 ceo_name, source = fetch_ceo_from_fmp(ticker, year)
+            if 'AI' in _sources and not ceo_name:
+                ceo_name, source = fetch_ceo_from_openai(
+                    ticker, company_name, year)
             if 'Web Search' in _sources and not ceo_name:
                 ceo_name, source = fetch_ceo_from_ddgs(company_name, year)
 
@@ -1569,8 +1591,7 @@ class CEODataService:
             return []
 
         tickers = [c.get('ticker', '') for c in companies]
-        ticker_map = {c.get('ticker', '')
-                            : c['company_name'] for c in companies}
+        ticker_map = {c.get('ticker', '')                      : c['company_name'] for c in companies}
 
         try:
             db = _conn if _conn is not None else _get_thread_conn()
