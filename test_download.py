@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """Test script for sustainability report download with DB integration"""
 
-from Services.SustainabilityReportDownloader import SustainabilityReportDownloader
+from Services.AviskDataScraper import AviskDataScraper
 import os
 
 # Use context manager for automatic cleanup
-with SustainabilityReportDownloader() as downloader:
+with AviskDataScraper() as downloader:
     print('Testing download for Apple Inc...')
     result = downloader.process_company(
         'AAPL', 'Apple Inc.', 'https://www.apple.com')

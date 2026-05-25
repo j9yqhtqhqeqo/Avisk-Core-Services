@@ -64,7 +64,7 @@ except Exception:
 
 logger = logging.getLogger(__name__)
 
-# ── FMP constants (same key used in SustainabilityReportDownloader) ───────────
+# ── FMP constants (same key used in AviskDataScraper) ───────────
 FMP_API_KEY = 'j1sUHyVT1lU3gsc2l6zF2jkuleFJEA2o'
 FMP_BASE = 'https://financialmodelingprep.com/stable'
 # seconds between calls  ≈ 270 calls/min (free: 300/min)
@@ -879,24 +879,34 @@ _fmp_profile_cache: dict[str, dict | None] = {}
 # (the company was a division of its parent or hadn't yet been formed).
 # CEO identification is skipped for pre-existence years.
 _COMPANY_EXISTS_FROM: dict[str, int] = {
+    'ABNB': 2020,   # Airbnb IPO Dec 2020
+    'ALLE': 2013,   # Allegion PLC spun from Ingersoll-Rand Dec 2013
     'CARR': 2020,   # Carrier Global spun from United Technologies Apr 2020
     'CEG':  2022,   # Constellation Energy spun from Exelon Feb 2022
+    'CRWD': 2019,   # CrowdStrike Holdings IPO Jun 2019
+    'DASH': 2020,   # DoorDash IPO Dec 2020
+    'DOW':  2019,   # Dow Inc. spun from DowDuPont Apr 2019
     'EVRG': 2018,   # Evergy formed from Great Plains Energy + Westar Jun 2018
     'FOX':  2019,   # Fox Corp spun from 21st Century Fox Mar 2019
     'FOXA': 2019,
     'FTV':  2016,   # Fortive spun from Danaher Jul 2016
     'GEHC': 2023,   # GE HealthCare spun from GE Jan 2023
+    'HPE':  2015,   # Hewlett Packard Enterprise spun from HP Nov 2015
     'INVH': 2017,   # Invitation Homes IPO Feb 2017
     'IQV':  2016,   # IQVIA formed from IMS Health + Quintiles Oct 2016
+    'KEYS': 2014,   # Keysight Technologies spun from Agilent Nov 2014
     'KHC':  2015,   # Kraft Heinz formed Jul 2015
     'KVUE': 2023,   # Kenvue spun from J&J May 2023
     'LIN':  2018,   # Linde plc formed Oct 2018 (Praxair + Linde AG)
     'LW':   2016,   # Lamb Weston spun from ConAgra Nov 2016
+    'MRNA': 2018,   # Moderna IPO Dec 2018
     'MTCH': 2015,   # Match Group spun from IAC Nov 2015
     'OTIS': 2020,   # Otis Worldwide spun from United Technologies Apr 2020
+    'PLTR': 2020,   # Palantir Technologies IPO Sep 2020
     'SOLV': 2024,   # Solventum spun from 3M Apr 2024
     'SW':   2024,   # Smurfit WestRock formed Jul 2024
     'SYF':  2014,   # Synchrony Financial IPO Jul 2014
+    'UBER': 2019,   # Uber Technologies IPO May 2019
     'VICI': 2017,   # VICI Properties IPO Oct 2017
     'VLTO': 2023,   # Veralto spun from Danaher Sep 2023
     'VST':  2016,   # Vistra Energy emerged from EFH bankruptcy Oct 2016
@@ -912,6 +922,7 @@ _TICKER_ALIASES: dict[str, list[tuple[int, int, str, str]]] = {
     'BF':   [(2012, 9999, 'BF.B', 'Brown-Forman Corporation')],
     'BKR':  [(2012, 2017, 'BHI',  'Baker Hughes Inc')],
     'BRK':  [(2012, 9999, 'BRK.B', 'Berkshire Hathaway Inc')],
+    'EG':   [(2012, 2022, 'RE',   'Everest Re Group Ltd')],
     'GEN':  [(2012, 2019, 'SYMC', 'Symantec Corp'),
              (2019, 2022, 'NLOK', 'NortonLifeLock Inc')],
     'K':    [(2012, 2023, 'K',    'Kellogg Company')],
@@ -1322,7 +1333,14 @@ class CEODataService:
         except Exception:
             pass
         self.conn = psycopg2.connect(
-            DB_Connection().DB_CONNECTION_STRING, connect_timeout=15)
+            DB_Connection().DB_CONNECTION_STRING,
+            connect_timeout=15,
+            options='-c statement_timeout=30000',  # 30-s cap — same as worker threads
+            keepalives=1,
+            keepalives_idle=30,
+            keepalives_interval=5,
+            keepalives_count=3,
+        )
         self.conn.autocommit = True
 
     # ── CEO upsert ─────────────────────────────────────────────────────────────
@@ -1646,6 +1664,13 @@ class CEODataService:
         logger.info("run_ceo_pipeline: sources=%s", _sources)
 
         total_requested = len(companies) * len(years)
+
+        # Emit an early signal so the UI immediately exits the
+        # "⏳ Computing pending task list from DB…" spinner state.
+        # A second _task_count is emitted below with the real (post-skip) total.
+        if on_progress:
+            on_progress({'status': '_task_count', 'total': total_requested,
+                         'skipped': 0})
 
         if skip_existing:
             # Reuse self.conn (just refreshed by _reconnect) — avoids opening

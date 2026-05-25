@@ -150,8 +150,9 @@ echo "Avisk Core Services Deployment"
 echo "Build ID: $BUILD_ID"
 echo "=================================="
 
-# Stop the service if running
-echo "Stopping service..."
+# Stop the services if running
+echo "Stopping services..."
+sudo systemctl stop avisk-job-worker || true
 sudo systemctl stop avisk-core-services || true
 
 # Backup current deployment
@@ -204,23 +205,25 @@ sudo -u avisk /opt/avisk/venv/bin/pip install -r requirements.txt
 # Clean up
 rm -rf /tmp/deployment-$BUILD_ID.tar.gz /tmp/app /tmp/requirements.txt /tmp/deployment-metadata.json
 
-# Start the service
-echo "Starting service..."
+# Start the services
+echo "Starting services..."
 sudo systemctl start avisk-core-services
+sudo systemctl start avisk-job-worker
 
 # Wait for service to start
 echo "Waiting for service to start..."
 sleep 5
 
 # Check service status
-if sudo systemctl is-active --quiet avisk-core-services; then
+if sudo systemctl is-active --quiet avisk-core-services && sudo systemctl is-active --quiet avisk-job-worker; then
     echo "=================================="
     echo "✅ Deployment Successful!"
     echo "=================================="
     echo "Service Status: RUNNING"
+    echo "Job Worker Status: RUNNING"
     echo "Build ID: $BUILD_ID"
     echo ""
-    echo "View logs: sudo journalctl -u avisk-core-services -f"
+    echo "View logs: sudo journalctl -u avisk-job-worker -f"
     echo ""
     exit 0
 else
@@ -228,7 +231,8 @@ else
     echo "❌ Deployment Failed!"
     echo "=================================="
     echo "Service failed to start. Checking logs..."
-    sudo journalctl -u avisk-core-services -n 50 --no-pager
+    sudo journalctl -u avisk-core-services -n 30 --no-pager
+    sudo journalctl -u avisk-job-worker -n 30 --no-pager
     exit 1
 fi
 EOFSCRIPT

@@ -1,0 +1,70 @@
+from datasets import load_dataset
+import pandas as pd
+
+# ----------------------------
+# CONFIG
+# ----------------------------
+DATASET_NAME = "kurry/sp500_earnings_transcripts"
+START_DATE = "2016-01-01"   # last 10 years cutoff
+TICKERS = ["AAPL", "MSFT", "AMZN", "GOOGL", "META"]  # optional filter
+
+OUTPUT_FILE = "sp500_transcripts_filtered.csv"
+
+# ----------------------------
+# LOAD DATASET
+# ----------------------------
+dataset = load_dataset(DATASET_NAME)
+
+df = dataset["train"].to_pandas()
+
+# ----------------------------
+# CLEAN / NORMALIZE
+# ----------------------------
+df["date"] = pd.to_datetime(df["date"], errors="coerce")
+
+# drop rows without transcript or date
+df = df.dropna(subset=["transcript", "date"])
+
+# ----------------------------
+# FILTER DATE RANGE
+# ----------------------------
+df = df[df["date"] >= START_DATE]
+
+# ----------------------------
+# FILTER TICKERS (optional)
+# ----------------------------
+if TICKERS:
+    df = df[df["ticker"].isin(TICKERS)]
+
+# ----------------------------
+# SORT FOR CONSISTENCY
+# ----------------------------
+df = df.sort_values(["ticker", "date"])
+
+# ----------------------------
+# BASIC TRANSCRIPT CLEANING
+# ----------------------------
+def clean_text(text):
+    if not isinstance(text, str):
+        return ""
+    return " ".join(text.replace("\n", " ").split())
+
+df["transcript_clean"] = df["transcript"].apply(clean_text)
+
+# ----------------------------
+# KEEP ONLY RELEVANT FIELDS
+# ----------------------------
+final_df = df[[
+    "ticker",
+    "company",
+    "date",
+    "quarter",
+    "transcript_clean"
+]]
+
+# ----------------------------
+# SAVE OUTPUT
+# ----------------------------
+final_df.to_csv(OUTPUT_FILE, index=False)
+
+print(f"Saved {len(final_df)} transcripts to {OUTPUT_FILE}")

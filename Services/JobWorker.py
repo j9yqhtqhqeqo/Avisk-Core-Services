@@ -7,7 +7,7 @@ Polls t_scraping_jobs every 5 seconds and executes queued jobs.
 
 Supported job_type values:
   - 'financial_metrics'   → FinancialDataScraper + MarketDataFetcher share-patch
-  - 'document_download'   → SustainabilityReportDownloader
+  - 'document_download'   → AviskDataScraper
 
 Usage:
   python Services/JobWorker.py
@@ -231,7 +231,7 @@ def _run_document_download(conn, job_id: str, payload: dict) -> list:
          f"Document download job started — {total} companies to process, "
          f"{bypassed} bypassed, workers={max_workers}")
 
-    from Services.SustainabilityReportDownloader import SustainabilityReportDownloader
+    from Services.AviskDataScraper import AviskDataScraper
 
     results = []
     completed = 0
@@ -247,7 +247,7 @@ def _run_document_download(conn, job_id: str, payload: dict) -> list:
         sym = co["symbol"]
         name = co["company_name"]
         # Each thread gets its own downloader instance (not thread-safe to share)
-        dl = SustainabilityReportDownloader(
+        dl = AviskDataScraper(
             download_dir=output_dir,
             delay_seconds=delay_seconds,
             current_sector_id=current_sector_id,

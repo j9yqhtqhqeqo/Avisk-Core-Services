@@ -29,6 +29,7 @@ _ceo_run: dict = {
     'results': [],
     'done': False,
     'summary': None,
+    'task_ready_t': 0.0,   # set when get_unprocessed_tasks completes
 }
 
 # ── Page config ────────────────────────────────────────────────────────────────
@@ -511,8 +512,10 @@ with tab3:
                 with _ceo_run_lock:
                     if _ceo_run['run_id'] == rid:
                         if r.get('status') == '_task_count':
-                            # Actual pending count after skip-existing deduction
+                            # Actual pending count after skip-existing deduction.
+                            # Also reset stale timer — workers are about to start.
                             _ceo_run['total'] = r['total']
+                            _ceo_run['task_ready_t'] = time.time()
                         else:
                             _ceo_run['results'].append(r)
             try:
@@ -549,11 +552,21 @@ with tab3:
             _load_ceo_coverage.clear()
             st.rerun()
 
-        # Track stale progress
+        # Track stale progress — use task_ready_t (DB query done, workers started)
+        # as the baseline so a slow get_unprocessed_tasks doesn't trigger false alarms.
         prev_len = st.session_state.get('_ceo_last_result_count', 0)
         if len(results) > prev_len:
             st.session_state['_ceo_last_progress_t'] = time.time()
             st.session_state['_ceo_last_result_count'] = len(results)
+
+        with _ceo_run_lock:
+            task_ready_t = _ceo_run.get('task_ready_t', 0.0)
+        # Stale seconds: count from whichever is latest —
+        # run start, last result, or task list ready (workers started)
+        _last_activity = max(
+            st.session_state.get('_ceo_last_progress_t', time.time()),
+            task_ready_t,
+        )
 
         if run_total is None:
             # Still in get_unprocessed_tasks — show indeterminate state
@@ -573,8 +586,8 @@ with tab3:
             st.progress(
                 pct, text=f"Identifying\u2026 {len(results):,}/{run_total:,}{last_label}")
 
-        stale_secs = time.time() - st.session_state.get('_ceo_last_progress_t', time.time())
-        if stale_secs > 60:
+        stale_secs = time.time() - _last_activity
+        if stale_secs > 120:
             st.warning(
                 f"⚠️ No progress for **{int(stale_secs)}s** — workers may be waiting. "
                 f"Results so far: {len(results):,}.")

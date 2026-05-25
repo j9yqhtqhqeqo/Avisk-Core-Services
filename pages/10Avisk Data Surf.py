@@ -4,7 +4,7 @@ Sustainability Report Downloader UI
 Streamlit interface for downloading sustainability reports from S&P 500 companies.
 """
 
-from Services.SustainabilityReportDownloader import SustainabilityReportDownloader
+from Services.AviskDataScraper import AviskDataScraper
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -348,7 +348,7 @@ with tab1:
     if st.session_state.companies_df is None:
         with st.spinner("Loading S&P 500 companies..."):
             try:
-                downloader = SustainabilityReportDownloader(
+                downloader = AviskDataScraper(
                     download_dir=output_dir,
                     use_storage=use_storage
                 )

@@ -29,7 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Known URL patterns from SustainabilityReportDownloader
+# Known URL patterns from AviskDataScraper
 KNOWN_REPORT_URL_PATTERNS = {
     'NVDA': [
         'https://images.nvidia.com/aem-dam/Solutions/documents/NVIDIA-Sustainability-Report-Fiscal-Year-{year}.pdf',
