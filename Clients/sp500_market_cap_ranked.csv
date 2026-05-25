@@ -1,501 +1,504 @@
 rank,symbol,company,market_cap,sector
-1,NVDA,NVIDIA Corporation,$4.32 Trillion,Technology
-2,AAPL,Apple Inc,$3.83 Trillion,Technology
-3,GOOG,Alphabet Inc Class C,$3.28 Trillion,Communication Services
-4,MSFT,Microsoft Corporation,$2.94 Trillion,Technology
-5,AMZN,Amazon.com Inc,$1.95 Trillion,Consumer Cyclical
-6,META,Meta Platforms Inc.,$1.40 Trillion,Communication Services
-7,TSLA,Tesla Inc,$1.15 Trillion,Consumer Cyclical
-8,LLY,Eli Lilly and Company,$925.28 Billion,Healthcare
-9,JPM,JPMorgan Chase & Co,$831.70 Billion,Financial Services
-10,XOM,Exxon Mobil Corp,$609.22 Billion,Energy
-11,JNJ,Johnson & Johnson,$574.95 Billion,Healthcare
-12,V,Visa Inc. Class A,$558.34 Billion,Financial Services
-13,MA,Mastercard Inc,$464.56 Billion,Financial Services
-14,MU,Micron Technology Inc,$444.23 Billion,Technology
-15,COST,Costco Wholesale Corp,$434.25 Billion,Consumer Defensive
-16,ABBV,AbbVie Inc,$388.97 Billion,Healthcare
-17,BAC,Bank of America Corp,$383.70 Billion,Financial Services
-18,HD,The Home Depot Inc,$343.72 Billion,Consumer Cyclical
-19,GE,GE Aerospace,$341.03 Billion,Industrials
-20,PG,Procter & Gamble Company,$338.50 Billion,Consumer Defensive
-21,AMD,Advanced Micro Devices Inc,$329.28 Billion,Technology
-22,CVX,Chevron Corp,$326.62 Billion,Energy
-23,PLTR,Palantir Technologies Inc. Class A Common Stock,$324.25 Billion,Technology
-24,NFLX,Netflix Inc,$324.19 Billion,Communication Services
-25,KO,The Coca-Cola Company,$307.80 Billion,Consumer Defensive
-26,CSCO,Cisco Systems Inc,$303.10 Billion,Technology
-27,LRCX,Lam Research Corp,$287.98 Billion,Technology
-28,PM,Philip Morris International Inc,$283.05 Billion,Consumer Defensive
-29,WFC,Wells Fargo & Company,$273.69 Billion,Financial Services
-30,AMAT,Applied Materials Inc,$269.77 Billion,Technology
-31,CAT,Caterpillar Inc,$263.80 Billion,Industrials
-32,ORCL,Oracle Corporation,$262.67 Billion,Technology
-33,UNH,UnitedHealth Group Incorporated,$252.65 Billion,Healthcare
-34,MRK,Merck & Company Inc,$242.01 Billion,Healthcare
-35,IBM,International Business Machines,$240.88 Billion,Technology
-36,GS,Goldman Sachs Group Inc,$239.10 Billion,Financial Services
-37,RTX,Raytheon Technologies Corp,$232.24 Billion,Industrials
-38,MCD,McDonald’s Corporation,$219.30 Billion,Consumer Cyclical
-39,LIN,Linde plc Ordinary Shares,$210.18 Billion,Basic Materials
-40,MS,Morgan Stanley,$207.18 Billion,Financial Services
-41,C,Citigroup Inc,$202.99 Billion,Financial Services
-42,PEP,PepsiCo Inc,$200.32 Billion,Consumer Defensive
-43,ABT,Abbott Laboratories,$194.05 Billion,Healthcare
-44,TMO,Thermo Fisher Scientific Inc,$188.02 Billion,Healthcare
-45,DIS,Walt Disney Company,$187.96 Billion,Communication Services
-46,AXP,American Express Company,$184.57 Billion,Financial Services
-47,KLAC,KLA-Tencor Corporation,$184.36 Billion,Technology
-48,GILD,Gilead Sciences Inc,$182.68 Billion,Healthcare
-49,T,AT&T Inc,$179.15 Billion,Communication Services
-50,AMGN,Amgen Inc,$177.76 Billion,Healthcare
-51,BA,The Boeing Company,$177.73 Billion,Industrials
-52,NEE,Nextera Energy Inc,$175.42 Billion,Utilities
-53,GEV,GE Vernova LLC,$174.16 Billion,Utilities
-54,TJX,The TJX Companies Inc,$173.90 Billion,Consumer Cyclical
-55,ISRG,Intuitive Surgical Inc,$173.82 Billion,Healthcare
-56,APH,Amphenol Corporation,$171.56 Billion,Technology
-57,INTC,Intel Corporation,$171.29 Billion,Technology
-58,CRM,Salesforce.com Inc,$168.01 Billion,Technology
-59,VZ,Verizon Communications Inc,$164.48 Billion,Communication Services
-60,DE,Deere & Company,$158.76 Billion,Industrials
-61,ADI,Analog Devices Inc,$156.91 Billion,Technology
-62,SCHW,Charles Schwab Corp,$155.63 Billion,Financial Services
-63,LOW,Lowe's Companies Inc,$155.32 Billion,Consumer Cyclical
-64,BLK,BlackRock Inc,$154.41 Billion,Financial Services
-65,QCOM,Qualcomm Incorporated,$152.44 Billion,Technology
-66,ANET,Arista Networks,$148.49 Billion,Technology
-67,TXN,Texas Instruments Incorporated,$147.41 Billion,Technology
-68,HON,Honeywell International Inc,$146.40 Billion,Industrials
-69,UBER,Uber Technologies Inc,$145.77 Billion,Technology
-70,PFE,Pfizer Inc,$144.87 Billion,Healthcare
-71,WELL,Welltower Inc,$140.42 Billion,Real Estate
-72,UNP,Union Pacific Corporation,$140.06 Billion,Industrials
-73,ACN,Accenture plc,$135.05 Billion,Technology
-74,AVGO,Broadcom Inc,$134.97 Billion,Technology
-75,BKNG,Booking Holdings Inc,$133.08 Billion,Consumer Cyclical
-76,ETN,Eaton Corporation PLC,$133.05 Billion,Industrials
-77,DHR,Danaher Corporation,$129.80 Billion,Healthcare
-78,SYK,Stryker Corporation,$127.47 Billion,Healthcare
-79,PLD,Prologis Inc,$126.68 Billion,Real Estate
-80,COF,Capital One Financial Corporation,$126.60 Billion,Financial Services
-81,SPGI,S&P Global Inc,$124.00 Billion,Financial Services
-82,PH,Parker-Hannifin Corporation,$123.55 Billion,Industrials
-83,COP,ConocoPhillips,$123.30 Billion,Energy
-84,BMY,Bristol-Myers Squibb Company,$122.66 Billion,Healthcare
-85,PGR,Progressive Corp,$121.27 Billion,Financial Services
-86,CB,Chubb Ltd,$119.59 Billion,Financial Services
-87,MDT,Medtronic PLC,$118.26 Billion,Healthcare
-88,TMUS,T-Mobile US Inc,$116.75 Billion,Communication Services
-89,VRTX,Vertex Pharmaceuticals Inc,$116.57 Billion,Healthcare
-90,PANW,Palo Alto Networks Inc,$112.86 Billion,Technology
-91,BSX,Boston Scientific Corp,$112.61 Billion,Healthcare
-92,CMCSA,Comcast Corp,$112.35 Billion,Communication Services
-93,CME,CME Group Inc,$108.58 Billion,Financial Services
-94,MCK,McKesson Corporation,$107.72 Billion,Healthcare
-95,ADBE,Adobe Systems Incorporated,$106.58 Billion,Technology
-96,LMT,Lockheed Martin Corporation,$106.03 Billion,Industrials
-97,INTU,Intuit Inc,$103.20 Billion,Technology
-98,CRWD,Crowdstrike Holdings Inc,$102.60 Billion,Technology
-99,GLW,Corning Incorporated,$101.59 Billion,Technology
-100,CVS,CVS Health Corp,$99.07 Billion,Healthcare
-101,SO,Southern Company,$97.89 Billion,Utilities
-102,BX,Blackstone Group Inc,$97.65 Billion,Financial Services
-103,SBUX,Starbucks Corporation,$97.05 Billion,Consumer Cyclical
-104,MO,Altria Group,$96.64 Billion,Consumer Defensive
-105,DUK,Duke Energy Corporation,$96.16 Billion,Utilities
-106,NEM,Newmont Goldcorp Corp,$94.76 Billion,Basic Materials
-107,STX,Seagate Technology PLC,$90.40 Billion,Technology
-108,PNC,PNC Financial Services Group Inc,$89.58 Billion,Financial Services
-109,MMC,Marsh & McLennan Companies Inc,$89.11 Billion,Financial Services
-110,WM,Waste Management Inc,$89.00 Billion,Industrials
-111,CEG,Constellation Energy Corp,$88.59 Billion,Utilities
-112,MMM,3M Company,$88.01 Billion,Industrials
-113,GD,General Dynamics Corporation,$86.61 Billion,Industrials
-114,USB,U.S. Bancorp,$85.92 Billion,Financial Services
-115,UPS,United Parcel Service Inc,$85.27 Billion,Industrials
-116,ICE,Intercontinental Exchange Inc,$84.96 Billion,Financial Services
-117,TT,Trane Technologies plc,$84.93 Billion,Industrials
-118,ADP,Automatic Data Processing Inc,$84.92 Billion,Technology
-119,MAR,Marriott International Inc,$84.34 Billion,Consumer Cyclical
-120,AMT,American Tower Corp,$84.07 Billion,Real Estate
-121,SHW,Sherwin-Williams Co,$83.86 Billion,Basic Materials
-122,RCL,Royal Caribbean Cruises Ltd,$83.64 Billion,Consumer Cyclical
-123,HCA,HCA Holdings Inc,$83.62 Billion,Healthcare
-124,EQIX,Equinix Inc,$83.27 Billion,Real Estate
-125,BK,The Bank of New York Mellon Corporation,$82.67 Billion,Financial Services
-126,ECL,Ecolab Inc,$81.73 Billion,Basic Materials
-127,NOC,Northrop Grumman Corporation,$81.58 Billion,Industrials
-128,SNPS,Synopsys Inc,$80.29 Billion,Technology
-129,REGN,Regeneron Pharmaceuticals Inc,$78.19 Billion,Healthcare
-130,ITW,Illinois Tool Works Inc,$78.09 Billion,Industrials
-131,ORLY,O’Reilly Automotive Inc,$77.44 Billion,Consumer Cyclical
-132,CDNS,Cadence Design Systems Inc,$76.85 Billion,Technology
-133,EMR,Emerson Electric Company,$76.50 Billion,Industrials
-134,CSX,CSX Corporation,$76.00 Billion,Industrials
-135,NKE,Nike Inc,$75.95 Billion,Consumer Cyclical
-136,ELV,Elevance Health Inc,$75.72 Billion,Healthcare
-137,JCI,Johnson Controls International PLC,$75.00 Billion,Industrials
-138,MDLZ,Mondelez International Inc,$74.05 Billion,Consumer Defensive
-139,WDC,Western Digital Corporation,$73.70 Billion,Technology
-140,WMB,Williams Companies Inc,$73.66 Billion,Energy
-141,TDG,Transdigm Group Incorporated,$72.99 Billion,Industrials
-142,FDX,FedEx Corporation,$72.91 Billion,Industrials
-143,CI,Cigna Corp,$72.52 Billion,Healthcare
-144,CMI,Cummins Inc,$72.40 Billion,Industrials
-145,NSC,Norfolk Southern Corporation,$70.82 Billion,Industrials
-146,HLT,Hilton Worldwide Holdings Inc,$70.64 Billion,Consumer Cyclical
-147,KKR,KKR & Co LP,$70.19 Billion,Financial Services
-148,MCO,Moodys Corporation,$69.73 Billion,Financial Services
-149,FCX,Freeport-McMoran Copper & Gold Inc,$69.08 Billion,Basic Materials
-150,RSG,Republic Services Inc,$68.31 Billion,Industrials
-151,TEL,TE Connectivity Ltd,$68.22 Billion,Technology
-152,COR,Cencora Inc.,$67.17 Billion,Healthcare
-153,GM,General Motors Company,$66.96 Billion,Consumer Cyclical
-154,AON,Aon PLC,$66.93 Billion,Financial Services
-155,CTAS,Cintas Corporation,$66.13 Billion,Industrials
-156,PWR,Quanta Services Inc,$66.00 Billion,Industrials
-157,WBD,Warner Bros Discovery Inc,$65.61 Billion,Communication Services
-158,PCAR,PACCAR Inc,$65.41 Billion,Industrials
-159,AEP,American Electric Power Co Inc,$64.82 Billion,Utilities
-160,TFC,Truist Financial Corp,$63.90 Billion,Financial Services
-161,SPG,Simon Property Group Inc,$63.52 Billion,Real Estate
-162,CL,Colgate-Palmolive Company,$62.85 Billion,Consumer Defensive
-163,KMI,Kinder Morgan Inc,$62.66 Billion,Energy
-164,ROST,Ross Stores Inc,$62.10 Billion,Consumer Cyclical
-165,MSI,Motorola Solutions Inc,$61.87 Billion,Technology
-166,TRV,The Travelers Companies Inc,$61.06 Billion,Financial Services
-167,EOG,EOG Resources Inc,$59.73 Billion,Energy
-168,DASH,"DoorDash, Inc. Class A Common Stock",$59.58 Billion,Communication Services
-169,BKR,Baker Hughes Co,$58.85 Billion,Energy
-170,APD,Air Products and Chemicals Inc,$58.70 Billion,Basic Materials
-171,AFL,Aflac Incorporated,$58.57 Billion,Financial Services
-172,NXPI,NXP Semiconductors NV,$57.71 Billion,Technology
-173,APO,Apollo Global Management LLC Class A,$57.34 Billion,Financial Services
-174,SLB,Schlumberger NV,$57.22 Billion,Energy
-175,SRE,Sempra Energy,$57.10 Billion,Utilities
-176,MNST,Monster Beverage Corp,$56.78 Billion,Consumer Defensive
-177,AZO,AutoZone Inc,$56.74 Billion,Consumer Cyclical
-178,PSX,Phillips 66,$55.65 Billion,Energy
-179,DLR,Digital Realty Trust Inc,$55.29 Billion,Real Estate
-180,URI,United Rentals Inc,$55.11 Billion,Industrials
-181,F,Ford Motor Company,$54.74 Billion,Consumer Cyclical
-182,ZTS,Zoetis Inc,$54.45 Billion,Healthcare
-183,VST,Vistra Energy Corp,$54.19 Billion,Utilities
-184,VLO,Valero Energy Corporation,$54.17 Billion,Energy
-185,ALL,The Allstate Corporation,$53.97 Billion,Financial Services
-186,MPC,Marathon Petroleum Corp,$53.56 Billion,Energy
-187,FTNT,Fortinet Inc,$53.56 Billion,Technology
-188,O,Realty Income Corporation,$53.51 Billion,Real Estate
-189,FAST,Fastenal Company,$53.12 Billion,Industrials
-190,AJG,Arthur J Gallagher & Co,$52.93 Billion,Financial Services
-191,LHX,L3Harris Technologies Inc,$51.53 Billion,Industrials
-192,D,Dominion Energy Inc,$51.45 Billion,Utilities
-193,BDX,Becton Dickinson and Company,$50.08 Billion,Healthcare
-194,DFS,Discover Financial Services,$50.05 Billion,Financial Services
-195,ABNB,Airbnb Inc,$49.72 Billion,Consumer Cyclical
-196,IDXX,IDEXX Laboratories Inc,$49.69 Billion,Healthcare
-197,TGT,Target Corporation,$49.36 Billion,Consumer Defensive
-198,GWW,WW Grainger Inc,$49.23 Billion,Industrials
-199,ADSK,Autodesk Inc,$48.90 Billion,Technology
-200,CAH,Cardinal Health Inc,$47.78 Billion,Healthcare
-201,PSA,Public Storage,$47.23 Billion,Real Estate
-202,CARR,Carrier Global Corp,$47.16 Billion,Industrials
-203,TRGP,Targa Resources Inc,$46.85 Billion,Energy
-204,AME,Ametek Inc,$46.59 Billion,Industrials
-205,KR,Kroger Company,$46.45 Billion,Consumer Defensive
-206,MPWR,Monolithic Power Systems Inc,$45.94 Billion,Technology
-207,OKE,ONEOK Inc,$45.78 Billion,Energy
-208,DAL,Delta Air Lines Inc,$45.27 Billion,Industrials
-209,EXC,Exelon Corporation,$45.09 Billion,Utilities
-210,EW,Edwards Lifesciences Corp,$45.06 Billion,Healthcare
-211,EA,Electronic Arts Inc,$44.86 Billion,Communication Services
-212,CMG,Chipotle Mexican Grill Inc,$44.79 Billion,Consumer Cyclical
-213,XEL,Xcel Energy Inc,$44.58 Billion,Utilities
-214,ROK,Rockwell Automation Inc,$43.47 Billion,Industrials
-215,HES,Hess Corporation,$43.42 Billion,Energy
-216,AMP,Ameriprise Financial Inc,$43.37 Billion,Financial Services
-217,CTVA,Corteva Inc,$43.35 Billion,Basic Materials
-218,MET,MetLife Inc,$43.24 Billion,Financial Services
-219,DHI,DR Horton Inc,$43.16 Billion,Consumer Cyclical
-220,OXY,Occidental Petroleum Corporation,$42.23 Billion,Energy
-221,YUM,Yum! Brands Inc,$41.95 Billion,Consumer Cyclical
-222,ETR,Entergy Corporation,$41.77 Billion,Utilities
-223,SYY,Sysco Corporation,$41.41 Billion,Consumer Defensive
-224,CBRE,CBRE Group Inc Class A,$41.08 Billion,Real Estate
-225,NDAQ,Nasdaq Inc,$40.81 Billion,Financial Services
-226,MCHP,Microchip Technology Inc,$40.65 Billion,Technology
-227,AIG,American International Group Inc,$40.40 Billion,Financial Services
-228,PEG,Public Service Enterprise Group Inc,$39.27 Billion,Utilities
-229,VMC,Vulcan Materials Company,$38.68 Billion,Basic Materials
-230,WAB,Westinghouse Air Brake Technologies Corp,$38.37 Billion,Industrials
-231,PYPL,PayPal Holdings Inc,$38.10 Billion,Financial Services
-232,HIG,Hartford Financial Services Group,$38.04 Billion,Financial Services
-233,MLM,Martin Marietta Materials Inc,$37.60 Billion,Basic Materials
-234,ED,Consolidated Edison Inc,$37.47 Billion,Utilities
-235,VTR,Ventas Inc,$37.11 Billion,Real Estate
-236,MSCI,MSCI Inc,$37.11 Billion,Financial Services
-237,RMD,ResMed Inc,$37.11 Billion,Healthcare
-238,GEHC,GE HealthCare Technologies Inc.,$37.06 Billion,Healthcare
-239,DELL,Dell Technologies Inc,$36.74 Billion,Technology
-240,UAL,United Airlines Holdings Inc,$36.64 Billion,Industrials
-241,TER,Teradyne Inc,$36.29 Billion,Technology
-242,CCI,Crown Castle,$36.18 Billion,Real Estate
-243,PRU,Prudential Financial Inc,$36.02 Billion,Financial Services
-244,EBAY,eBay Inc,$36.00 Billion,Consumer Cyclical
-245,KEYS,Keysight Technologies Inc,$35.96 Billion,Technology
-246,NUE,Nucor Corp,$35.76 Billion,Basic Materials
-247,KDP,Keurig Dr Pepper Inc,$35.49 Billion,Consumer Defensive
-248,GRMN,Garmin Ltd,$35.47 Billion,Technology
-249,A,Agilent Technologies Inc,$34.94 Billion,Healthcare
-250,FITB,Fifth Third Bancorp,$34.85 Billion,Financial Services
-251,PCG,PG&E Corp,$34.84 Billion,Utilities
-252,WEC,WEC Energy Group Inc,$34.83 Billion,Utilities
-253,CCL,Carnival Corporation,$34.59 Billion,Consumer Cyclical
-254,ACGL,Arch Capital Group Ltd,$34.26 Billion,Financial Services
-255,OTIS,Otis Worldwide Corp,$34.18 Billion,Industrials
-256,KMB,Kimberly-Clark Corporation,$34.04 Billion,Consumer Defensive
-257,IR,Ingersoll Rand Inc,$33.99 Billion,Industrials
-258,ROP,"Roper Technologies, Inc.",$33.79 Billion,Technology
-259,ODFL,Old Dominion Freight Line Inc,$33.52 Billion,Industrials
-260,TTWO,Take-Two Interactive Software Inc,$33.43 Billion,Communication Services
-261,CPRT,Copart Inc,$33.31 Billion,Industrials
-262,ANSS,ANSYS Inc,$32.74 Billion,Technology
-263,STT,State Street Corp,$32.65 Billion,Financial Services
-264,AXON,Axon Enterprise Inc.,$32.46 Billion,Industrials
-265,KVUE,Kenvue Inc.,$32.24 Billion,Consumer Defensive
-266,FANG,Diamondback Energy Inc,$31.48 Billion,Energy
-267,ULTA,Ulta Beauty Inc,$31.22 Billion,Consumer Cyclical
-268,CTSH,Cognizant Technology Solutions Corp Class A,$31.16 Billion,Technology
-269,EQT,EQT Corporation,$31.15 Billion,Energy
-270,XYL,Xylem Inc,$31.13 Billion,Industrials
-271,FICO,Fair Isaac Corporation,$31.09 Billion,Technology
-272,TPR,Tapestry Inc,$31.00 Billion,Consumer Cyclical
-273,MTB,M&T Bank Corporation,$30.89 Billion,Financial Services
-274,WDAY,Workday Inc,$30.21 Billion,Technology
-275,PAYX,Paychex Inc,$29.98 Billion,Technology
-276,IRM,Iron Mountain Incorporated,$29.90 Billion,Real Estate
-277,ADM,Archer-Daniels-Midland Company,$29.77 Billion,Consumer Defensive
-278,VICI,VICI Properties Inc,$29.67 Billion,Real Estate
-279,HPE,Hewlett Packard Enterprise Co,$29.17 Billion,Technology
-280,K,Kellanova,$28.63 Billion,Consumer Defensive
-281,AEE,Ameren Corp,$28.61 Billion,Utilities
-282,EXR,Extra Space Storage Inc,$28.48 Billion,Real Estate
-284,HAL,Halliburton Company,$28.06 Billion,Energy
-285,DOV,Dover Corporation,$28.03 Billion,Industrials
-286,WTW,Willis Towers Watson PLC,$27.78 Billion,Financial Services
-287,BIIB,Biogen Inc,$27.74 Billion,Healthcare
-288,TSCO,Tractor Supply Company,$27.73 Billion,Consumer Cyclical
-289,EL,Estee Lauder Companies Inc,$27.61 Billion,Consumer Defensive
-290,RJF,Raymond James Financial Inc.,$27.51 Billion,Financial Services
-291,MTD,Mettler-Toledo International Inc,$27.49 Billion,Healthcare
-292,DG,Dollar General Corporation,$27.35 Billion,Consumer Defensive
-293,TDY,Teledyne Technologies Incorporated,$27.31 Billion,Technology
-294,DXCM,DexCom Inc,$27.29 Billion,Healthcare
-295,NTRS,Northern Trust Corporation,$27.00 Billion,Financial Services
-296,FE,FirstEnergy Corporation,$27.00 Billion,Utilities
-297,ATO,Atmos Energy Corporation,$26.98 Billion,Utilities
-298,DTE,DTE Energy Company,$26.98 Billion,Utilities
-299,IQV,IQVIA Holdings Inc,$26.60 Billion,Healthcare
-300,LEN,Lennar Corporation,$26.48 Billion,Consumer Cyclical
-301,NRG,NRG Energy Inc.,$26.39 Billion,Utilities
-302,PHM,PulteGroup Inc,$26.21 Billion,Consumer Cyclical
-303,CFG,"Citizens Financial Group, Inc.",$26.11 Billion,Financial Services
-304,CNP,CenterPoint Energy Inc,$26.08 Billion,Utilities
-305,SYF,Synchrony Financial,$25.85 Billion,Financial Services
-306,PPL,PPL Corporation,$25.59 Billion,Utilities
-307,AWK,American Water Works,$25.53 Billion,Utilities
-308,ES,Eversource Energy,$25.45 Billion,Utilities
-309,ON,ON Semiconductor Corporation,$25.42 Billion,Technology
-310,CINF,Cincinnati Financial Corporation,$25.35 Billion,Financial Services
-311,PPG,PPG Industries Inc,$24.88 Billion,Basic Materials
-312,VRSK,Verisk Analytics Inc,$24.64 Billion,Industrials
-313,LYV,Live Nation Entertainment Inc,$24.62 Billion,Communication Services
-314,FIS,Fidelity National Information Services Inc,$24.55 Billion,Technology
-315,JBL,Jabil Circuit Inc,$24.48 Billion,Technology
-316,RF,Regions Financial Corporation,$24.43 Billion,Financial Services
-317,STE,STERIS plc,$23.99 Billion,Healthcare
-318,DVN,Devon Energy Corporation,$23.85 Billion,Energy
-319,KEY,KeyCorp,$23.82 Billion,Financial Services
-320,GIS,General Mills Inc,$23.80 Billion,Consumer Defensive
-321,WSM,Williams-Sonoma Inc,$23.76 Billion,Consumer Cyclical
-322,AVB,AvalonBay Communities Inc,$23.63 Billion,Real Estate
-323,EFX,Equifax Inc,$23.48 Billion,Industrials
-324,HUBB,Hubbell Inc,$23.46 Billion,Industrials
-325,STLD,Steel Dynamics Inc,$23.28 Billion,Basic Materials
-326,EXPE,Expedia Group Inc.,$23.14 Billion,Consumer Cyclical
-327,CPAY,Corpay Inc,$23.08 Billion,Technology
-328,FSLR,First Solar Inc,$22.93 Billion,Technology
-329,IP,International Paper,$22.89 Billion,Consumer Cyclical
-330,VLTO,Veralto Corporation,$22.84 Billion,Industrials
-331,LUV,Southwest Airlines Company,$22.64 Billion,Industrials
-332,EIX,Edison International,$22.51 Billion,Utilities
-333,DLTR,Dollar Tree Inc,$22.50 Billion,Consumer Defensive
-334,SW,Smurfit WestRock plc,$22.44 Billion,Consumer Cyclical
-335,HUM,Humana Inc,$22.21 Billion,Healthcare
-336,STZ,Constellation Brands Inc Class A,$22.16 Billion,Consumer Defensive
-337,LH,Laboratory Corporation of America Holdings,$22.05 Billion,Healthcare
-338,NOW,ServiceNow Inc,$21.92 Billion,Technology
-339,CMS,CMS Energy Corporation,$21.81 Billion,Utilities
-340,EQR,Equity Residential,$21.74 Billion,Real Estate
-341,DRI,Darden Restaurants Inc,$21.37 Billion,Consumer Cyclical
-342,CHRW,CH Robinson Worldwide Inc,$21.18 Billion,Industrials
-343,SBAC,SBA Communications Corp,$21.04 Billion,Real Estate
-344,DGX,Quest Diagnostics Incorporated,$20.89 Billion,Healthcare
-345,NVR,NVR Inc,$20.74 Billion,Consumer Cyclical
-346,CHD,Church & Dwight Company Inc,$20.50 Billion,Consumer Defensive
-347,LDOS,Leidos Holdings Inc,$20.49 Billion,Technology
-348,BRO,Brown & Brown Inc,$20.28 Billion,Financial Services
-349,KHC,Kraft Heinz Co,$20.27 Billion,Consumer Defensive
-350,BR,Broadridge Financial Solutions Inc,$20.22 Billion,Technology
-351,TROW,T. Rowe Price Group Inc,$20.11 Billion,Financial Services
-352,PKG,Packaging Corp of America,$19.97 Billion,Consumer Cyclical
-353,FOXA,Fox Corp Class A,$19.95 Billion,Communication Services
-354,NTAP,NetApp Inc,$19.90 Billion,Technology
-355,NI,NiSource Inc,$19.89 Billion,Utilities
-356,HSY,Hershey Co,$19.89 Billion,Consumer Defensive
-357,VRSN,VeriSign Inc,$19.87 Billion,Technology
-358,DOW,Dow Inc,$19.86 Billion,Basic Materials
-359,ALB,Albemarle Corp,$19.81 Billion,Basic Materials
-360,CHTR,Charter Communications Inc,$19.79 Billion,Communication Services
-361,CNC,Centene Corp,$19.48 Billion,Healthcare
-362,LULU,Lululemon Athletica Inc.,$19.15 Billion,Consumer Cyclical
-363,CSGP,CoStar Group Inc,$19.13 Billion,Real Estate
-364,WAT,Waters Corporation,$19.10 Billion,Healthcare
-365,CTRA,Coterra Energy Inc,$18.94 Billion,Energy
-366,SNA,Snap-On Inc,$18.89 Billion,Industrials
-367,BG,Bunge Limited,$18.85 Billion,Consumer Defensive
-368,PFG,Principal Financial Group Inc,$18.78 Billion,Financial Services
-369,L,Loews Corp,$18.73 Billion,Financial Services
-370,WY,Weyerhaeuser Company,$18.56 Billion,Real Estate
-371,ZBH,Zimmer Biomet Holdings Inc,$18.53 Billion,Healthcare
-372,IFF,International Flavors & Fragrances Inc,$18.37 Billion,Basic Materials
-373,DD,Dupont De Nemours Inc,$18.35 Billion,Basic Materials
-374,ROL,Rollins Inc,$18.27 Billion,Consumer Cyclical
-375,PTC,PTC Inc,$18.20 Billion,Technology
-376,LVS,Las Vegas Sands Corp,$17.88 Billion,Consumer Cyclical
-377,EVRG,"Evergy, Inc.",$17.76 Billion,Utilities
-378,APTV,Aptiv PLC,$17.44 Billion,Consumer Cyclical
-379,GPC,Genuine Parts Co,$17.42 Billion,Consumer Cyclical
-380,WST,West Pharmaceutical Services Inc,$17.38 Billion,Healthcare
-381,TSN,Tyson Foods Inc,$17.35 Billion,Consumer Defensive
-382,PODD,Insulet Corporation,$17.27 Billion,Healthcare
-383,LNT,Alliant Energy Corp,$17.20 Billion,Utilities
-384,HPQ,HP Inc,$16.92 Billion,Technology
-385,FTV,Fortive Corp,$16.79 Billion,Technology
-386,TXT,Textron Inc,$16.72 Billion,Industrials
-387,WRB,W. R. Berkley Corp,$16.65 Billion,Financial Services
-388,INCY,Incyte Corporation,$16.61 Billion,Healthcare
-389,HOLX,Hologic Inc,$16.47 Billion,Healthcare
-390,GPN,Global Payments Inc,$16.37 Billion,Industrials
-391,LII,Lennox International Inc,$16.34 Billion,Industrials
-392,CDW,CDW Corp,$16.23 Billion,Technology
-393,ESS,Essex Property Trust Inc,$16.16 Billion,Real Estate
-394,MRNA,Moderna Inc,$16.00 Billion,Healthcare
-395,PNR,Pentair PLC,$15.99 Billion,Industrials
-396,J,Jacobs Solutions Inc.,$15.99 Billion,Industrials
-397,HII,Huntington Ingalls Industries Inc,$15.96 Billion,Industrials
-398,COO,"The Cooper Companies, Inc",$15.94 Billion,Healthcare
-399,JBHT,JB Hunt Transport Services Inc,$15.84 Billion,Industrials
-400,MAA,Mid-America Apartment Communities Inc,$15.60 Billion,Real Estate
-401,FFIV,F5 Networks Inc,$15.55 Billion,Technology
-402,TRMB,Trimble Inc,$15.54 Billion,Technology
-403,DECK,Deckers Outdoor Corporation,$15.39 Billion,Consumer Cyclical
-404,INVH,Invitation Homes Inc,$15.17 Billion,Real Estate
-405,BALL,Ball Corporation,$15.14 Billion,Consumer Cyclical
-406,SMCI,Super Micro Computer Inc,$15.04 Billion,Technology
-407,VTRS,Viatris Inc,$14.85 Billion,Healthcare
-408,NDSN,Nordson Corporation,$14.77 Billion,Industrials
-409,MAS,Masco Corporation,$14.51 Billion,Industrials
-410,AVY,Avery Dennison Corp,$14.51 Billion,Consumer Cyclical
-411,LYB,LyondellBasell Industries NV,$14.32 Billion,Basic Materials
-412,HAS,Hasbro Inc,$14.25 Billion,Consumer Cyclical
-413,RL,Ralph Lauren Corp Class A,$14.11 Billion,Consumer Cyclical
-414,ALLE,Allegion PLC,$13.80 Billion,Industrials
-415,AKAM,Akamai Technologies Inc,$13.64 Billion,Technology
-416,TYL,Tyler Technologies Inc,$13.38 Billion,Technology
-417,JNPR,Juniper Networks Inc,$13.18 Billion,Technology
-418,ZBRA,Zebra Technologies Corporation,$13.10 Billion,Technology
-419,CF,CF Industries Holdings Inc,$13.09 Billion,Basic Materials
-420,NWS,News Corp B,$13.07 Billion,Communication Services
-421,CLX,The Clorox Company,$13.04 Billion,Consumer Defensive
-422,OMC,Omnicom Group Inc,$13.02 Billion,Communication Services
-423,BBY,Best Buy Co. Inc,$12.85 Billion,Consumer Cyclical
-424,HST,Host Hotels & Resorts Inc,$12.84 Billion,Real Estate
-425,IEX,IDEX Corporation,$12.79 Billion,Industrials
-426,REG,Regency Centers Corporation,$12.64 Billion,Real Estate
-427,ALGN,Align Technology Inc,$12.57 Billion,Healthcare
-428,UHS,Universal Health Services Inc,$12.32 Billion,Healthcare
-429,DPZ,Domino's Pizza Inc Common Stock,$12.26 Billion,Consumer Cyclical
-430,GDDY,Godaddy Inc,$12.24 Billion,Technology
-431,BLDR,Builders FirstSource Inc,$12.05 Billion,Industrials
-432,DOC,Healthpeak Properties Inc,$11.92 Billion,Real Estate
-433,SWK,Stanley Black & Decker Inc,$11.75 Billion,Industrials
-434,GL,Globe Life Inc,$11.46 Billion,Financial Services
-435,JKHY,Jack Henry & Associates Inc,$11.40 Billion,Technology
-436,UDR,UDR Inc,$11.35 Billion,Real Estate
-437,PNW,Pinnacle West Capital Corp,$11.14 Billion,Utilities
-438,AIZ,Assurant Inc,$11.00 Billion,Financial Services
-439,CPT,Camden Property Trust,$10.97 Billion,Real Estate
-440,DAY,Dayforce Inc.,$10.96 Billion,Technology
-441,EG,Everest Group Ltd,$10.93 Billion,Financial Services
-442,IT,Gartner Inc,$10.89 Billion,Technology
-443,SOLV,Solventum Corp.,$10.86 Billion,Healthcare
-444,NCLH,Norwegian Cruise Line Holdings Ltd,$10.84 Billion,Consumer Cyclical
-445,GEN,Gen Digital Inc.,$10.77 Billion,Technology
-446,BAX,Baxter International Inc,$10.62 Billion,Healthcare
-447,SJM,The J. M. Smucker Company,$10.61 Billion,Consumer Defensive
-448,AES,The AES Corporation,$10.20 Billion,Utilities
-449,RVTY,Revvity Inc.,$9.89 Billion,Healthcare
-450,BF,Brown-Forman Corporation,$9.81 Billion,Consumer Defensive
-451,APA,APA Corporation,$9.63 Billion,Energy
-452,TAP,Molson Coors Brewing Co Class B,$9.04 Billion,Consumer Defensive
-453,SWKS,Skyworks Solutions Inc,$9.02 Billion,Technology
-454,TECH,Bio-Techne Corp,$9.01 Billion,Healthcare
-455,GNRC,Generac Holdings Inc,$8.97 Billion,Industrials
-456,EMN,Eastman Chemical Company,$8.94 Billion,Basic Materials
-457,BXP,Boston Properties Inc,$8.92 Billion,Real Estate
-458,AOS,Smith AO Corporation,$8.92 Billion,Industrials
-459,IPG,Interpublic Group of Companies Inc,$8.88 Billion,Communication Services
-460,IVZ,Invesco Plc,$8.79 Billion,Financial Services
-461,EPAM,EPAM Systems Inc,$8.65 Billion,Technology
-462,WBA,Walgreens Boots Alliance Inc,$8.58 Billion,Healthcare
-463,WYNN,Wynn Resorts Limited,$8.49 Billion,Consumer Cyclical
-464,ARE,Alexandria Real Estate Equities Inc,$8.38 Billion,Real Estate
-465,BEN,Franklin Resources Inc,$8.35 Billion,Financial Services
-466,POOL,Pool Corporation,$8.33 Billion,Industrials
-467,FRT,Federal Realty Investment Trust,$8.28 Billion,Real Estate
-468,LKQ,LKQ Corporation,$8.26 Billion,Consumer Cyclical
-469,TPL,Texas Pacific Land Trust,$8.25 Billion,Energy
-470,CAG,ConAgra Foods Inc,$8.10 Billion,Consumer Defensive
-471,CRL,Charles River Laboratories,$7.71 Billion,Healthcare
-472,HSIC,Henry Schein Inc,$7.58 Billion,Healthcare
-473,MOS,The Mosaic Company,$7.56 Billion,Basic Materials
-474,ERIE,Erie Indemnity Company,$7.14 Billion,Financial Services
-475,FDS,FactSet Research Systems Inc,$7.10 Billion,Financial Services
-476,MTCH,Match Group Inc,$7.07 Billion,Communication Services
-477,MGM,MGM Resorts International,$7.04 Billion,Consumer Cyclical
-478,HRL,Hormel Foods Corporation,$6.81 Billion,Consumer Defensive
-479,MHK,Mohawk Industries Inc,$6.74 Billion,Consumer Cyclical
-480,MOH,Molina Healthcare Inc,$6.50 Billion,Healthcare
-481,MKTX,MarketAxess Holdings Inc,$6.37 Billion,Financial Services
-482,KMX,CarMax Inc,$5.96 Billion,Consumer Cyclical
-483,PAYC,"Paycom Software, Inc.",$5.92 Billion,Technology
-484,LW,Lamb Weston Holdings Inc,$5.83 Billion,Consumer Defensive
-485,ENPH,Enphase Energy Inc,$5.79 Billion,Technology
-486,CPB,Campbell’s Co,$5.68 Billion,Consumer Defensive
-487,DVA,DaVita HealthCare Partners Inc,$5.60 Billion,Healthcare
-488,CZR,Caesars Entertainment Corporation,$3.66 Billion,Consumer Cyclical
-489,MKC,McCormick & Company Incorporated,-,Consumer Defensive
-490,GOOGL,Alphabet Inc Class A,-,Communication Services
-491,WMT,Walmart Inc,-,Consumer Defensive
-492,FOX,Fox Corp Class B,-,Communication Services
-493,KIM,Kimco Realty Corporation,-,Real Estate
-494,EXPD,"Expeditors International of Washington, Inc.",-,Industrials
-495,NWSA,News Corp A,-,Communication Services
-496,HBAN,Huntington Bancshares Incorporated,-,Financial Services
-497,FI,"Fiserv, Inc.",-,Technology
-498,BRK,Berkshire Hathaway Inc,-,Financial Services
-499,HWM,Howmet Aerospace Inc,-,Industrials
-500,PARA,Paramount Global Class B,-,Communication Services
-501,AMCR,Amcor PLC,-,Consumer Cyclical
+1,NVDA,Nvidia,$5.06 Trillion,Semiconductors
+2,AAPL,Apple Inc.,$3.88 Trillion,"Technology Hardware, Storage & Peripherals"
+3,MSFT,Microsoft,$3.08 Trillion,Systems Software
+4,AMZN,Amazon,$2.86 Trillion,Broadline Retail
+5,GOOGL,Alphabet Inc. (Class A),$2.23 Trillion,Interactive Media & Services
+6,GOOG,Alphabet Inc. (Class C),$2.07 Trillion,Interactive Media & Services
+7,AVGO,Broadcom,$1.68 Trillion,Semiconductors
+8,TSLA,"Tesla, Inc.",$1.60 Trillion,Automobile Manufacturers
+9,META,Meta Platforms,$1.34 Trillion,Interactive Media & Services
+10,BRK-B,Berkshire Hathaway,$1.05 Trillion,Multi-Sector Holdings
+11,LLY,Lilly (Eli),$936.50 Billion,Pharmaceuticals
+12,WMT,Walmart,$898.72 Billion,Consumer Staples Merchandise Retail
+13,MU,Micron Technology,$842.18 Billion,Semiconductors
+14,JPM,JPMorgan Chase,$826.06 Billion,Diversified Banks
+15,AMD,Advanced Micro Devices,$742.23 Billion,Semiconductors
+16,XOM,ExxonMobil,$637.68 Billion,Integrated Oil & Gas
+17,INTC,Intel,$602.32 Billion,Semiconductors
+18,JNJ,Johnson & Johnson,$564.59 Billion,Pharmaceuticals
+19,ORCL,Oracle Corporation,$552.43 Billion,Application Software
+20,V,Visa Inc.,$545.85 Billion,Transaction & Payment Processing Services
+21,MA,Mastercard,$437.24 Billion,Transaction & Payment Processing Services
+22,COST,Costco,$434.25 Billion,Consumer Staples Merchandise Retail
+23,NFLX,Netflix,$375.43 Billion,Movies & Entertainment
+24,LRCX,Lam Research,$370.23 Billion,Semiconductor Materials & Equipment
+25,CAT,Caterpillar Inc.,$362.70 Billion,Construction Machinery & Heavy Transportation Equipment
+26,CVX,Chevron Corporation,$361.71 Billion,Integrated Oil & Gas
+27,ABBV,AbbVie,$356.49 Billion,Biotechnology
+28,BAC,Bank of America,$349.79 Billion,Diversified Banks
+29,AMAT,Applied Materials,$342.97 Billion,Semiconductor Materials & Equipment
+30,KO,Coca-Cola Company (The),$338.43 Billion,Soft Drinks & Non-alcoholic Beverages
+31,PG,Procter & Gamble,$337.52 Billion,Personal Care Products
+32,PLTR,Palantir Technologies,$324.25 Billion,Application Software
+33,GE,GE Aerospace,$314.25 Billion,Aerospace & Defense
+34,HD,Home Depot (The),$311.66 Billion,Home Improvement Retail
+35,CSCO,Cisco,$309.49 Billion,Communications Equipment
+36,MS,Morgan Stanley,$304.56 Billion,Investment Banking & Brokerage
+37,MRK,Merck & Co.,$303.26 Billion,Pharmaceuticals
+38,PM,Philip Morris International,$283.83 Billion,Tobacco
+39,GEV,GE Vernova,$279.13 Billion,Heavy Electrical Equipment
+40,UNH,UnitedHealth Group,$256.27 Billion,Managed Health Care
+41,QCOM,Qualcomm,$250.36 Billion,Semiconductors
+42,KLAC,KLA Corporation,$241.03 Billion,Semiconductor Materials & Equipment
+43,RTX,RTX Corporation,$237.14 Billion,Aerospace & Defense
+44,GS,Goldman Sachs,$236.20 Billion,Investment Banking & Brokerage
+45,WFC,Wells Fargo,$231.47 Billion,Diversified Banks
+46,SNDK,Sandisk,$218.98 Billion,"Technology Hardware, Storage & Peripherals"
+47,IBM,IBM,$215.95 Billion,IT Consulting & Other Services
+48,C,Citigroup,$213.35 Billion,Diversified Banks
+49,AXP,American Express,$212.74 Billion,Consumer Finance
+50,LIN,Linde plc,$210.18 Billion,Industrial Gases
+51,TMUS,T-Mobile US,$207.21 Billion,Wireless Telecommunication Services
+52,PEP,PepsiCo,$205.78 Billion,Soft Drinks & Non-alcoholic Beverages
+53,TXN,Texas Instruments,$205.49 Billion,Semiconductors
+54,VZ,Verizon,$197.19 Billion,Integrated Telecommunication Services
+55,MCD,McDonald's,$195.92 Billion,Restaurants
+56,ADI,Analog Devices,$193.85 Billion,Semiconductors
+57,NEE,NextEra Energy,$184.42 Billion,Multi-Utilities
+58,AMGN,Amgen,$182.88 Billion,Biotechnology
+59,STX,Seagate Technology,$182.24 Billion,"Technology Hardware, Storage & Peripherals"
+60,DIS,Walt Disney Company (The),$178.86 Billion,Movies & Entertainment
+61,T,AT&T,$174.82 Billion,Integrated Telecommunication Services
+62,PANW,Palo Alto Networks,$173.28 Billion,Systems Software
+63,BA,Boeing,$172.65 Billion,Aerospace & Defense
+64,ANET,Arista Networks,$171.79 Billion,Communications Equipment
+65,TJX,TJX Companies,$169.59 Billion,Apparel Retail
+66,TMO,Thermo Fisher Scientific,$168.42 Billion,Life Sciences Tools & Services
+67,GLW,Corning Inc.,$167.01 Billion,Electronic Components
+68,WDC,Western Digital,$166.92 Billion,"Technology Hardware, Storage & Peripherals"
+69,GILD,Gilead Sciences,$166.70 Billion,Biotechnology
+70,BLK,BlackRock,$166.57 Billion,Asset Management & Custody Banks
+71,APH,Amphenol,$162.33 Billion,Electronic Components
+72,APP,AppLovin,$161.82 Billion,Application Software
+73,SCHW,Charles Schwab Corporation,$160.19 Billion,Investment Banking & Brokerage
+74,CRM,Salesforce,$160.09 Billion,Application Software
+75,UNP,Union Pacific Corporation,$157.13 Billion,Rail Transportation
+76,ABT,Abbott Laboratories,$151.99 Billion,Health Care Equipment
+77,ISRG,Intuitive Surgical,$148.77 Billion,Health Care Equipment
+78,UBER,Uber,$147.81 Billion,Passenger Ground Transportation
+79,WELL,Welltower,$146.77 Billion,Health Care REITs
+80,PFE,Pfizer,$146.36 Billion,Pharmaceuticals
+81,HON,Honeywell,$144.70 Billion,Industrial Conglomerates
+82,DE,Deere & Company,$142.93 Billion,Agricultural & Farm Machinery
+83,COP,ConocoPhillips,$140.77 Billion,Oil & Gas Exploration & Production
+84,IBKR,Interactive Brokers,$138.30 Billion,Investment Banking & Brokerage
+85,ETN,Eaton Corporation,$133.05 Billion,Electrical Components & Equipment
+86,PLD,Prologis,$126.68 Billion,Industrial REITs
+87,VRT,Vertiv,$125.78 Billion,Electrical Components & Equipment
+88,BKNG,Booking Holdings,$124.80 Billion,"Hotels, Resorts & Cruise Lines"
+89,CB,Chubb Limited,$124.22 Billion,Property & Casualty Insurance
+90,SPGI,S&P Global,$124.01 Billion,Financial Exchanges & Data
+91,DHR,Danaher Corporation,$121.49 Billion,Life Sciences Tools & Services
+92,SYK,Stryker Corporation,$121.11 Billion,Health Care Equipment
+93,LOW,Lowe's,$120.43 Billion,Home Improvement Retail
+94,SBUX,Starbucks,$117.51 Billion,Restaurants
+95,NEM,Newmont,$117.46 Billion,Gold
+96,PGR,Progressive Corporation,$116.93 Billion,Property & Casualty Insurance
+97,COF,Capital One,$116.86 Billion,Consumer Finance
+98,BMY,Bristol Myers Squibb,$114.68 Billion,Pharmaceuticals
+99,MO,Altria,$112.89 Billion,Tobacco
+100,ACN,Accenture,$110.31 Billion,IT Consulting & Other Services
+101,VRTX,Vertex Pharmaceuticals,$110.28 Billion,Biotechnology
+102,PH,Parker Hannifin,$109.31 Billion,Industrial Machinery & Supplies & Components
+103,PWR,Quanta Services,$108.56 Billion,Construction & Engineering
+104,CRWD,CrowdStrike,$108.17 Billion,Systems Software
+105,NOW,ServiceNow,$106.83 Billion,Systems Software
+106,CEG,Constellation Energy,$106.54 Billion,Electric Utilities
+107,LMT,Lockheed Martin,$106.03 Billion,Aerospace & Defense
+108,CME,CME Group,$101.91 Billion,Financial Exchanges & Data
+109,CVS,CVS Health,$101.04 Billion,Health Care Services
+110,TT,Trane Technologies,$99.83 Billion,Building Products
+111,SNPS,Synopsys,$98.94 Billion,Application Software
+112,ADBE,Adobe Inc.,$98.93 Billion,Application Software
+113,CDNS,Cadence Design Systems,$97.98 Billion,Application Software
+114,SO,Southern Company,$97.89 Billion,Electric Utilities
+115,MDT,Medtronic,$97.77 Billion,Health Care Equipment
+116,DUK,Duke Energy,$97.37 Billion,Electric Utilities
+117,BNY,BNY Mellon,$95.51 Billion,Asset Management & Custody Banks
+118,MAR,Marriott International,$93.17 Billion,"Hotels, Resorts & Cruise Lines"
+119,EQIX,Equinix,$92.84 Billion,Data Center REITs
+120,GD,General Dynamics,$92.73 Billion,Aerospace & Defense
+121,WMB,Williams Companies,$90.72 Billion,Oil & Gas Storage & Transportation
+122,FDX,FedEx,$90.33 Billion,Air Freight & Logistics
+123,CMCSA,Comcast,$89.41 Billion,Cable & Satellite
+124,INTU,Intuit,$88.48 Billion,Application Software
+125,MCK,McKesson Corporation,$88.33 Billion,Health Care Distributors
+126,CMI,Cummins,$88.25 Billion,Construction Machinery & Heavy Transportation Equipment
+127,BX,Blackstone Inc.,$88.04 Billion,Asset Management & Custody Banks
+128,HCA,HCA Healthcare,$87.42 Billion,Health Care Facilities
+129,PNC,PNC Financial Services,$87.08 Billion,Diversified Banks
+130,ICE,Intercontinental Exchange,$86.51 Billion,Financial Exchanges & Data
+131,WM,Waste Management,$86.49 Billion,Environmental & Facilities Services
+132,BSX,Boston Scientific,$85.69 Billion,Health Care Equipment
+133,USB,U.S. Bancorp,$85.23 Billion,Diversified Banks
+134,ADP,Automatic Data Processing,$85.14 Billion,Human Resource & Employment Services
+135,FCX,Freeport-McMoRan,$85.10 Billion,Copper
+136,JCI,Johnson Controls,$84.42 Billion,Building Products
+137,KKR,KKR & Co.,$83.64 Billion,Asset Management & Custody Banks
+138,CIEN,Ciena,$82.54 Billion,Communications Equipment
+139,CSX,CSX Corporation,$82.50 Billion,Rail Transportation
+140,AMT,American Tower,$82.24 Billion,Telecom Tower REITs
+141,HWM,Howmet Aerospace,$81.02 Billion,Aerospace & Defense
+142,SLB,Schlumberger,$79.64 Billion,Oil & Gas Equipment & Services
+143,DDOG,Datadog,$79.14 Billion,Application Software
+144,MRSH,Marsh McLennan,$79.07 Billion,Insurance Brokers
+145,MDLZ,Mondelez International,$78.83 Billion,Packaged Foods & Meats
+146,DELL,Dell Technologies,$78.74 Billion,"Technology Hardware, Storage & Peripherals"
+147,MCO,Moody's Corporation,$78.32 Billion,Financial Exchanges & Data
+148,MPWR,Monolithic Power Systems,$78.11 Billion,Semiconductors
+149,NOC,Northrop Grumman,$77.86 Billion,Aerospace & Defense
+150,SHW,Sherwin-Williams,$76.62 Billion,Specialty Chemicals
+151,EMR,Emerson Electric,$76.41 Billion,Electrical Components & Equipment
+152,ORLY,O’Reilly Automotive,$76.35 Billion,Automotive Retail
+153,CI,Cigna,$75.41 Billion,Health Care Services
+154,NXPI,NXP Semiconductors,$75.34 Billion,Semiconductors
+155,CVNA,Carvana,$74.89 Billion,Automotive Retail
+156,NSC,Norfolk Southern,$74.82 Billion,Rail Transportation
+157,MMM,3M,$74.74 Billion,Industrial Conglomerates
+158,UPS,United Parcel Service,$74.65 Billion,Air Freight & Logistics
+159,MNST,Monster Beverage,$74.53 Billion,Soft Drinks & Non-alcoholic Beverages
+160,APO,Apollo Global Management,$74.09 Billion,Asset Management & Custody Banks
+161,COHR,Coherent Corp.,$73.87 Billion,Electronic Components
+162,MPC,Marathon Petroleum,$73.71 Billion,Oil & Gas Refining & Marketing
+163,LITE,Lumentum,$73.67 Billion,Communications Equipment
+164,ITW,Illinois Tool Works,$72.65 Billion,Industrial Machinery & Supplies & Components
+165,VLO,Valero Energy,$72.48 Billion,Oil & Gas Refining & Marketing
+166,HLT,Hilton Worldwide,$72.11 Billion,"Hotels, Resorts & Cruise Lines"
+167,ECL,Ecolab,$71.29 Billion,Specialty Chemicals
+168,AEP,American Electric Power,$70.82 Billion,Electric Utilities
+169,CL,Colgate-Palmolive,$70.06 Billion,Household Products
+170,KMI,Kinder Morgan,$69.88 Billion,Oil & Gas Storage & Transportation
+171,PSX,Phillips 66,$69.23 Billion,Oil & Gas Refining & Marketing
+172,CTAS,Cintas,$69.15 Billion,Diversified Support Services
+173,ROST,Ross Stores,$69.00 Billion,Apparel Retail
+174,RCL,Royal Caribbean Group,$68.68 Billion,"Hotels, Resorts & Cruise Lines"
+175,GM,General Motors,$67.89 Billion,Automobile Manufacturers
+176,WBD,Warner Bros. Discovery,$67.77 Billion,Broadcasting
+177,CRH,CRH plc,$67.07 Billion,Construction Materials
+178,TDG,TransDigm Group,$67.05 Billion,Aerospace & Defense
+179,HOOD,Robinhood Markets,$66.31 Billion,Investment Banking & Brokerage
+180,AON,Aon plc,$66.19 Billion,Insurance Brokers
+181,EOG,EOG Resources,$65.92 Billion,Oil & Gas Exploration & Production
+182,DASH,DoorDash,$65.92 Billion,Specialized Consumer Services
+183,REGN,Regeneron Pharmaceuticals,$65.82 Billion,Biotechnology
+184,TRV,Travelers Companies (The),$65.63 Billion,Property & Casualty Insurance
+185,FIX,Comfort Systems USA,$64.33 Billion,Construction & Engineering
+186,ELV,Elevance Health,$63.54 Billion,Managed Health Care
+187,BKR,Baker Hughes,$63.38 Billion,Oil & Gas Equipment & Services
+188,APD,Air Products,$62.29 Billion,Industrial Gases
+189,MSI,Motorola Solutions,$61.87 Billion,Communications Equipment
+190,FTNT,Fortinet,$61.83 Billion,Systems Software
+191,SPG,Simon Property Group,$61.60 Billion,Retail REITs
+192,RSG,Republic Services,$61.48 Billion,Environmental & Facilities Services
+193,SRE,Sempra,$60.66 Billion,Multi-Utilities
+194,URI,United Rentals,$59.72 Billion,Trading Companies & Distributors
+195,TEL,TE Connectivity,$59.66 Billion,Electronic Manufacturing Services
+196,TFC,Truist Financial,$59.54 Billion,Diversified Banks
+197,O,Realty Income,$57.74 Billion,Retail REITs
+198,AFL,Aflac,$57.57 Billion,Life & Health Insurance
+199,PCAR,Paccar,$57.55 Billion,Construction Machinery & Heavy Transportation Equipment
+200,GWW,W. W. Grainger,$56.83 Billion,Industrial Machinery & Supplies & Components
+201,AZO,AutoZone,$56.13 Billion,Automotive Retail
+202,ABNB,Airbnb,$55.44 Billion,"Hotels, Resorts & Cruise Lines"
+203,DLR,Digital Realty,$55.29 Billion,Data Center REITs
+204,F,Ford Motor Company,$55.15 Billion,Automobile Manufacturers
+205,OKE,Oneok,$55.00 Billion,Oil & Gas Storage & Transportation
+206,D,Dominion Energy,$54.43 Billion,Multi-Utilities
+207,ALL,Allstate,$54.30 Billion,Property & Casualty Insurance
+208,DVN,Devon Energy,$53.88 Billion,Oil & Gas Exploration & Production
+209,NKE,"Nike, Inc.",$53.58 Billion,"Apparel, Accessories & Luxury Goods"
+210,CTVA,Corteva,$53.51 Billion,Fertilizers & Agricultural Chemicals
+211,VST,Vistra Corp .,$52.95 Billion,Electric Utilities
+212,OXY,Occidental Petroleum,$52.75 Billion,Oil & Gas Exploration & Production
+213,PSA,Public Storage,$52.71 Billion,Self-Storage REITs
+214,FANG,Diamondback Energy,$52.60 Billion,Oil & Gas Exploration & Production
+215,TGT,Target Corporation,$52.60 Billion,Consumer Staples Merchandise Retail
+216,CARR,Carrier Global,$52.44 Billion,Building Products
+217,AME,Ametek,$51.69 Billion,Electrical Components & Equipment
+218,LHX,L3Harris,$51.53 Billion,Aerospace & Defense
+219,AJG,Arthur J. Gallagher & Co.,$51.10 Billion,Insurance Brokers
+220,MCHP,Microchip Technology,$50.56 Billion,Semiconductors
+221,COR,Cencora,$50.53 Billion,Health Care Distributors
+222,FAST,Fastenal,$50.44 Billion,Trading Companies & Distributors
+223,ROK,Rockwell Automation,$50.33 Billion,Electrical Components & Equipment
+224,MET,MetLife,$50.18 Billion,Life & Health Insurance
+225,EA,Electronic Arts,$50.16 Billion,Interactive Home Entertainment
+226,TER,Teradyne,$50.05 Billion,Semiconductor Materials & Equipment
+227,ADSK,Autodesk,$48.93 Billion,Application Software
+228,NDAQ,"Nasdaq, Inc.",$48.84 Billion,Financial Exchanges & Data
+229,COIN,Coinbase,$48.74 Billion,Financial Exchanges & Data
+230,DAL,Delta Air Lines,$48.18 Billion,Passenger Airlines
+231,EBAY,eBay Inc.,$48.01 Billion,Broadline Retail
+232,XEL,Xcel Energy,$47.96 Billion,Multi-Utilities
+233,TRGP,Targa Resources,$46.85 Billion,Oil & Gas Storage & Transportation
+234,GRMN,Garmin,$46.33 Billion,Consumer Electronics
+235,EXC,Exelon,$44.93 Billion,Electric Utilities
+236,FITB,Fifth Third Bancorp,$44.71 Billion,Regional Banks
+237,EW,Edwards Lifesciences,$44.43 Billion,Health Care Equipment
+238,IDXX,Idexx Laboratories,$44.12 Billion,Health Care Equipment
+239,WAB,Wabtec,$43.51 Billion,Construction Machinery & Heavy Transportation Equipment
+240,CAH,Cardinal Health,$43.01 Billion,Health Care Distributors
+241,YUM,Yum! Brands,$42.89 Billion,Restaurants
+242,MSCI,MSCI Inc.,$42.52 Billion,Financial Exchanges & Data
+243,ETR,Entergy,$41.77 Billion,Electric Utilities
+244,DHI,D. R. Horton,$41.75 Billion,Homebuilding
+245,CMG,Chipotle Mexican Grill,$41.68 Billion,Restaurants
+246,HPE,Hewlett Packard Enterprise,$41.60 Billion,"Technology Hardware, Storage & Peripherals"
+247,STT,State Street Corporation,$41.56 Billion,Asset Management & Custody Banks
+248,AIG,American International Group,$41.34 Billion,Multi-line Insurance
+249,ODFL,Old Dominion,$41.25 Billion,Cargo Ground Transportation
+250,KR,Kroger,$41.20 Billion,Food Retail
+251,ARES,Ares Management,$41.04 Billion,Asset Management & Custody Banks
+252,TTWO,Take-Two Interactive,$40.82 Billion,Interactive Home Entertainment
+253,BDX,Becton Dickinson,$40.68 Billion,Health Care Equipment
+254,AMP,Ameriprise Financial,$40.66 Billion,Asset Management & Custody Banks
+255,VTR,Ventas,$40.60 Billion,Health Care REITs
+256,XYZ,"Block, Inc.",$40.52 Billion,Transaction & Payment Processing Services
+257,ED,Consolidated Edison,$39.18 Billion,Multi-Utilities
+258,PYPL,PayPal,$39.02 Billion,Transaction & Payment Processing Services
+259,PEG,Public Service Enterprise Group,$38.44 Billion,Electric Utilities
+260,CBRE,CBRE Group,$38.38 Billion,Real Estate Services
+261,EME,Emcor,$37.80 Billion,Construction & Engineering
+262,HIG,Hartford (The),$37.66 Billion,Property & Casualty Insurance
+263,JBL,Jabil,$37.47 Billion,Electronic Manufacturing Services
+264,CBOE,Cboe Global Markets,$37.40 Billion,Financial Exchanges & Data
+265,SYY,Sysco,$36.54 Billion,Food Distributors
+266,WEC,WEC Energy Group,$36.37 Billion,Electric Utilities
+267,PRU,Prudential Financial,$36.23 Billion,Life & Health Insurance
+268,CCI,Crown Castle,$36.18 Billion,Telecom Tower REITs
+269,SATS,EchoStar,$35.99 Billion,Wireless Telecommunication Services
+270,KEYS,Keysight Technologies,$35.96 Billion,Electronic Equipment & Instruments
+271,ZTS,Zoetis,$35.84 Billion,Pharmaceuticals
+272,NUE,Nucor,$35.76 Billion,Steel
+273,PCG,PG&E Corporation,$35.39 Billion,Multi-Utilities
+274,EQT,EQT Corporation,$35.31 Billion,Oil & Gas Exploration & Production
+275,LYV,Live Nation Entertainment,$34.35 Billion,Movies & Entertainment
+276,KMB,Kimberly-Clark,$34.17 Billion,Household Products
+277,VMC,Vulcan Materials Company,$34.00 Billion,Construction Materials
+278,STLD,Steel Dynamics,$33.90 Billion,Steel
+279,PAYX,Paychex,$33.88 Billion,Human Resource & Employment Services
+280,HAL,Halliburton,$33.63 Billion,Oil & Gas Equipment & Services
+281,WAT,Waters Corporation,$33.61 Billion,Life Sciences Tools & Services
+282,ADM,Archer Daniels Midland,$33.40 Billion,Agricultural Products & Services
+283,ROP,Roper Technologies,$32.99 Billion,Electronic Equipment & Instruments
+284,HUM,Humana,$32.93 Billion,Managed Health Care
+285,Q,Qnity Electronics,$32.85 Billion,Semiconductor Materials & Equipment
+286,LVS,Las Vegas Sands,$32.80 Billion,Casinos & Gaming
+287,ACGL,Arch Capital Group,$32.77 Billion,Property & Casualty Insurance
+288,CPRT,Copart,$32.55 Billion,Diversified Support Services
+289,A,Agilent Technologies,$32.54 Billion,Life Sciences Tools & Services
+290,KVUE,Kenvue,$32.24 Billion,Personal Care Products
+291,MLM,Martin Marietta Materials,$32.21 Billion,Construction Materials
+292,CCL,Carnival Corporation,$32.19 Billion,"Hotels, Resorts & Cruise Lines"
+293,UAL,United Airlines Holdings,$31.36 Billion,Passenger Airlines
+294,AXON,Axon Enterprise,$31.11 Billion,Aerospace & Defense
+295,MTB,M&T Bank,$31.07 Billion,Regional Banks
+296,VICI,Vici Properties,$30.69 Billion,Hotel & Resort REITs
+297,CASY,Casey's,$30.58 Billion,Food Retail
+298,FISV,Fiserv,$30.46 Billion,Transaction & Payment Processing Services
+299,AEE,Ameren,$30.44 Billion,Multi-Utilities
+300,EXR,Extra Space Storage,$30.27 Billion,Self-Storage REITs
+301,IRM,Iron Mountain,$29.90 Billion,Other Specialized REITs
+302,RJF,Raymond James Financial,$29.85 Billion,Investment Banking & Brokerage
+303,NTRS,Northern Trust,$29.68 Billion,Asset Management & Custody Banks
+304,ATO,Atmos Energy,$29.68 Billion,Gas Utilities
+305,DTE,DTE Energy,$29.63 Billion,Multi-Utilities
+306,CNC,Centene Corporation,$29.04 Billion,Managed Health Care
+307,NRG,NRG Energy,$29.04 Billion,Independent Power Producers & Energy Traders
+308,GEHC,GE HealthCare,$28.87 Billion,Health Care Equipment
+309,HSY,Hershey Company (The),$28.87 Billion,Packaged Foods & Meats
+310,RMD,ResMed,$28.83 Billion,Health Care Equipment
+311,TDY,Teledyne Technologies,$28.74 Billion,Electronic Equipment & Instruments
+312,IQV,IQVIA,$28.43 Billion,Life Sciences Tools & Services
+313,OTIS,Otis Worldwide,$28.36 Billion,Industrial Machinery & Supplies & Components
+314,DOV,Dover Corporation,$28.27 Billion,Industrial Machinery & Supplies & Components
+315,IR,Ingersoll Rand,$28.02 Billion,Industrial Machinery & Supplies & Components
+316,DXCM,Dexcom,$27.75 Billion,Health Care Equipment
+317,BIIB,Biogen,$27.74 Billion,Biotechnology
+318,CNP,CenterPoint Energy,$27.65 Billion,Multi-Utilities
+319,KHC,Kraft Heinz,$27.58 Billion,Packaged Foods & Meats
+320,ON,ON Semiconductor,$27.40 Billion,Semiconductors
+321,EIX,Edison International,$27.16 Billion,Electric Utilities
+322,PPL,PPL Corporation,$27.01 Billion,Electric Utilities
+323,TPR,"Tapestry, Inc.",$26.97 Billion,"Apparel, Accessories & Luxury Goods"
+324,XYL,Xylem Inc.,$26.85 Billion,Industrial Machinery & Supplies & Components
+325,FE,FirstEnergy,$26.75 Billion,Electric Utilities
+326,CFG,Citizens Financial Group,$26.29 Billion,Regional Banks
+327,VEEV,Veeva Systems,$26.14 Billion,Health Care Technology
+328,WDAY,"Workday, Inc.",$26.10 Billion,Application Software
+329,VRSN,Verisign,$26.07 Billion,Internet Services & Infrastructure
+330,AVB,AvalonBay Communities,$25.83 Billion,Multi-Family Residential REITs
+331,STZ,Constellation Brands,$25.53 Billion,Distillers & Vintners
+332,WRB,W. R. Berkley Corporation,$25.47 Billion,Property & Casualty Insurance
+333,ROL,"Rollins, Inc.",$25.43 Billion,Environmental & Facilities Services
+334,FICO,Fair Isaac,$25.32 Billion,Application Software
+335,ES,Eversource Energy,$25.29 Billion,Electric Utilities
+336,HUBB,Hubbell Incorporated,$25.25 Billion,Industrial Machinery & Supplies & Components
+337,HBAN,Huntington Bancshares,$25.07 Billion,Regional Banks
+338,CINF,Cincinnati Financial,$24.98 Billion,Property & Casualty Insurance
+339,SYF,Synchrony Financial,$24.97 Billion,Consumer Finance
+340,EQR,Equity Residential,$24.80 Billion,Multi-Family Residential REITs
+341,EXPE,Expedia Group,$24.58 Billion,"Hotels, Resorts & Cruise Lines"
+342,WTW,Willis Towers Watson,$24.47 Billion,Insurance Brokers
+343,CTSH,Cognizant,$24.44 Billion,IT Consulting & Other Services
+344,AWK,American Water Works,$24.44 Billion,Water Utilities
+345,PPG,PPG Industries,$24.19 Billion,Specialty Chemicals
+346,CPAY,Corpay,$23.81 Billion,Transaction & Payment Processing Services
+347,FSLR,First Solar,$23.63 Billion,Semiconductors
+348,EXE,Expand Energy,$23.43 Billion,Oil & Gas Exploration & Production
+349,KEY,KeyCorp,$23.38 Billion,Regional Banks
+350,BG,Bunge Global,$23.36 Billion,Agricultural Products & Services
+351,DG,Dollar General,$23.26 Billion,Consumer Staples Merchandise Retail
+352,RF,Regions Financial Corporation,$22.86 Billion,Regional Banks
+353,ULTA,Ulta Beauty,$22.85 Billion,Other Specialty Retail
+354,JBHT,J.B. Hunt,$22.70 Billion,Cargo Ground Transportation
+355,DOW,Dow Inc.,$22.66 Billion,Commodity Chemicals
+356,FIS,Fidelity National Information Services,$22.56 Billion,Transaction & Payment Processing Services
+357,NI,NiSource,$22.55 Billion,Multi-Utilities
+358,LYB,LyondellBasell,$22.50 Billion,Specialty Chemicals
+359,DRI,Darden Restaurants,$22.48 Billion,Restaurants
+360,CMS,CMS Energy,$22.43 Billion,Multi-Utilities
+361,VRSK,Verisk Analytics,$22.42 Billion,Research & Consulting Services
+362,L,Loews Corporation,$22.40 Billion,Multi-line Insurance
+363,PHM,PulteGroup,$22.18 Billion,Homebuilding
+364,TROW,T. Rowe Price,$22.15 Billion,Asset Management & Custody Banks
+365,EL,Estée Lauder Companies (The),$21.84 Billion,Personal Care Products
+366,MTD,Mettler Toledo,$21.79 Billion,Life Sciences Tools & Services
+367,VLTO,Veralto,$21.55 Billion,Environmental & Facilities Services
+368,CHD,Church & Dwight,$21.50 Billion,Household Products
+369,WSM,"Williams-Sonoma, Inc.",$21.44 Billion,Homefurnishing Retail
+370,SBAC,SBA Communications,$21.39 Billion,Telecom Tower REITs
+371,OMC,Omnicom Group,$21.35 Billion,Advertising
+372,NTAP,NetApp,$21.09 Billion,"Technology Hardware, Storage & Peripherals"
+373,LH,Labcorp,$20.92 Billion,Health Care Services
+374,DGX,Quest Diagnostics,$20.74 Billion,Health Care Services
+375,CHTR,Charter Communications,$20.49 Billion,Cable & Satellite
+376,PFG,Principal Financial Group,$20.43 Billion,Life & Health Insurance
+377,STE,Steris,$20.36 Billion,Health Care Equipment
+378,ALB,Albemarle Corporation,$20.24 Billion,Specialty Chemicals
+379,CHRW,C.H. Robinson,$20.20 Billion,Air Freight & Logistics
+380,SMCI,Supermicro,$20.13 Billion,"Technology Hardware, Storage & Peripherals"
+381,LUV,Southwest Airlines,$19.97 Billion,Passenger Airlines
+382,HPQ,HP Inc.,$19.89 Billion,"Technology Hardware, Storage & Peripherals"
+383,SW,Smurfit Westrock,$19.87 Billion,Paper & Plastic Packaging Products & Materials
+384,DD,DuPont,$19.73 Billion,Specialty Chemicals
+385,EFX,Equifax,$19.53 Billion,Research & Consulting Services
+386,EXPD,Expeditors International,$19.44 Billion,Air Freight & Logistics
+387,PKG,Packaging Corporation of America,$19.43 Billion,Paper & Plastic Packaging Products & Materials
+388,INCY,Incyte,$19.41 Billion,Biotechnology
+389,VTRS,Viatris,$19.39 Billion,Pharmaceuticals
+390,IFF,International Flavors & Fragrances,$19.28 Billion,Specialty Chemicals
+391,LEN,Lennar,$19.17 Billion,Homebuilding
+392,SNA,Snap-on,$19.03 Billion,Industrial Machinery & Supplies & Components
+393,EVRG,Evergy,$18.85 Billion,Electric Utilities
+394,BRO,Brown & Brown,$18.76 Billion,Insurance Brokers
+395,CF,CF Industries,$18.70 Billion,Fertilizers & Agricultural Chemicals
+396,MRNA,Moderna,$18.60 Billion,Biotechnology
+397,LNT,Alliant Energy,$18.53 Billion,Electric Utilities
+398,TSN,Tyson Foods,$18.35 Billion,Packaged Foods & Meats
+399,DLTR,Dollar Tree,$18.35 Billion,Consumer Staples Merchandise Retail
+400,BR,Broadridge Financial Solutions,$18.21 Billion,Data Processing & Outsourced Services
+401,FTV,Fortive,$18.03 Billion,Industrial Machinery & Supplies & Components
+402,GIS,General Mills,$17.98 Billion,Packaged Foods & Meats
+403,ESS,Essex Property Trust,$17.78 Billion,Multi-Family Residential REITs
+404,AMCR,Amcor,$17.73 Billion,Paper & Plastic Packaging Products & Materials
+405,GPN,Global Payments,$17.34 Billion,Transaction & Payment Processing Services
+406,WST,West Pharmaceutical Services,$17.16 Billion,Health Care Supplies
+407,WY,Weyerhaeuser,$16.97 Billion,Timber REITs
+408,ZBH,Zimmer Biomet,$16.94 Billion,Health Care Equipment
+409,PTC,PTC Inc.,$16.94 Billion,Application Software
+410,LII,Lennox International,$16.87 Billion,Building Products
+411,TSCO,Tractor Supply,$16.71 Billion,Other Specialty Retail
+412,IP,International Paper,$16.57 Billion,Paper & Plastic Packaging Products & Materials
+413,NVR,"NVR, Inc.",$16.50 Billion,Homebuilding
+414,FFIV,"F5, Inc.",$16.44 Billion,Communications Equipment
+415,NDSN,Nordson Corporation,$16.15 Billion,Industrial Machinery & Supplies & Components
+416,BEN,Franklin Resources,$16.12 Billion,Asset Management & Custody Banks
+417,TXT,Textron,$15.99 Billion,Aerospace & Defense
+418,GNRC,Generac,$15.86 Billion,Electrical Components & Equipment
+419,LDOS,Leidos,$15.85 Billion,Diversified Support Services
+420,KIM,Kimco Realty,$15.83 Billion,Retail REITs
+421,INVH,Invitation Homes,$15.79 Billion,Single-Family Residential REITs
+422,IEX,IDEX Corporation,$15.63 Billion,Industrial Machinery & Supplies & Components
+423,AKAM,Akamai Technologies,$15.43 Billion,Internet Services & Infrastructure
+424,HST,Host Hotels & Resorts,$15.33 Billion,Hotel & Resort REITs
+425,MAA,Mid-America Apartment Communities,$15.26 Billion,Multi-Family Residential REITs
+426,BALL,Ball Corporation,$15.05 Billion,"Metal, Glass & Plastic Containers"
+427,GEN,Gen Digital,$14.63 Billion,Systems Software
+428,RL,Ralph Lauren Corporation,$14.60 Billion,"Apparel, Accessories & Luxury Goods"
+429,REG,Regency Centers,$14.43 Billion,Retail REITs
+430,CSGP,CoStar Group,$14.39 Billion,Real Estate Services
+431,TKO,TKO Group Holdings,$14.36 Billion,Movies & Entertainment
+432,LULU,Lululemon Athletica,$14.05 Billion,"Apparel, Accessories & Luxury Goods"
+433,EG,Everest Group,$13.91 Billion,Reinsurance
+434,DECK,Deckers Brands,$13.72 Billion,Footwear
+435,J,Jacobs Solutions,$13.71 Billion,Construction & Engineering
+436,GPC,Genuine Parts Company,$13.61 Billion,Distributors
+437,DOC,Healthpeak Properties,$13.60 Billion,Health Care REITs
+438,MAS,Masco,$13.57 Billion,Building Products
+439,CDW,CDW Corporation,$13.39 Billion,Technology Distributors
+440,FOXA,Fox Corporation (Class A),$13.33 Billion,Broadcasting
+441,SOLV,Solventum,$13.33 Billion,Health Care Technology
+442,TYL,Tyler Technologies,$13.21 Billion,Application Software
+443,TRMB,Trimble Inc.,$13.13 Billion,Application Software
+444,BBY,Best Buy,$12.91 Billion,Computer & Electronics Retail
+445,FOX,Fox Corporation (Class B),$12.86 Billion,Broadcasting
+446,DVA,DaVita,$12.74 Billion,Health Care Services
+447,APA,APA Corporation,$12.57 Billion,Oil & Gas Exploration & Production
+448,HAS,Hasbro,$12.47 Billion,Leisure Products
+449,HII,Huntington Ingalls Industries,$12.46 Billion,Aerospace & Defense
+450,UDR,"UDR, Inc.",$12.35 Billion,Multi-Family Residential REITs
+451,AVY,Avery Dennison,$12.34 Billion,Paper & Plastic Packaging Products & Materials
+452,APTV,Aptiv,$12.20 Billion,Automotive Parts & Equipment
+453,MKC,McCormick & Company,$12.12 Billion,Packaged Foods & Meats
+454,PNR,Pentair,$12.09 Billion,Industrial Machinery & Supplies & Components
+455,BF-B,Brown–Forman,$12.02 Billion,Distillers & Vintners
+456,IVZ,Invesco,$11.99 Billion,Asset Management & Custody Banks
+457,GL,Globe Life,$11.73 Billion,Life & Health Insurance
+458,ALGN,Align Technology,$11.72 Billion,Health Care Supplies
+459,COO,Cooper Companies (The),$11.71 Billion,Health Care Supplies
+460,PSKY,Paramount Skydance Corporation,$11.71 Billion,Movies & Entertainment
+461,SWK,Stanley Black & Decker,$11.40 Billion,Industrial Machinery & Supplies & Components
+462,ALLE,Allegion,$11.21 Billion,Building Products
+463,PNW,Pinnacle West Capital,$11.14 Billion,Multi-Utilities
+464,ZBRA,Zebra Technologies,$11.12 Billion,Electronic Equipment & Instruments
+465,HRL,Hormel Foods,$11.09 Billion,Packaged Foods & Meats
+466,IT,Gartner,$11.08 Billion,IT Consulting & Other Services
+467,SJM,J.M. Smucker Company (The),$11.03 Billion,Packaged Foods & Meats
+468,AIZ,Assurant,$10.94 Billion,Multi-line Insurance
+469,GDDY,GoDaddy,$10.91 Billion,Internet Services & Infrastructure
+470,CLX,Clorox,$10.75 Billion,Household Products
+471,PODD,Insulet Corporation,$10.68 Billion,Health Care Equipment
+472,DPZ,Domino's,$10.53 Billion,Restaurants
+473,TTD,Trade Desk (The),$10.52 Billion,Advertising
+474,CPT,Camden Property Trust,$10.40 Billion,Multi-Family Residential REITs
+475,ERIE,Erie Indemnity,$10.36 Billion,Insurance Brokers
+476,RVTY,Revvity,$10.24 Billion,Health Care Equipment
+477,AES,AES Corporation,$10.23 Billion,Independent Power Producers & Energy Traders
+478,WYNN,Wynn Resorts,$10.12 Billion,Casinos & Gaming
+479,JKHY,Jack Henry & Associates,$10.12 Billion,Transaction & Payment Processing Services
+480,FRT,Federal Realty Investment Trust,$10.05 Billion,Retail REITs
+481,BAX,Baxter International,$9.87 Billion,Health Care Equipment
+482,MGM,MGM Resorts,$9.82 Billion,Casinos & Gaming
+483,BXP,"BXP, Inc.",$9.57 Billion,Office REITs
+484,NWSA,News Corp (Class A),$9.44 Billion,Publishing
+485,SWKS,Skyworks Solutions,$9.34 Billion,Semiconductors
+486,TPL,Texas Pacific Land Corporation,$9.24 Billion,Oil & Gas Exploration & Production
+487,CPB,Campbell's Company (The),$8.81 Billion,Packaged Foods & Meats
+488,UHS,Universal Health Services,$8.41 Billion,Health Care Facilities
+489,ARE,Alexandria Real Estate Equities,$8.02 Billion,Office REITs
+490,FDS,FactSet,$7.99 Billion,Financial Exchanges & Data
+491,BLDR,Builders FirstSource,$7.98 Billion,Building Products
+492,CRL,Charles River Laboratories,$7.89 Billion,Life Sciences Tools & Services
+493,HSIC,Henry Schein,$7.86 Billion,Health Care Distributors
+494,TECH,Bio-Techne,$7.54 Billion,Life Sciences Tools & Services
+495,NCLH,Norwegian Cruise Line Holdings,$7.48 Billion,"Hotels, Resorts & Cruise Lines"
+496,TAP,Molson Coors Beverage Company,$7.46 Billion,Brewers
+497,MOS,Mosaic Company (The),$7.05 Billion,Fertilizers & Agricultural Chemicals
+498,POOL,Pool Corporation,$6.73 Billion,Distributors
+499,AOS,A. O. Smith,$6.49 Billion,Building Products
+500,CAG,Conagra Brands,$6.49 Billion,Packaged Foods & Meats
+501,NWS,News Corp (Class B),$5.49 Billion,Publishing
+502,EPAM,EPAM Systems,$5.18 Billion,IT Consulting & Other Services
+503,KDP,Keurig Dr Pepper,-,Soft Drinks & Non-alcoholic Beverages

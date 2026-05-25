@@ -16,6 +16,8 @@ class Content_Type:
     def __init__(self) -> None:
         self.sustainbility_report = 1
         self.TenK_Report = 2
+        self.Other_EDGAR_Filing = 3
+        self.Earnings_Transcript = 4
 
 
 class Processing_Type:

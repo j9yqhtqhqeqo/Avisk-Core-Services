@@ -68,6 +68,7 @@ dependencies:
     # Additional data processing
     - openpyxl  # Excel file support
     - xlsxwriter  # Excel writing
+    - yfinance>=0.2.0
     # Web framework utilities
     - streamlit-components-community
 

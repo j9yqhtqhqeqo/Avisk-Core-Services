@@ -41,7 +41,7 @@ class DataSourceDBManager():
             cursor = self.dbConnection.cursor(
                 cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(" select d.unique_id ,d.company_name ,d.year ,d.content_type,l.data_lookups_description, d.source_type , d.source_url ,d.processed_ind\
-                            from t_data_source d INNER join  t_data_lookups l on d.content_type = l.data_lookups_id\
+                            from t_data_source d INNER join  t_data_lookups l on d.content_type = l.data_lookups_id and l.data_lookups_group_id = 1\
                             where d.processed_ind = 0 order by d.unique_id")
             rows = cursor.fetchall()
             for row in rows:

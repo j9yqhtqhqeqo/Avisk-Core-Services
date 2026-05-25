@@ -1,8 +1,10 @@
 """
-Scrape S&P 500 companies ranked by market cap from marketcap.company
+Build a current S&P 500 market-cap ranking CSV.
 
-This script fetches all pages of S&P 500 companies and saves them to a CSV file
-with their market cap ranking for use in the Sustainability Report Downloader.
+The primary ranking feed comes from marketcap.company. That source can lag the
+live S&P 500 constituent list, so this script reconciles the scraped ranking
+against the current Wikipedia constituent table and fills any missing current
+symbols with live market caps from Yahoo Finance.
 
 Usage:
     python Utilities/scrape_sp500_market_cap.py
@@ -14,6 +16,11 @@ import pandas as pd
 import time
 import re
 from pathlib import Path
+import yfinance as yf
+
+
+WIKIPEDIA_SP500_URL = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+MARKETCAP_URL = 'https://marketcap.company/stock-indices/s-p-500-index-market-cap/'
 
 
 def extract_symbol_from_text(text: str) -> str:
@@ -22,6 +29,66 @@ def extract_symbol_from_text(text: str) -> str:
     if match:
         return match.group(1)
     return ""
+
+
+def normalize_symbol(symbol: str) -> str:
+    return str(symbol).strip().upper().replace('.', '-')
+
+
+def fetch_current_sp500_constituents() -> pd.DataFrame:
+    """Fetch the current S&P 500 constituent list from Wikipedia."""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    response = requests.get(WIKIPEDIA_SP500_URL, headers=headers, timeout=30)
+    response.raise_for_status()
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    table = soup.find('table', {'id': 'constituents'}) or soup.find('table', {'class': 'wikitable'})
+    if table is None:
+        raise ValueError('Could not find S&P 500 constituents table on Wikipedia')
+
+    rows: list[dict[str, str]] = []
+    for row in table.find_all('tr')[1:]:
+        cols = row.find_all('td')
+        if len(cols) < 4:
+            continue
+        rows.append({
+            'symbol': normalize_symbol(cols[0].get_text(' ', strip=True)),
+            'company': cols[1].get_text(' ', strip=True),
+            'sector': cols[3].get_text(' ', strip=True),
+        })
+
+    dataframe = pd.DataFrame(rows)
+    return dataframe.drop_duplicates(subset=['symbol']).reset_index(drop=True)
+
+
+def parse_market_cap_value(market_cap_text: str) -> float:
+    """Convert strings like '$4.32 Trillion' into numeric dollars."""
+    text = str(market_cap_text or '').strip().replace('$', '').replace(',', '')
+    match = re.match(r'([0-9.]+)\s*(Trillion|Billion|Million)?', text, re.IGNORECASE)
+    if not match:
+        return 0.0
+
+    value = float(match.group(1))
+    suffix = (match.group(2) or '').lower()
+    if suffix == 'trillion':
+        return value * 1_000_000_000_000
+    if suffix == 'billion':
+        return value * 1_000_000_000
+    if suffix == 'million':
+        return value * 1_000_000
+    return value
+
+
+def format_market_cap_value(market_cap_value: float) -> str:
+    if market_cap_value >= 1_000_000_000_000:
+        return f"${market_cap_value / 1_000_000_000_000:.2f} Trillion"
+    if market_cap_value >= 1_000_000_000:
+        return f"${market_cap_value / 1_000_000_000:.2f} Billion"
+    if market_cap_value >= 1_000_000:
+        return f"${market_cap_value / 1_000_000:.2f} Million"
+    return f"${market_cap_value:,.0f}"
 
 
 def scrape_sp500_market_cap(num_pages: int = 11) -> pd.DataFrame:
@@ -34,7 +101,6 @@ def scrape_sp500_market_cap(num_pages: int = 11) -> pd.DataFrame:
     Returns:
         DataFrame with columns: rank, symbol, company, market_cap
     """
-    base_url = "https://marketcap.company/stock-indices/s-p-500-index-market-cap/"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
@@ -43,9 +109,9 @@ def scrape_sp500_market_cap(num_pages: int = 11) -> pd.DataFrame:
 
     for page in range(1, num_pages + 1):
         if page == 1:
-            url = base_url
+            url = MARKETCAP_URL
         else:
-            url = f"{base_url}?page={page}"
+            url = f"{MARKETCAP_URL}?page={page}"
 
         print(f"Fetching page {page}/{num_pages}: {url}")
 
@@ -94,7 +160,7 @@ def scrape_sp500_market_cap(num_pages: int = 11) -> pd.DataFrame:
                     if symbol:
                         all_companies.append({
                             'rank': rank,
-                            'symbol': symbol,
+                            'symbol': normalize_symbol(symbol),
                             'company': company_name,
                             'market_cap': market_cap,
                             'sector': sector
@@ -111,6 +177,62 @@ def scrape_sp500_market_cap(num_pages: int = 11) -> pd.DataFrame:
             continue
 
     return pd.DataFrame(all_companies)
+
+
+def fetch_market_cap_from_yahoo(symbol: str) -> float | None:
+    """Fetch a live market cap from Yahoo Finance for a single ticker."""
+    try:
+        info = yf.Ticker(symbol).info
+    except Exception as exc:
+        print(f"  Yahoo lookup failed for {symbol}: {exc}")
+        return None
+
+    market_cap = info.get('marketCap')
+    if market_cap is None:
+        print(f"  Yahoo lookup returned no market cap for {symbol}")
+        return None
+    return float(market_cap)
+
+
+def reconcile_with_current_constituents(scraped_df: pd.DataFrame) -> pd.DataFrame:
+    """Keep only current S&P 500 constituents and backfill missing current symbols."""
+    current_df = fetch_current_sp500_constituents()
+    scraped_df = scraped_df.copy()
+    scraped_df['symbol'] = scraped_df['symbol'].astype(str).map(normalize_symbol)
+    scraped_df['market_cap_value'] = scraped_df['market_cap'].map(parse_market_cap_value)
+
+    current_symbols = set(current_df['symbol'])
+    scraped_df = scraped_df[scraped_df['symbol'].isin(current_symbols)].copy()
+
+    wiki_by_symbol = current_df.set_index('symbol').to_dict('index')
+    scraped_df['company'] = scraped_df['symbol'].map(lambda symbol: wiki_by_symbol[symbol]['company'])
+    scraped_df['sector'] = scraped_df['symbol'].map(lambda symbol: wiki_by_symbol[symbol]['sector'])
+
+    scraped_symbols = set(scraped_df['symbol'])
+    missing_symbols = current_df[~current_df['symbol'].isin(scraped_symbols)].copy()
+    print(f"Reconciling against live S&P 500 list: {len(missing_symbols)} current symbols missing from scrape")
+
+    enriched_rows: list[dict[str, object]] = []
+    for row in missing_symbols.itertuples(index=False):
+        print(f"  Fetching live market cap for missing symbol {row.symbol} ({row.company})")
+        market_cap_value = fetch_market_cap_from_yahoo(row.symbol)
+        if market_cap_value is None:
+            continue
+        enriched_rows.append({
+            'symbol': row.symbol,
+            'company': row.company,
+            'market_cap': format_market_cap_value(market_cap_value),
+            'market_cap_value': market_cap_value,
+            'sector': row.sector,
+        })
+        time.sleep(0.2)
+
+    if enriched_rows:
+        scraped_df = pd.concat([scraped_df, pd.DataFrame(enriched_rows)], ignore_index=True)
+
+    scraped_df = scraped_df.sort_values('market_cap_value', ascending=False).reset_index(drop=True)
+    scraped_df['rank'] = scraped_df.index + 1
+    return scraped_df[['rank', 'symbol', 'company', 'market_cap', 'sector']]
 
 
 def save_to_csv(df: pd.DataFrame, output_path: str):
@@ -148,6 +270,8 @@ def main():
     if df.empty:
         print("No data scraped!")
         return
+
+    df = reconcile_with_current_constituents(df)
 
     # Save to CSV
     output_dir = Path(__file__).parent.parent / 'Clients'
