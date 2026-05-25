@@ -44,9 +44,11 @@ def fetch_current_sp500_constituents() -> pd.DataFrame:
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    table = soup.find('table', {'id': 'constituents'}) or soup.find('table', {'class': 'wikitable'})
+    table = soup.find('table', {'id': 'constituents'}) or soup.find(
+        'table', {'class': 'wikitable'})
     if table is None:
-        raise ValueError('Could not find S&P 500 constituents table on Wikipedia')
+        raise ValueError(
+            'Could not find S&P 500 constituents table on Wikipedia')
 
     rows: list[dict[str, str]] = []
     for row in table.find_all('tr')[1:]:
@@ -66,7 +68,8 @@ def fetch_current_sp500_constituents() -> pd.DataFrame:
 def parse_market_cap_value(market_cap_text: str) -> float:
     """Convert strings like '$4.32 Trillion' into numeric dollars."""
     text = str(market_cap_text or '').strip().replace('$', '').replace(',', '')
-    match = re.match(r'([0-9.]+)\s*(Trillion|Billion|Million)?', text, re.IGNORECASE)
+    match = re.match(
+        r'([0-9.]+)\s*(Trillion|Billion|Million)?', text, re.IGNORECASE)
     if not match:
         return 0.0
 
@@ -198,23 +201,30 @@ def reconcile_with_current_constituents(scraped_df: pd.DataFrame) -> pd.DataFram
     """Keep only current S&P 500 constituents and backfill missing current symbols."""
     current_df = fetch_current_sp500_constituents()
     scraped_df = scraped_df.copy()
-    scraped_df['symbol'] = scraped_df['symbol'].astype(str).map(normalize_symbol)
-    scraped_df['market_cap_value'] = scraped_df['market_cap'].map(parse_market_cap_value)
+    scraped_df['symbol'] = scraped_df['symbol'].astype(
+        str).map(normalize_symbol)
+    scraped_df['market_cap_value'] = scraped_df['market_cap'].map(
+        parse_market_cap_value)
 
     current_symbols = set(current_df['symbol'])
     scraped_df = scraped_df[scraped_df['symbol'].isin(current_symbols)].copy()
 
     wiki_by_symbol = current_df.set_index('symbol').to_dict('index')
-    scraped_df['company'] = scraped_df['symbol'].map(lambda symbol: wiki_by_symbol[symbol]['company'])
-    scraped_df['sector'] = scraped_df['symbol'].map(lambda symbol: wiki_by_symbol[symbol]['sector'])
+    scraped_df['company'] = scraped_df['symbol'].map(
+        lambda symbol: wiki_by_symbol[symbol]['company'])
+    scraped_df['sector'] = scraped_df['symbol'].map(
+        lambda symbol: wiki_by_symbol[symbol]['sector'])
 
     scraped_symbols = set(scraped_df['symbol'])
-    missing_symbols = current_df[~current_df['symbol'].isin(scraped_symbols)].copy()
-    print(f"Reconciling against live S&P 500 list: {len(missing_symbols)} current symbols missing from scrape")
+    missing_symbols = current_df[~current_df['symbol'].isin(
+        scraped_symbols)].copy()
+    print(
+        f"Reconciling against live S&P 500 list: {len(missing_symbols)} current symbols missing from scrape")
 
     enriched_rows: list[dict[str, object]] = []
     for row in missing_symbols.itertuples(index=False):
-        print(f"  Fetching live market cap for missing symbol {row.symbol} ({row.company})")
+        print(
+            f"  Fetching live market cap for missing symbol {row.symbol} ({row.company})")
         market_cap_value = fetch_market_cap_from_yahoo(row.symbol)
         if market_cap_value is None:
             continue
@@ -228,9 +238,11 @@ def reconcile_with_current_constituents(scraped_df: pd.DataFrame) -> pd.DataFram
         time.sleep(0.2)
 
     if enriched_rows:
-        scraped_df = pd.concat([scraped_df, pd.DataFrame(enriched_rows)], ignore_index=True)
+        scraped_df = pd.concat(
+            [scraped_df, pd.DataFrame(enriched_rows)], ignore_index=True)
 
-    scraped_df = scraped_df.sort_values('market_cap_value', ascending=False).reset_index(drop=True)
+    scraped_df = scraped_df.sort_values(
+        'market_cap_value', ascending=False).reset_index(drop=True)
     scraped_df['rank'] = scraped_df.index + 1
     return scraped_df[['rank', 'symbol', 'company', 'market_cap', 'sector']]
 
