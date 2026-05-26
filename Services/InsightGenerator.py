@@ -171,6 +171,7 @@ class keyWordSearchManager:
         telemetry.add_metric("Dictionary Type", "Exposure Pathway")
 
         self.validation_mode = validation_mode
+        self.retry_required_for_related_keywords = False
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
 
@@ -276,7 +277,7 @@ class keyWordSearchManager:
                     self.document_id, search_failed=True)
                 documents_failed += 1
 
-        if (retry_for_new_dicitonary_items):
+        if (retry_for_new_dicitonary_items and not self.validation_mode):
             print("Rerunning..generate_keyword_location_map_for_exposure_pathway..")
             # print(
             #     f"[DEBUG] Retry required for new dictionary items. Rerunning generate_keyword_location_map_for_exposure_pathway for batch {batch_num}")
