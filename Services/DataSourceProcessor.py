@@ -170,15 +170,34 @@ class DataSourceProcessor:
                         url=source_url, f_name=l_file_location, f_log=self.logfile)
                 elif (source_type == 'file'):
                     print('Processing Manually downloaded file:')
-                    l_file_location = os.path.join(
-                        self.pdf_in_folder, 'ManualDownloads', source_url)
-                    print(l_file_location)
+                    candidate_locations = [
+                        os.path.join(self.pdf_in_folder,
+                                     str(year), source_url),
+                        os.path.join(self.pdf_in_folder,
+                                     'ManualDownloads', source_url),
+                    ]
 
-                    # Verify file exists (directly accessible via FUSE mount)
-                    if not os.path.exists(l_file_location):
-                        print(f'Manual file not found: {l_file_location}')
+                    try:
+                        for year_dir in sorted(Path(self.pdf_in_folder).iterdir()):
+                            if year_dir.is_dir() and year_dir.name.isdigit():
+                                candidate_locations.append(
+                                    str(year_dir / source_url))
+                    except Exception:
+                        pass
+
+                    resolved_location = next(
+                        (path for path in candidate_locations if os.path.exists(path)),
+                        None,
+                    )
+                    if resolved_location is None:
+                        print('Manual file lookup paths tried:')
+                        for candidate in candidate_locations:
+                            print(candidate)
                         raise FileNotFoundError(
-                            f'Manual file not found: {l_file_location}')
+                            f'Manual file not found: {source_url}')
+
+                    l_file_location = resolved_location
+                    print(l_file_location)
 
                 # Verify file exists before processing
                 if not os.path.exists(l_file_location):
