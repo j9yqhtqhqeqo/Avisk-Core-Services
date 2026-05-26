@@ -1,152 +1,130 @@
 """
 DictionaryRecommendationEngine
 
-Recommends whether a candidate keyword should be Included or Excluded from
-each of the three Avisk dictionary contexts:
+Recommends whether a validation pair should be Included or Excluded in the
+keyword context dictionaries.
 
-  • internalization   → t_internalization_dictionary (dictionary_id, keywords, internalization_id)
-  • exposure_pathway  → t_exposure_pathway_dictionary (dictionary_id, keywords, exposure_path_id)
-  • mitigation        → t_mitigation                  (dictionary_id, keywords)
+Each candidate is a pair:
 
-The engine loads all existing keywords from each context and computes
-character-n-gram TF-IDF cosine similarity between the candidate and the
-existing terms. High similarity → Include; low similarity → Exclude.
+  KEYWORD : RELATED_TERM
 
-An existing Exclude flat-file list is also consulted to identify terms that
-have already been manually marked for exclusion.
+The engine compares RELATED_TERM against the historical InclusionDictionary
+and ExclusionDictionary entries that already exist for that KEYWORD.
+Recommendations are intentionally conservative:
 
-Usage::
+  - exact historical exclusion  -> Exclude
+  - exact historical inclusion  -> Include
+  - suspicious fragment/code hit -> Exclude
+  - otherwise compare similarity to historical include vs exclude examples
 
-    from Services.DictionaryRecommendationEngine import DictionaryRecommendationEngine
-
-    engine = DictionaryRecommendationEngine()
-    engine.load()
-
-    results = engine.recommend('climate transition')
-    # {
-    #   'term': 'climate transition',
-    #   'contexts': {
-    #     'internalization':  { 'action': 'Include', 'confidence': 0.84, 'reason': '...', 'scores': {...} },
-    #     'exposure_pathway': { 'action': 'Include', 'confidence': 0.71, 'reason': '...', 'scores': {...} },
-    #     'mitigation':       { 'action': 'Exclude', 'confidence': 0.52, 'reason': '...', 'scores': {...} },
-    #   }
-    # }
-
-    batch = engine.recommend_batch(['carbon', 'lawsuit', 'offset', 'net zero'])
+This aligns the recommendation path with how validation files are actually
+resolved by ContextResolver.
 """
 
-import re
-import math
+import ast
 import logging
+import math
+import os
+import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
+
+from Utilities.PathConfiguration import PathConfiguration
 
 logger = logging.getLogger(__name__)
 
-# ── Thresholds ────────────────────────────────────────────────────────────────
 
-# Minimum cosine similarity to the context vocabulary to recommend Include.
-# Below this threshold the term is considered unrelated to the context → Exclude.
-INCLUDE_SIMILARITY_THRESHOLD = 0.08
+# Minimum similarity needed before a historical example is treated as
+# meaningful evidence.
+MATCH_SIMILARITY_THRESHOLD = 0.32
 
-# Minimum number of existing dictionary terms in a context before we trust
-# the similarity signal. If fewer terms exist the context is "empty" and we
-# return a low-confidence Exclude.
-MIN_CONTEXT_TERMS = 3
+# Require a visible gap between include and exclude evidence before returning
+# Include. When evidence is close, bias toward Exclude.
+DECISION_MARGIN = 0.05
 
 
-# ── Context definitions ───────────────────────────────────────────────────────
+path_config = PathConfiguration()
+INCLUSION_DICTIONARY_PATH = os.path.join(
+    os.path.dirname(path_config.get_new_include_dict_term_path()),
+    'InclusionDictionary.txt',
+)
+EXCLUSION_DICTIONARY_PATH = os.path.join(
+    os.path.dirname(path_config.get_new_exclude_dict_term_path()),
+    'ExclusionDictionary.txt',
+)
 
-CONTEXTS = {
-    'internalization': {
-        'table':       't_internalization_dictionary',
-        'keyword_col': 'keywords',
-        'description': 'Risk factor internalization — how ESG risks affect company performance',
-    },
-    'exposure_pathway': {
-        'table':       't_exposure_pathway_dictionary',
-        'keyword_col': 'keywords',
-        'description': 'Exposure pathways — channels through which ESG risks reach the company',
-    },
-    'mitigation': {
-        'table':       't_mitigation',
-        'keyword_col': 'keywords',
-        'description': 'Mitigation strategies — how the company responds to ESG risks',
-    },
-}
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 
 class DictionaryRecommendationEngine:
     """
-    Recommends Include / Exclude for candidate keywords by measuring their
-    n-gram TF-IDF cosine similarity against existing terms in each of the
-    three dictionary context tables.
+    Recommend Include / Exclude for KEYWORD:RELATED_TERM validation pairs.
 
     Parameters
     ----------
-    db_connection : psycopg2 connection, optional
-        An open psycopg2 connection.  If None the engine falls back to
-        file-based exclusion lists only and marks everything as low-confidence.
+    db_connection : optional
+        Retained for backward compatibility. Not used by the current engine.
 
-    exclude_terms : list of str, optional
-        Terms already in the Exclusion flat file.  These are pre-seeded as
-        known negatives even before similarity is computed.
+    exclude_terms : optional
+        Retained for backward compatibility. Not used by the current engine.
     """
 
-    def __init__(self, db_connection=None, exclude_terms: Optional[List[str]] = None):
+    def __init__(self, db_connection=None, exclude_terms=None):
         self.db_connection = db_connection
-        self._known_exclusions: List[str] = [
-            t.lower().strip() for t in (exclude_terms or [])
-        ]
-        # Per-context vocabulary: context_name → list of lowercase keyword strings
-        self._vocab: Dict[str, List[str]] = {}
-        # Per-context IDF weights
-        self._idf: Dict[str, Dict[str, float]] = {}
+        self.exclude_terms = exclude_terms
+        self._include_history: Dict[str, List[str]] = {}
+        self._exclude_history: Dict[str, List[str]] = {}
         self._loaded = False
 
-    # ── Loading ───────────────────────────────────────────────────────────────
-
     def load(self):
-        """
-        Fetch existing keywords from all three dictionary tables and build
-        TF-IDF vocabularies.  Call once before recommend().
-        """
-        for ctx_name, cfg in CONTEXTS.items():
-            terms = self._fetch_terms(cfg['table'], cfg['keyword_col'])
-            self._vocab[ctx_name] = terms
-            self._idf[ctx_name] = self._build_idf(terms)
-            logger.info(
-                f"[{ctx_name}] Loaded {len(terms)} existing dictionary terms "
-                f"from {cfg['table']}"
-            )
+        """Load historical include/exclude dictionaries from disk."""
+        self._include_history = self._load_dictionary(
+            INCLUSION_DICTIONARY_PATH)
+        self._exclude_history = self._load_dictionary(
+            EXCLUSION_DICTIONARY_PATH)
+        logger.info(
+            "Loaded %s include keywords and %s exclude keywords",
+            len(self._include_history),
+            len(self._exclude_history),
+        )
         self._loaded = True
 
-    def _fetch_terms(self, table: str, col: str) -> List[str]:
-        """Fetch keyword strings from a dictionary table."""
-        terms: List[str] = []
-        if not self.db_connection:
-            logger.warning(
-                f"No DB connection — cannot load terms from {table}")
-            return terms
-        try:
-            cur = self.db_connection.cursor()
-            cur.execute(f"SELECT {col} FROM {table} WHERE {col} IS NOT NULL")
-            for (kw,) in cur.fetchall():
-                cleaned = str(kw).lower().strip()
-                if cleaned:
-                    terms.append(cleaned)
-            cur.close()
-        except Exception as e:
-            logger.warning(f"Failed to fetch terms from {table}: {e}")
-        return terms
+    def _load_dictionary(self, file_path: str) -> Dict[str, List[str]]:
+        if not os.path.exists(file_path):
+            logger.warning("Dictionary file not found: %s", file_path)
+            return {}
 
-    # ── N-gram TF-IDF helpers ─────────────────────────────────────────────────
+        with open(file_path, 'r') as handle:
+            raw = handle.read().strip() or '{}'
+
+        try:
+            parsed = ast.literal_eval(raw)
+        except Exception as exc:
+            logger.warning(
+                "Failed to parse dictionary file %s: %s", file_path, exc)
+            return {}
+
+        history: Dict[str, List[str]] = {}
+        for keyword, values in parsed.items():
+            key = str(keyword).upper().strip()
+            history[key] = self._as_string_list(values)
+        return history
+
+    @staticmethod
+    def _as_string_list(values) -> List[str]:
+        if isinstance(values, list):
+            return [str(value).upper().strip() for value in values if str(value).strip()]
+        if isinstance(values, tuple):
+            return [str(value).upper().strip() for value in values if str(value).strip()]
+        if values is None:
+            return []
+        value = str(values).upper().strip()
+        return [value] if value else []
+
+    @staticmethod
+    def _word_tokens(text: str) -> List[str]:
+        return re.findall(r"[a-z0-9][a-z0-9\-']*", text.lower())
 
     @staticmethod
     def _ngrams(text: str, n: int = 2) -> List[str]:
-        """Character n-grams (bi-grams default) — robust to spelling variants."""
         cleaned = re.sub(r'[^a-z0-9 ]', ' ', text.lower())
         tokens = cleaned.split()
         result: List[str] = []
@@ -158,234 +136,303 @@ class DictionaryRecommendationEngine:
                               for i in range(len(token) - n + 1))
         return result
 
-    @staticmethod
-    def _word_tokens(text: str) -> List[str]:
-        """Simple word tokeniser."""
-        return re.findall(r"[a-z][a-z0-9\-']*", text.lower())
-
     def _term_features(self, text: str) -> List[str]:
-        """Combine word tokens + character bigrams for richer matching."""
         return self._word_tokens(text) + self._ngrams(text, n=2)
 
-    def _build_idf(self, terms: List[str]) -> Dict[str, float]:
-        """Build IDF weights treating each keyword as a 'document'."""
+    def _build_idf(self, terms: Iterable[str]) -> Dict[str, float]:
+        terms = list(terms)
         if not terms:
             return {}
-        df: Dict[str, int] = defaultdict(int)
+
+        document_frequency: Dict[str, int] = defaultdict(int)
         for term in terms:
-            for feat in set(self._term_features(term)):
-                df[feat] += 1
-        N = len(terms)
+            for feature in set(self._term_features(term)):
+                document_frequency[feature] += 1
+
+        total = len(terms)
         return {
-            feat: math.log((N + 1) / (freq + 1)) + 1.0
-            for feat, freq in df.items()
+            feature: math.log((total + 1) / (count + 1)) + 1.0
+            for feature, count in document_frequency.items()
         }
 
     def _vectorise(self, text: str, idf: Dict[str, float]) -> Dict[str, float]:
-        """Create a normalised TF-IDF vector for a text string."""
-        tf: Dict[str, int] = defaultdict(int)
-        feats = self._term_features(text)
-        for f in feats:
-            tf[f] += 1
-        vec = {f: count * idf.get(f, 0.5) for f, count in tf.items()}
-        norm = math.sqrt(sum(v ** 2 for v in vec.values())) or 1.0
-        return {f: v / norm for f, v in vec.items()}
+        term_frequency: Dict[str, int] = defaultdict(int)
+        for feature in self._term_features(text):
+            term_frequency[feature] += 1
+
+        vector = {
+            feature: count * idf.get(feature, 0.5)
+            for feature, count in term_frequency.items()
+        }
+        norm = math.sqrt(sum(value ** 2 for value in vector.values())) or 1.0
+        return {feature: value / norm for feature, value in vector.items()}
 
     @staticmethod
-    def _cosine(a: Dict[str, float], b: Dict[str, float]) -> float:
-        return sum(a.get(k, 0.0) * v for k, v in b.items())
+    def _cosine(left: Dict[str, float], right: Dict[str, float]) -> float:
+        return sum(left.get(key, 0.0) * value for key, value in right.items())
 
-    def _max_similarity_to_vocab(
-        self, candidate: str, ctx_name: str
-    ) -> Tuple[float, str]:
-        """
-        Return (max_cosine_similarity, most_similar_existing_term) for the
-        candidate against all terms in the context vocabulary.
-        """
-        idf = self._idf.get(ctx_name, {})
-        vocab = self._vocab.get(ctx_name, [])
-        if not vocab or not idf:
-            return 0.0, ''
+    def _similarity_to_history(self, candidate: str, history_terms: List[str]) -> Dict[str, object]:
+        if not history_terms:
+            return {
+                'max_similarity': 0.0,
+                'mean_similarity': 0.0,
+                'combined': 0.0,
+                'closest_term': '',
+                'shared_tokens': [],
+            }
 
-        cand_vec = self._vectorise(candidate, idf)
-        best_score = 0.0
-        best_term = ''
-        for existing_term in vocab:
-            ev = self._vectorise(existing_term, idf)
-            score = self._cosine(cand_vec, ev)
-            if score > best_score:
-                best_score = score
-                best_term = existing_term
-        return best_score, best_term
+        idf = self._build_idf(history_terms)
+        candidate_vector = self._vectorise(candidate, idf)
 
-    def _mean_similarity_to_vocab(self, candidate: str, ctx_name: str) -> float:
-        """Mean cosine similarity of candidate against top-20 closest vocab terms."""
-        idf = self._idf.get(ctx_name, {})
-        vocab = self._vocab.get(ctx_name, [])
-        if not vocab or not idf:
-            return 0.0
+        scores: List[Tuple[float, str]] = []
+        for history_term in history_terms:
+            history_vector = self._vectorise(history_term, idf)
+            scores.append(
+                (self._cosine(candidate_vector, history_vector), history_term))
 
-        cand_vec = self._vectorise(candidate, idf)
-        scores = sorted(
-            (self._cosine(cand_vec, self._vectorise(t, idf)) for t in vocab),
-            reverse=True,
+        scores.sort(reverse=True, key=lambda item: item[0])
+        max_similarity, closest_term = scores[0]
+        top_scores = [score for score, _ in scores[:10]]
+        mean_similarity = sum(top_scores) / len(top_scores)
+        combined = 0.7 * max_similarity + 0.3 * mean_similarity
+
+        return {
+            'max_similarity': max_similarity,
+            'mean_similarity': mean_similarity,
+            'combined': combined,
+            'closest_term': closest_term,
+            'shared_tokens': self._shared_word_tokens(candidate, closest_term),
+        }
+
+    def _shared_word_tokens(self, left: str, right: str) -> List[str]:
+        left_tokens = {token for token in self._word_tokens(
+            left) if len(token) >= 3}
+        right_tokens = {token for token in self._word_tokens(
+            right) if len(token) >= 3}
+        return sorted(left_tokens & right_tokens)
+
+    @staticmethod
+    def _url_like_pattern(text: str) -> bool:
+        text_lower = text.lower().strip()
+        return bool(
+            re.search(r"(https?://|www\.|\.com\b|\.org\b|\.net\b|/)", text_lower)
         )
-        top = scores[:20]
-        return sum(top) / len(top) if top else 0.0
 
-    # ── Per-context recommendation ────────────────────────────────────────────
+    def _has_oversized_word(self, text: str) -> bool:
+        return any(len(token) > 25 for token in re.findall(r"[A-Za-z]+", text))
 
-    def _recommend_in_context(self, ctx_name: str, candidate: str) -> Dict:
-        vocab = self._vocab.get(ctx_name, [])
-        idf = self._idf.get(ctx_name, {})
-        cand_lower = candidate.lower().strip()
+    def _forced_exclude_reason(self, related_term: str) -> Optional[str]:
+        if self._url_like_pattern(related_term):
+            return 'Related term looks like a URL or path and should be excluded.'
+        if self._has_oversized_word(related_term):
+            return 'Related term contains a word longer than 25 letters and should be excluded.'
+        return None
 
-        # ── Fast-path: already a known exclusion ──────────────────────────────
-        if cand_lower in self._known_exclusions:
+    def _is_suspicious_fragment_match(self, keyword: str, related_term: str) -> bool:
+        keyword_clean = keyword.upper().strip()
+        related_clean = related_term.upper().strip()
+        if not keyword_clean or keyword_clean == related_clean:
+            return False
+
+        if keyword_clean not in related_clean:
+            return False
+
+        related_tokens = {token.upper()
+                          for token in self._word_tokens(related_term)}
+        if keyword_clean in related_tokens:
+            return False
+
+        return keyword_clean.isdigit() or len(keyword_clean) <= 3
+
+    def _confidence_from_gap(self, winner: float, loser: float) -> float:
+        gap = max(winner - loser, 0.0)
+        return round(min(0.35 + gap * 2.5, 0.99), 3)
+
+    def _recommend_pair(self, keyword: str, related_term: str) -> Dict[str, object]:
+        keyword_clean = str(keyword).upper().strip()
+        related_clean = str(related_term).upper().strip()
+        include_terms = self._include_history.get(keyword_clean, [])
+        exclude_terms = self._exclude_history.get(keyword_clean, [])
+
+        forced_exclude_reason = self._forced_exclude_reason(related_clean)
+        if forced_exclude_reason:
             return {
-                'action':     'Exclude',
+                'keyword': keyword_clean,
+                'related_term': related_clean,
+                'action': 'Exclude',
+                'confidence': 0.99,
+                'reason': forced_exclude_reason,
+                'closest_include_term': '',
+                'closest_exclude_term': '',
+                'include_max_similarity': 0.0,
+                'include_mean_similarity': 0.0,
+                'exclude_max_similarity': 0.0,
+                'exclude_mean_similarity': 0.0,
+            }
+
+        if related_clean in exclude_terms:
+            return {
+                'keyword': keyword_clean,
+                'related_term': related_clean,
+                'action': 'Exclude',
                 'confidence': 1.0,
-                'reason':     'Term is already in the Exclusion flat file.',
-                'scores': {
-                    'max_similarity':  0.0,
-                    'mean_similarity': 0.0,
-                    'combined': -1.0,
-                },
+                'reason': 'Exact match found in ExclusionDictionary for this keyword.',
+                'closest_include_term': '',
+                'closest_exclude_term': related_clean,
+                'include_max_similarity': 0.0,
+                'include_mean_similarity': 0.0,
+                'exclude_max_similarity': 1.0,
+                'exclude_mean_similarity': 1.0,
             }
 
-        # ── Fast-path: not enough context to decide ───────────────────────────
-        if len(vocab) < MIN_CONTEXT_TERMS:
+        if related_clean in include_terms:
             return {
-                'action':     'Exclude',
-                'confidence': 0.1,
+                'keyword': keyword_clean,
+                'related_term': related_clean,
+                'action': 'Include',
+                'confidence': 1.0,
+                'reason': 'Exact match found in InclusionDictionary for this keyword.',
+                'closest_include_term': related_clean,
+                'closest_exclude_term': '',
+                'include_max_similarity': 1.0,
+                'include_mean_similarity': 1.0,
+                'exclude_max_similarity': 0.0,
+                'exclude_mean_similarity': 0.0,
+            }
+
+        if self._is_suspicious_fragment_match(keyword_clean, related_clean):
+            return {
+                'keyword': keyword_clean,
+                'related_term': related_clean,
+                'action': 'Exclude',
+                'confidence': 0.98,
                 'reason': (
-                    f"Context '{ctx_name}' has fewer than {MIN_CONTEXT_TERMS} "
-                    f"existing terms — cannot compute similarity reliably."
+                    'Related term appears to contain the keyword only as a short '
+                    'fragment/code match, which is usually a false positive.'
                 ),
-                'scores': {
-                    'max_similarity':  0.0,
-                    'mean_similarity': 0.0,
-                    'combined':        0.0,
-                },
+                'closest_include_term': '',
+                'closest_exclude_term': '',
+                'include_max_similarity': 0.0,
+                'include_mean_similarity': 0.0,
+                'exclude_max_similarity': 0.0,
+                'exclude_mean_similarity': 0.0,
             }
 
-        # ── Similarity signals ────────────────────────────────────────────────
-        max_sim, closest_term = self._max_similarity_to_vocab(
-            candidate, ctx_name)
-        mean_sim = self._mean_similarity_to_vocab(candidate, ctx_name)
+        if not include_terms and not exclude_terms:
+            return {
+                'keyword': keyword_clean,
+                'related_term': related_clean,
+                'action': 'Exclude',
+                'confidence': 0.15,
+                'reason': 'No historical include/exclude entries exist for this keyword.',
+                'closest_include_term': '',
+                'closest_exclude_term': '',
+                'include_max_similarity': 0.0,
+                'include_mean_similarity': 0.0,
+                'exclude_max_similarity': 0.0,
+                'exclude_mean_similarity': 0.0,
+            }
 
-        # Weighted combination (max catches exact/near matches; mean gauges
-        # general topical overlap)
-        combined = 0.65 * max_sim + 0.35 * mean_sim
+        include_stats = self._similarity_to_history(
+            related_clean, include_terms)
+        exclude_stats = self._similarity_to_history(
+            related_clean, exclude_terms)
 
-        # ── Decision ──────────────────────────────────────────────────────────
-        if combined >= INCLUDE_SIMILARITY_THRESHOLD:
-            action = 'Include'
-            confidence = round(
-                min(combined / max(INCLUDE_SIMILARITY_THRESHOLD * 3, 0.001), 1.0), 3)
+        include_score = float(include_stats['combined'])
+        exclude_score = float(exclude_stats['combined'])
+
+        if exclude_score >= MATCH_SIMILARITY_THRESHOLD and (
+            exclude_score >= include_score + DECISION_MARGIN or
+            float(exclude_stats['max_similarity']) >= 0.5
+        ):
             reason = (
-                f"Similar to existing {ctx_name} term '{closest_term}' "
-                f"(max sim: {max_sim:.2f}, mean sim: {mean_sim:.2f}). "
-                f"Recommend adding to {CONTEXTS[ctx_name]['description']}."
+                f"Closer to excluded term '{exclude_stats['closest_term']}' "
+                f"(score: {exclude_score:.2f}) than to included history "
+                f"(score: {include_score:.2f})."
             )
-        else:
-            action = 'Exclude'
-            confidence = round(min((INCLUDE_SIMILARITY_THRESHOLD - combined) /
-                                   max(INCLUDE_SIMILARITY_THRESHOLD, 0.001), 1.0), 3)
+            if exclude_stats['shared_tokens']:
+                reason += f" Shared tokens with excluded history: {', '.join(exclude_stats['shared_tokens'])}."
+            return {
+                'keyword': keyword_clean,
+                'related_term': related_clean,
+                'action': 'Exclude',
+                'confidence': self._confidence_from_gap(exclude_score, include_score),
+                'reason': reason,
+                'closest_include_term': str(include_stats['closest_term']),
+                'closest_exclude_term': str(exclude_stats['closest_term']),
+                'include_max_similarity': round(float(include_stats['max_similarity']), 4),
+                'include_mean_similarity': round(float(include_stats['mean_similarity']), 4),
+                'exclude_max_similarity': round(float(exclude_stats['max_similarity']), 4),
+                'exclude_mean_similarity': round(float(exclude_stats['mean_similarity']), 4),
+            }
+
+        if include_score >= MATCH_SIMILARITY_THRESHOLD and (
+            include_score >= exclude_score + DECISION_MARGIN and (
+                bool(include_stats['shared_tokens']) or
+                float(include_stats['max_similarity']) >= 0.45
+            )
+        ):
             reason = (
-                f"Low similarity to {ctx_name} vocabulary "
-                f"(max sim: {max_sim:.2f}, mean sim: {mean_sim:.2f}, "
-                f"threshold: {INCLUDE_SIMILARITY_THRESHOLD}). "
-                f"Term does not appear relevant to "
-                f"{CONTEXTS[ctx_name]['description']}."
+                f"Closer to included term '{include_stats['closest_term']}' "
+                f"(score: {include_score:.2f}) than to excluded history "
+                f"(score: {exclude_score:.2f})."
             )
+            if include_stats['shared_tokens']:
+                reason += f" Shared tokens with included history: {', '.join(include_stats['shared_tokens'])}."
+            return {
+                'keyword': keyword_clean,
+                'related_term': related_clean,
+                'action': 'Include',
+                'confidence': self._confidence_from_gap(include_score, exclude_score),
+                'reason': reason,
+                'closest_include_term': str(include_stats['closest_term']),
+                'closest_exclude_term': str(exclude_stats['closest_term']),
+                'include_max_similarity': round(float(include_stats['max_similarity']), 4),
+                'include_mean_similarity': round(float(include_stats['mean_similarity']), 4),
+                'exclude_max_similarity': round(float(exclude_stats['max_similarity']), 4),
+                'exclude_mean_similarity': round(float(exclude_stats['mean_similarity']), 4),
+            }
 
         return {
-            'action':     action,
-            'confidence': confidence,
-            'reason':     reason,
-            'scores': {
-                'max_similarity':  round(max_sim, 4),
-                'mean_similarity': round(mean_sim, 4),
-                'combined':        round(combined, 4),
-            },
+            'keyword': keyword_clean,
+            'related_term': related_clean,
+            'action': 'Exclude',
+            'confidence': self._confidence_from_gap(max(exclude_score, include_score), min(exclude_score, include_score)),
+            'reason': (
+                'No strong positive evidence from historical inclusion entries. '
+                f"Closest include score: {include_score:.2f}; closest exclude score: {exclude_score:.2f}."
+            ),
+            'closest_include_term': str(include_stats['closest_term']),
+            'closest_exclude_term': str(exclude_stats['closest_term']),
+            'include_max_similarity': round(float(include_stats['max_similarity']), 4),
+            'include_mean_similarity': round(float(include_stats['mean_similarity']), 4),
+            'exclude_max_similarity': round(float(exclude_stats['max_similarity']), 4),
+            'exclude_mean_similarity': round(float(exclude_stats['mean_similarity']), 4),
         }
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    def _coerce_candidate(self, candidate) -> Tuple[str, str]:
+        if isinstance(candidate, dict):
+            keyword = candidate.get('Keyword', candidate.get('keyword', ''))
+            related_term = candidate.get(
+                'Related Term', candidate.get('related_term', ''))
+            return str(keyword), str(related_term)
+        if isinstance(candidate, (list, tuple)) and len(candidate) >= 2:
+            return str(candidate[0]), str(candidate[1])
+        return str(candidate), str(candidate)
 
-    def recommend(self, candidate: str) -> Dict:
-        """
-        Recommend Include / Exclude for `candidate` in all three dictionary
-        contexts.
-
-        Returns
-        -------
-        dict with shape::
-
-            {
-              'term': 'climate transition',
-              'contexts': {
-                'internalization':  {
-                    'action':     'Include',
-                    'confidence': 0.84,       # 0 = uncertain, 1 = very confident
-                    'reason':     'Similar to existing term ...',
-                    'scores': {
-                        'max_similarity':  0.91,
-                        'mean_similarity': 0.42,
-                        'combined':        0.74,
-                    }
-                },
-                'exposure_pathway': { ... },
-                'mitigation':       { ... },
-              }
-            }
-        """
+    def recommend(self, keyword: str, related_term: Optional[str] = None) -> Dict[str, object]:
         if not self._loaded:
-            logger.warning("Engine not loaded — call load() first.")
+            logger.warning('Engine not loaded — call load() first.')
+        if related_term is None:
+            related_term = keyword
+        return self._recommend_pair(keyword, related_term)
 
-        return {
-            'term': candidate,
-            'contexts': {
-                ctx: self._recommend_in_context(ctx, candidate)
-                for ctx in CONTEXTS
-            },
-        }
-
-    def recommend_batch(self, candidates: List[str]) -> List[Dict]:
-        """
-        Recommend Include / Exclude for a list of candidate terms.
-
-        Parameters
-        ----------
-        candidates : list of str
-
-        Returns
-        -------
-        list of recommend() dicts, one per candidate.
-        """
-        return [self.recommend(c) for c in candidates]
-
-    # ── Convenience: flat summary for DataFrame display ───────────────────────
-
-    def recommend_to_rows(self, candidates: List[str]) -> List[Dict]:
-        """
-        Like recommend_batch() but returns one flat row per
-        (candidate, context) combination — easy to load into a DataFrame.
-
-        Columns: term, context, action, confidence, reason,
-                 max_similarity, mean_similarity, combined
-        """
-        rows: List[Dict] = []
-        for rec in self.recommend_batch(candidates):
-            for ctx_name, ctx_rec in rec['contexts'].items():
-                rows.append({
-                    'term':            rec['term'],
-                    'context':         ctx_name,
-                    'action':          ctx_rec['action'],
-                    'confidence':      ctx_rec['confidence'],
-                    'reason':          ctx_rec['reason'],
-                    'max_similarity':  ctx_rec['scores']['max_similarity'],
-                    'mean_similarity': ctx_rec['scores']['mean_similarity'],
-                    'combined':        ctx_rec['scores']['combined'],
-                })
+    def recommend_batch(self, candidates) -> List[Dict[str, object]]:
+        rows: List[Dict[str, object]] = []
+        for candidate in candidates:
+            keyword, related_term = self._coerce_candidate(candidate)
+            rows.append(self.recommend(keyword, related_term))
         return rows
+
+    def recommend_to_rows(self, candidates) -> List[Dict[str, object]]:
+        return self.recommend_batch(candidates)
