@@ -160,6 +160,10 @@ def _normalize_roles(raw_roles: Any, default_roles: Optional[list[str]] = None) 
     return list(default_roles or [])
 
 
+def _normalize_login_identifier(value: Optional[str]) -> str:
+    return str(value or "").strip().lower()
+
+
 def _normalize_email_address(email: Optional[str], required: bool = False) -> Optional[str]:
     normalized_email = str(email or "").strip().lower()
     if not normalized_email:
@@ -443,7 +447,8 @@ def _configured_users() -> list[dict[str, Any]]:
 
     legacy_user = _legacy_user_record()
     if legacy_user:
-        users_by_username[legacy_user["username"].lower()] = legacy_user
+        users_by_username.setdefault(
+            legacy_user["username"].lower(), legacy_user)
 
     return list(users_by_username.values())
 
@@ -463,11 +468,21 @@ def _password_matches(provided_password: str, user_record: dict[str, Any]) -> bo
     return hmac.compare_digest(provided_password, configured_password)
 
 
+def _user_matches_identifier(user_record: dict[str, Any], identifier: str) -> bool:
+    normalized_identifier = _normalize_login_identifier(identifier)
+    if not normalized_identifier:
+        return False
+
+    username = _normalize_login_identifier(user_record.get("username"))
+    email = _normalize_login_identifier(user_record.get("email"))
+    return normalized_identifier == username or (
+        bool(email) and normalized_identifier == email
+    )
+
+
 def _authenticate_user(username: str, password: str) -> Optional[dict[str, Any]]:
-    candidate_username = username.strip()
     for user_record in _configured_users():
-        configured_username = str(user_record.get("username", ""))
-        if not hmac.compare_digest(candidate_username, configured_username):
+        if not _user_matches_identifier(user_record, username):
             continue
         if not bool(user_record.get("is_active", True)):
             continue
@@ -477,9 +492,8 @@ def _authenticate_user(username: str, password: str) -> Optional[dict[str, Any]]
 
 
 def _get_user_record(username: str) -> Optional[dict[str, Any]]:
-    candidate_username = username.strip().lower()
     for user_record in _configured_users():
-        if user_record["username"].strip().lower() == candidate_username:
+        if _user_matches_identifier(user_record, username):
             return user_record
     return None
 
