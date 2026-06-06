@@ -27,7 +27,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+from Utilities.auth import require_login  # noqa: E402
 from Utilities.mobile import inject_mobile_css  # noqa: E402
+require_login(["admin", "validator"])
 inject_mobile_css()
 
 # Page header

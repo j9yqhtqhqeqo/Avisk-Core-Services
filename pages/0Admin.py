@@ -30,7 +30,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from Utilities.auth import require_login  # noqa: E402
 from Utilities.mobile import inject_mobile_css  # noqa: E402
+require_login(["admin"])
 inject_mobile_css()
 
 st.title("⚙️ Admin — Service Management")

@@ -39,6 +39,10 @@ st.set_page_config(
     layout="wide",
 )
 
+from Utilities.auth import require_login  # noqa: E402
+
+require_login()
+
 st.title("👔 CEO Insights")
 st.caption(
     "Identify S&P 500 CEOs by year and collect their significant public statements.")

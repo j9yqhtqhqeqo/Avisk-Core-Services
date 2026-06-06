@@ -1,3 +1,4 @@
+from Utilities.auth import require_login
 from Utilities.mobile import inject_mobile_css
 from version import get_version_string, get_build_string, get_build_date_string, ENVIRONMENT
 from Utilities.Lookups import Lookups, Processing_Type
@@ -16,6 +17,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+require_login()
 inject_mobile_css()
 
 

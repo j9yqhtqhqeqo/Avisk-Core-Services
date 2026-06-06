@@ -194,7 +194,7 @@ if [ -f /opt/avisk/config/.env ]; then
 fi
 # Add new BUILD_ID and BUILD_DATE
 echo "BUILD_ID=$BUILD_ID" | sudo tee -a /opt/avisk/config/.env > /dev/null
-echo "BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S")" | sudo tee -a /opt/avisk/config/.env > /dev/null
+echo "BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" | sudo tee -a /opt/avisk/config/.env > /dev/null
 sudo chown avisk:avisk /opt/avisk/config/.env
 
 # Install/update Python dependencies
