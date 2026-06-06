@@ -193,6 +193,19 @@ def generate_temporary_password(length: int = 14) -> str:
     return "".join(password_chars)
 
 
+def _validate_password_strength(password: str) -> None:
+    if len(password) < 12:
+        raise ValueError("Password must be at least 12 characters long.")
+    if not re.search(r"[A-Z]", password):
+        raise ValueError("Password must contain at least one uppercase letter.")
+    if not re.search(r"[a-z]", password):
+        raise ValueError("Password must contain at least one lowercase letter.")
+    if not re.search(r"\d", password):
+        raise ValueError("Password must contain at least one number.")
+    if not re.search(r"[^A-Za-z0-9]", password):
+        raise ValueError("Password must contain at least one special character.")
+
+
 def _normalize_user_record(record: dict[str, Any], default_roles: Optional[list[str]] = None) -> Optional[dict[str, Any]]:
     username = str(record.get("username", "")).strip()
     if not username:
@@ -805,8 +818,7 @@ def register_invited_user(token: str, username: str, password: str) -> dict[str,
     normalized_username = username.strip()
     if not normalized_username:
         raise ValueError("Username is required.")
-    if len(password) < 8:
-        raise ValueError("Password must be at least 8 characters long.")
+    _validate_password_strength(password)
 
     existing_users = get_user_directory()
     if any(user["username"].lower() == normalized_username.lower() for user in existing_users):
@@ -853,8 +865,7 @@ def create_managed_user(
         raise ValueError("Username is required.")
     if password is None:
         password = generate_temporary_password()
-    if len(password) < 8:
-        raise ValueError("Password must be at least 8 characters long.")
+    _validate_password_strength(password)
 
     existing_users = get_user_directory()
     if any(user["username"].lower() == normalized_username.lower() for user in existing_users):
@@ -887,8 +898,7 @@ def set_password(username: str, new_password: str, force_change_next_login: bool
     normalized_username = username.strip()
     if not normalized_username:
         raise ValueError("Username is required.")
-    if len(new_password) < 8:
-        raise ValueError("Password must be at least 8 characters long.")
+    _validate_password_strength(new_password)
 
     existing_user = _get_user_record(normalized_username)
     if not existing_user:
