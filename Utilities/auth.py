@@ -197,13 +197,16 @@ def _validate_password_strength(password: str) -> None:
     if len(password) < 12:
         raise ValueError("Password must be at least 12 characters long.")
     if not re.search(r"[A-Z]", password):
-        raise ValueError("Password must contain at least one uppercase letter.")
+        raise ValueError(
+            "Password must contain at least one uppercase letter.")
     if not re.search(r"[a-z]", password):
-        raise ValueError("Password must contain at least one lowercase letter.")
+        raise ValueError(
+            "Password must contain at least one lowercase letter.")
     if not re.search(r"\d", password):
         raise ValueError("Password must contain at least one number.")
     if not re.search(r"[^A-Za-z0-9]", password):
-        raise ValueError("Password must contain at least one special character.")
+        raise ValueError(
+            "Password must contain at least one special character.")
 
 
 def _normalize_user_record(record: dict[str, Any], default_roles: Optional[list[str]] = None) -> Optional[dict[str, Any]]:
