@@ -45,6 +45,48 @@ class DictionaryManager:
     def __init__(self) -> None:
         pass  # Files are directly accessible via FUSE mount
 
+    def _parse_validation_line(self, line):
+        parts = [part.strip() for part in line.strip().split(':')]
+        if len(parts) < 3:
+            return None
+
+        return {
+            'key': parts[0].upper(),
+            'value': parts[1].upper(),
+            'action': parts[2].upper(),
+            'category': parts[3] if len(parts) >= 4 else ''
+        }
+
+    def _load_validation_rows(self):
+        if not os.path.isfile(NEW_VALIDATION_FILE_PATH):
+            return []
+
+        rows = []
+        seen = set()
+
+        with open(NEW_VALIDATION_FILE_PATH, 'r') as f:
+            for line in f:
+                if not line.strip():
+                    continue
+
+                row = self._parse_validation_line(line)
+                if row is None:
+                    continue
+
+                row_key = (
+                    row['key'],
+                    row['value'],
+                    row['action'],
+                    row['category']
+                )
+                if row_key in seen:
+                    continue
+
+                seen.add(row_key)
+                rows.append(row)
+
+        return rows
+
     def _update_Dictionary_Items(self, new_dictionary_item_path, current_dictionary_item_path, bkp_file_path):
         # Files are directly accessible via FUSE mount
         # Ensure current dictionary exists
@@ -126,30 +168,28 @@ class DictionaryManager:
         include_items = dict()
         exclude_items = dict()
 
-        if not os.path.isfile(NEW_VALIDATION_FILE_PATH):
+        rows = self._load_validation_rows()
+
+        if not rows:
             return None, None
 
-        with open(NEW_VALIDATION_FILE_PATH, 'r') as f:
-            for line in f:
-                if line.strip():
-                    parts = line.strip().split(':')
-                    if len(parts) >= 3:
-                        key = parts[0].upper().strip()
-                        value = parts[1].upper().strip()
-                        action = parts[2].upper().strip()
+        for row in rows:
+            key = row['key']
+            value = row['value']
+            action = row['action']
 
-                        target_dict = include_items if action == 'INCLUDE' else exclude_items
+            target_dict = include_items if action == 'INCLUDE' else exclude_items
 
-                        # Add to appropriate dictionary
-                        try:
-                            current_values = target_dict[key]
-                            if isinstance(current_values, list):
-                                if value not in current_values:
-                                    current_values.append(value)
-                            elif value != current_values:
-                                target_dict[key] = [current_values, value]
-                        except KeyError:
-                            target_dict[key] = value
+            # Add to appropriate dictionary
+            try:
+                current_values = target_dict[key]
+                if isinstance(current_values, list):
+                    if value not in current_values:
+                        current_values.append(value)
+                elif value != current_values:
+                    target_dict[key] = [current_values, value]
+            except KeyError:
+                target_dict[key] = value
 
         return include_items, exclude_items
 
@@ -228,51 +268,58 @@ class DictionaryManager:
             return
 
         # Process the validation file
-        include_items, exclude_items = self._process_validation_file()
+        validation_rows = self._load_validation_rows()
 
-        if not include_items and not exclude_items:
+        if not validation_rows:
             print("No valid keywords found in validation file")
             return
 
+        include_rows = [
+            row for row in validation_rows if row['action'] == 'INCLUDE'
+        ]
+        exclude_rows = [
+            row for row in validation_rows if row['action'] == 'EXCLUDE'
+        ]
+
         # Write include items to display file
-        if include_items:
+        if include_rows:
             if os.path.isfile(NEW_INCLUDE_DITCTORY_ITEM_PATH):
                 os.remove(NEW_INCLUDE_DITCTORY_ITEM_PATH)
 
             log_generator = logGenerator(NEW_INCLUDE_DITCTORY_ITEM_PATH)
-            new_sorted_dict = dict(sorted(include_items.items()))
+            include_rows = sorted(
+                include_rows,
+                key=lambda row: (row['key'], row['value'], row['category'])
+            )
 
-            for key, valuelist in new_sorted_dict.items():
-                if isinstance(valuelist, list):
-                    for value in valuelist:
-                        log_generator.log_details(
-                            key.strip() + ':' + str(value), False)
-                else:
-                    log_generator.log_details(
-                        key.strip() + ':' + str(valuelist), False)
+            for row in include_rows:
+                line = row['key'].strip() + ':' + str(row['value'])
+                if row['category']:
+                    line += ':' + row['category']
+                log_generator.log_details(line, False)
 
             print(
-                f'Inclusion keywords prepared for validation ({len(include_items)} keywords)')
+                f'Inclusion keywords prepared for validation ({len(include_rows)} keywords)')
 
         # Write exclude items to display file
-        if exclude_items:
+        if exclude_rows:
             if os.path.isfile(NEW_EXCLUDE_DITCTORY_ITEM_PATH):
                 os.remove(NEW_EXCLUDE_DITCTORY_ITEM_PATH)
 
             log_generator = logGenerator(NEW_EXCLUDE_DITCTORY_ITEM_PATH)
-            new_sorted_dict = dict(sorted(exclude_items.items()))
+            exclude_rows = sorted(
+                exclude_rows,
+                key=lambda row: (row['key'], row['value'], row['category'])
+            )
 
-            for key, valuelist in new_sorted_dict.items():
-                if isinstance(valuelist, list):
-                    for value in valuelist:
-                        log_generator.log_details(
-                            key.strip() + ':' + str(value), False)
-                else:
-                    log_generator.log_details(
-                        key.strip() + ':' + str(valuelist), False)
+            for row in exclude_rows:
+                line = row['key'].strip() + ':' + str(row['value'])
+                if row['category']:
+                    line += ':' + row['category']
+                log_generator.log_details(line, False)
 
             print(
-                f'Exclusion keywords prepared for validation ({len(exclude_items)} keywords)')
+                f'Exclusion keywords prepared for validation ({len(exclude_rows)} keywords)')
 
 
 class ContextResolver:

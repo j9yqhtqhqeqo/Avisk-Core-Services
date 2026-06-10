@@ -289,6 +289,25 @@ def mark_validation_pending(category_key: str, selections: list[tuple[str, int |
         return False, str(exc), 0
 
 
+def mark_validation_pending_by_category(selection_map: dict[str, list[tuple[str, int | str]]]) -> tuple[bool, str, int]:
+    total_updated_count = 0
+    for category_key, selections in selection_map.items():
+        if not selections:
+            continue
+        success, error, updated_count = mark_validation_pending(
+            category_key,
+            selections,
+        )
+        if not success:
+            return False, error, total_updated_count
+        total_updated_count += updated_count
+
+    if total_updated_count == 0:
+        return False, 'Select at least one company and year combination.', 0
+
+    return True, '', total_updated_count
+
+
 def render_not_ready_validation_tab() -> None:
     st.subheader('Manage Validation List')
     st.caption(
@@ -300,14 +319,29 @@ def render_not_ready_validation_tab() -> None:
             f"⚠️ Not Ready validation data unavailable: {combinations['error']}")
         return
 
-    category_options = list(VALIDATION_CATEGORY_CONFIG.keys())
-    selected_category = st.selectbox(
-        'Validation category',
-        category_options,
-        format_func=lambda category_key: VALIDATION_CATEGORY_CONFIG[category_key]['label'],
-    )
+    st.caption('Validation category filter')
+    filter_columns = st.columns(len(VALIDATION_CATEGORY_CONFIG))
+    selected_categories = []
+    for index, category_key in enumerate(VALIDATION_CATEGORY_CONFIG.keys()):
+        is_selected = filter_columns[index].checkbox(
+            VALIDATION_CATEGORY_CONFIG[category_key]['label'],
+            value=True,
+            key=f'{category_key}_manage_validation_filter',
+        )
+        if is_selected:
+            selected_categories.append(category_key)
 
-    selected_rows = combinations['categories'][selected_category]
+    selected_rows = []
+    for category_key in selected_categories:
+        for row in combinations['categories'][category_key]:
+            selected_rows.append({
+                'category_key': category_key,
+                'category_label': VALIDATION_CATEGORY_CONFIG[category_key]['label'],
+                'company_name': row['company_name'],
+                'year': row['year'],
+                'document_count': row['document_count'],
+            })
+
     if not selected_rows:
         st.info('No Not Ready documents were found for the selected category.')
         return
@@ -317,9 +351,13 @@ def render_not_ready_validation_tab() -> None:
     selection_options = []
     selection_lookup = {}
     for row in selected_rows:
-        option_label = f"{row['company_name']} ({row['year']}) - {row['document_count']} document(s)"
+        option_label = (
+            f"{row['category_label']} | {row['company_name']} "
+            f"({row['year']}) - {row['document_count']} document(s)"
+        )
         selection_options.append(option_label)
         selection_lookup[option_label] = (
+            row['category_key'],
             str(row['company_name']),
             row['year'],
             int(row['document_count']),
@@ -328,15 +366,15 @@ def render_not_ready_validation_tab() -> None:
     selected_options = st.multiselect(
         'Company and year combinations',
         selection_options,
-        key=f'{selected_category}_not_ready_combinations',
+        key='manage_validation_not_ready_combinations',
     )
 
     selected_combinations = [
-        (selection_lookup[option][0], selection_lookup[option][1])
+        selection_lookup[option]
         for option in selected_options
     ]
     selected_document_count = sum(
-        selection_lookup[option][2] for option in selected_options
+        selection_lookup[option][3] for option in selected_options
     )
 
     if selected_options:
@@ -344,14 +382,19 @@ def render_not_ready_validation_tab() -> None:
             f"{selected_document_count} document(s) across {len(selected_options)} company/year combination(s) will move from Not Ready to Pending."
         )
 
-    if st.button('Update selected combinations to Pending', key=f'{selected_category}_mark_pending'):
-        success, error, updated_count = mark_validation_pending(
-            selected_category,
-            selected_combinations,
+    if st.button('Update selected combinations to Pending', key='manage_validation_mark_pending'):
+        selection_map: dict[str, list[tuple[str, int | str]]] = {}
+        for category_key, company_name, year, _document_count in selected_combinations:
+            selection_map.setdefault(category_key, []).append(
+                (company_name, year)
+            )
+
+        success, error, updated_count = mark_validation_pending_by_category(
+            selection_map,
         )
         if success:
             st.success(
-                f"Updated {updated_count} document(s) to Pending across {len(selected_options)} company/year combination(s) in {VALIDATION_CATEGORY_CONFIG[selected_category]['label']}."
+                f"Updated {updated_count} document(s) to Pending across {len(selected_options)} company/year combination(s)."
             )
             st.rerun()
         else:
@@ -506,10 +549,11 @@ class StartUpClass:
 
         st.text("Select Keyword Validation Category:")
         self.ExposurePathwaySelected = st.checkbox(
-            "Exposure Pathway", value=False)
+            "Exposure Pathway", value=True, disabled=True)
         self.InternalizationSelected = st.checkbox(
-            "Internalization", value=False)
-        self.MitigationSelected = st.checkbox("Mitigation", value=False)
+            "Internalization", value=True, disabled=True)
+        self.MitigationSelected = st.checkbox(
+            "Mitigation", value=True, disabled=True)
 
         st.button('Run Validations',
                   on_click=self.run_keyword_validations)

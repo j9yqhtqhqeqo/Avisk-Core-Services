@@ -89,6 +89,7 @@ class keyWordSearchManager:
         self.validation_mode = False
         self.retry_required_for_related_keywords = False
         self.is_related_keywords_need_to_be_addressed = False
+        self.current_validation_category = ''
 
         self.insightDBMgr = InsightGeneratorDBManager()
 
@@ -144,8 +145,11 @@ class keyWordSearchManager:
 
             else:
                 # Write to validation file with INCLUDE as default (user will select in UI)
+                validation_entry = keyword + ':' + related_keyword + ':INCLUDE'
+                if self.current_validation_category:
+                    validation_entry += ':' + self.current_validation_category
                 self.validation_log_generator.log_details(
-                    keyword + ':' + related_keyword + ':INCLUDE', False)
+                    validation_entry, False)
                 exit_loop = True
 
     def _address_related_keywords(self):
@@ -171,6 +175,7 @@ class keyWordSearchManager:
         telemetry.add_metric("Dictionary Type", "Exposure Pathway")
 
         self.validation_mode = validation_mode
+        self.current_validation_category = 'Exposure Pathway'
         self.retry_required_for_related_keywords = False
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
@@ -423,6 +428,7 @@ class keyWordSearchManager:
         telemetry.add_metric("Dictionary Type", "Internalization")
 
         self.validation_mode = validation_mode
+        self.current_validation_category = 'Internalization'
         # self.keyword_search_logfile_init()
         self.proximity_entity_list = []
         self.document_list = document_List
@@ -683,6 +689,7 @@ class keyWordSearchManager:
 
         # self.keyword_search_logfile_init()
         self.validation_mode = validation_mode
+        self.current_validation_category = 'Mitigation'
         self.proximity_entity_list = []
         self.document_list = document_List
         if (len(self.document_list) == 0):
@@ -1037,7 +1044,6 @@ class Insight_Generator(keyWordSearchManager):
         insights_genetated = len(insightList)
         self.total_insights_generated += insights_genetated
         # print("Total Insights generated:" + str(insights_genetated))
-
         if (insights_genetated > 0):
 
             try:

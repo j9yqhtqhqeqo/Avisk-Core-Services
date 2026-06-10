@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 import datetime as dt
 import os
+import psycopg2
+import psycopg2.extras
 sys.path.append(str(Path(sys.argv[0]).resolve().parent.parent))
 
 try:
@@ -18,6 +20,51 @@ try:
 except Exception:
     _db_conn_str = None
     _DB_AVAILABLE = False
+
+
+@st.cache_data(show_spinner=False)
+def load_keyword_category_map(db_conn_str):
+    if not db_conn_str:
+        return {}
+
+    category_queries = {
+        'Exposure Pathway': "SELECT keywords FROM t_exposure_pathway_dictionary",
+        'Internalization': "SELECT keywords FROM t_internalization_dictionary",
+        'Mitigation': "SELECT keywords FROM t_mitigation",
+    }
+
+    category_map = {}
+    connection = None
+
+    try:
+        connection = psycopg2.connect(db_conn_str)
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        for category, query in category_queries.items():
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+            for row in rows:
+                keywords = row.get('keywords') if hasattr(row, 'get') else row['keywords']
+                if not keywords:
+                    continue
+
+                for keyword in str(keywords).split(','):
+                    normalized_keyword = keyword.strip().upper()
+                    if not normalized_keyword:
+                        continue
+
+                    category_map.setdefault(normalized_keyword, set()).add(category)
+
+        return {
+            keyword: ' / '.join(sorted(categories))
+            for keyword, categories in category_map.items()
+        }
+    except Exception:
+        return {}
+    finally:
+        if connection is not None:
+            connection.close()
 
 # Configure page
 st.set_page_config(
@@ -45,6 +92,15 @@ class StartUpClass:
             st.session_state.terms_df = None
         if 'terms_loaded' not in st.session_state:
             st.session_state.terms_loaded = False
+
+        self.keyword_category_map = load_keyword_category_map(
+            _db_conn_str) if _DB_AVAILABLE else {}
+
+    def _resolve_category(self, keyword, category):
+        if category:
+            return category
+
+        return self.keyword_category_map.get(keyword.strip().upper(), '')
 
     def process_include_exclude_terms(self, DebugMode=False):
         try:
@@ -81,10 +137,14 @@ class StartUpClass:
                 for line in f:
                     if line.strip():
                         parts = line.strip().split(':', 1)
-                        if len(parts) == 2:
+                        if len(parts) >= 2:
                             terms_data.append({
                                 'Keyword': parts[0].strip(),
                                 'Related Term': parts[1].strip(),
+                                'Category': self._resolve_category(
+                                    parts[0].strip(),
+                                    parts[2].strip() if len(parts) >= 3 else ''
+                                ),
                                 'Action': 'Include'
                             })
 
@@ -94,14 +154,19 @@ class StartUpClass:
                 for line in f:
                     if line.strip():
                         parts = line.strip().split(':', 1)
-                        if len(parts) == 2:
+                        if len(parts) >= 2:
                             # Check if this term already exists from include file
                             existing = next((t for t in terms_data if t['Keyword'] == parts[0].strip(
-                            ) and t['Related Term'] == parts[1].strip()), None)
+                            ) and t['Related Term'] == parts[1].strip()
+                                and t.get('Category', '') == (parts[2].strip() if len(parts) >= 3 else '')), None)
                             if not existing:
                                 terms_data.append({
                                     'Keyword': parts[0].strip(),
                                     'Related Term': parts[1].strip(),
+                                    'Category': self._resolve_category(
+                                        parts[0].strip(),
+                                        parts[2].strip() if len(parts) >= 3 else ''
+                                    ),
                                     'Action': 'Exclude'
                                 })
 
@@ -121,12 +186,18 @@ class StartUpClass:
         # Write include file
         with open(include_path, 'w') as f:
             for _, row in include_terms.iterrows():
-                f.write(f"{row['Keyword']}:{row['Related Term']}\n")
+                line = f"{row['Keyword']}:{row['Related Term']}"
+                if 'Category' in row and str(row['Category']).strip():
+                    line += f":{row['Category']}"
+                f.write(f"{line}\n")
 
         # Write exclude file
         with open(exclude_path, 'w') as f:
             for _, row in exclude_terms.iterrows():
-                f.write(f"{row['Keyword']}:{row['Related Term']}\n")
+                line = f"{row['Keyword']}:{row['Related Term']}"
+                if 'Category' in row and str(row['Category']).strip():
+                    line += f":{row['Category']}"
+                f.write(f"{line}\n")
 
         return len(include_terms), len(exclude_terms)
 
@@ -137,6 +208,7 @@ class StartUpClass:
         **Instructions:** Review the keywords below and decide whether each should be **Included** or **Excluded**.
         - **Include**: Add to InclusionDictionary (term is considered a match)
         - **Exclude**: Add to ExclusionDictionary (term is filtered out)
+        - **Category**: Shows whether the keyword came from Exposure Pathway, Internalization, or Mitigation validation
         """)
 
         # Load terms button
@@ -163,6 +235,12 @@ class StartUpClass:
                     "Related Term": st.column_config.TextColumn(
                         "Related Term",
                         help="The related term found in validation",
+                        disabled=True,
+                        width="medium"
+                    ),
+                    "Category": st.column_config.TextColumn(
+                        "Category",
+                        help="Validation category that produced this keyword",
                         disabled=True,
                         width="medium"
                     ),
@@ -236,6 +314,17 @@ class StartUpClass:
                             rows = engine.recommend_to_rows(candidates)
 
                         rec_df = pd.DataFrame(rows)
+                        rec_df = rec_df.merge(
+                            candidates_df[['Keyword', 'Related Term', 'Category']].rename(
+                                columns={
+                                    'Keyword': 'keyword',
+                                    'Related Term': 'related_term',
+                                    'Category': 'category',
+                                }
+                            ),
+                            on=['keyword', 'related_term'],
+                            how='left'
+                        )
                         st.session_state['rec_df'] = rec_df
                 except Exception as e:
                     st.error(f"❌ Recommendation engine error: {e}")
@@ -246,7 +335,7 @@ class StartUpClass:
                 st.markdown("#### 📊 Recommendation Results")
 
                 display_cols = [
-                    'keyword', 'related_term', 'action', 'confidence',
+                    'keyword', 'related_term', 'category', 'action', 'confidence',
                     'closest_include_term', 'closest_exclude_term',
                     'include_max_similarity', 'exclude_max_similarity', 'reason'
                 ]
@@ -259,6 +348,7 @@ class StartUpClass:
                     column_config={
                         'keyword': st.column_config.TextColumn('Keyword'),
                         'related_term': st.column_config.TextColumn('Related Term'),
+                        'category': st.column_config.TextColumn('Category'),
                         'action': st.column_config.TextColumn('Recommendation'),
                         'confidence': st.column_config.ProgressColumn(
                             'Confidence', min_value=0, max_value=1, format='%.0%%'),
